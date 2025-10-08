@@ -4,6 +4,8 @@
 #include <nterm.h>
 #include <symbol_ref.h>
 #include <term.h>
+#include <symbol_list.h>
+#include <ostream>
 
 #include <string>
 #include <string_view>
@@ -61,6 +63,8 @@ public:
 
     size_t get_term_count() const;
     size_t get_nterm_count() const;
+
+    void print_symbol_list(std::ostream& os, const symbol_list& sl) const;
 };
 
 } // namespace ptg

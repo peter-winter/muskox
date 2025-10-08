@@ -1,6 +1,7 @@
 #pragma once
 
 #include <symbol_collection.h>
+#include <symbol_list.h>
 
 #include <string_view>
 #include <vector>
@@ -13,10 +14,10 @@ class ruleset
 public:
     struct rside
     {
-        std::vector<symbol_ref> symbols_;
+        symbol_list symbols_;
         size_t precedence_;
 
-        rside(std::vector<symbol_ref> symbols = {}, size_t precedence = 0)
+        rside(symbol_list symbols = {}, size_t precedence = 0)
             : symbols_(std::move(symbols)), precedence_(precedence)
         {
         }

@@ -4,6 +4,7 @@
 
 #include <grammar_error.h>
 #include <stdexcept>
+#include <sstream>
 
 TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
 {
@@ -198,5 +199,25 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         sc.add_term("term_custom", ptg::associativity::right(), 5);
         REQUIRE(sc.get_term_assoc(2).to_string() == "right");
         REQUIRE(sc.get_term_prec(2) == 5);
+    }
+
+    SECTION("print_symbol_list")
+    {
+        sc.add_term("a");
+        sc.add_nterm("B");
+        sc.add_term("c");
+
+        ptg::symbol_list sl { sc.get_symbol_ref("a"), sc.get_symbol_ref("B"), sc.get_symbol_ref("c") };
+        std::stringstream ss;
+        sc.print_symbol_list(ss, sl);
+        REQUIRE(ss.str() == "a B c");
+    }
+
+    SECTION("print_symbol_list empty")
+    {
+        ptg::symbol_list sl;
+        std::stringstream ss;
+        sc.print_symbol_list(ss, sl);
+        REQUIRE(ss.str().empty() == true);
     }
 }

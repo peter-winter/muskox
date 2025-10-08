@@ -113,4 +113,23 @@ size_t symbol_collection::get_nterm_count() const
     return nterms_.size();
 }
 
+void symbol_collection::print_symbol_list(std::ostream& os, const symbol_list& sl) const
+{
+    if (sl.empty())
+    {
+        return;
+    }
+
+    bool first = true;
+    for (const auto& sym : sl)
+    {
+        if (!first)
+        {
+            os << " ";
+        }
+        first = false;
+        os << get_symbol_name(sym);
+    }
+}
+
 } // namespace ptg

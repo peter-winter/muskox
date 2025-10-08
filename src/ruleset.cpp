@@ -30,7 +30,7 @@ void ruleset::add_rule_impl(std::string_view left, const std::vector<std::string
         throw grammar_error(grammar_error::code::lside_term, left);
     }
 
-    std::vector<symbol_ref> rrefs;
+    symbol_list rrefs;
     for (auto r : rights)
     {
         try
@@ -51,46 +51,35 @@ std::string ruleset::to_string() const
     std::stringstream ss;
     for (size_t i = 0; i < symbols_.get_nterm_count(); ++i)
     {
-        std::string_view left = symbols_.get_nterm_name(i);
-        const auto& prods = rsides_[i];
-        if (prods.empty())
+        const auto& rside_group = rsides_[i];
+        if (rside_group.empty())
         {
             continue;
         }
+        
+        std::string_view left = symbols_.get_nterm_name(i);
 
-        ss << left << " :";
+        ss << left << " : ";
         size_t indent = left.size() + 1;
         bool first = true;
-        for (const auto& prod : prods)
+        for (const auto& rs : rside_group)
         {
             if (!first)
             {
                 ss << "\n" << std::string(indent, ' ') << "| ";
             }
-            else
-            {
-                ss << " ";
-            }
+            
             first = false;
 
-            bool sym_first = true;
-            for (const auto& sym : prod.symbols_)
-            {
-                if (!sym_first)
-                {
-                    ss << " ";
-                }
-                sym_first = false;
-                ss << symbols_.get_symbol_name(sym);
-            }
+            symbols_.print_symbol_list(ss, rs.symbols_);
 
-            if (prod.precedence_ != 0)
+            if (rs.precedence_ != 0)
             {
-                if (!prod.symbols_.empty())
+                if (!rs.symbols_.empty())
                 {
                     ss << " ";
                 }
-                ss << "[" << prod.precedence_ << "]";
+                ss << "[" << rs.precedence_ << "]";
             }
         }
         ss << "\n" << std::string(indent, ' ') << ";\n\n";
@@ -178,11 +167,11 @@ std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
 size_t ruleset::get_max_symbol_count() const
 {
     size_t max = 0;
-    for (const auto& prod_group : rsides_)
+    for (const auto& nterm_rsides : rsides_)
     {
-        for (const auto& prod : prod_group)
+        for (const auto& rs : nterm_rsides)
         {
-            max = std::max(max, prod.symbols_.size());
+            max = std::max(max, rs.symbols_.size());
         }
     }
     return max;
