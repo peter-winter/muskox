@@ -12,29 +12,31 @@ using Catch::Matchers::Message;
 TEST_CASE("ruleset add_rule", "[ruleset]")
 {
     ptg::symbol_collection sc;
-    sc.add_nterm("S");
-    sc.add_term("a", ptg::associativity::left(), 0);
-    sc.add_nterm("B");
+    size_t s_idx = sc.add_nterm("S");
+    size_t a_idx = sc.add_term("a");
+    size_t b_idx = sc.add_nterm("B");
     ptg::ruleset rs(sc, "S");
 
     SECTION("basic add")
     {
-        rs.add_rule("S", {"a", "B"});
-        REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 2);
-        REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol(1, 0, 0).index_ == 1);  // a is 1
-        REQUIRE(rs.get_symbol_type(1, 0, 1) == ptg::symbol_type::non_terminal);
-        REQUIRE(rs.get_symbol(1, 0, 1).index_ == 2);  // B is 2
-        REQUIRE(rs.get_rside_precedence(1, 0) == 0);
+        size_t ridx = rs.add_rule("S", {"a", "B"});
+        REQUIRE(ridx == 0);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == ptg::symbol_type::terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == ptg::symbol_type::non_terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
+        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 0);
     }
 
     SECTION("empty right side")
     {
-        rs.add_rule("S", {});
-        REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 0);
-        REQUIRE(rs.get_rside_precedence(1, 0) == 0);
+        size_t ridx = rs.add_rule("S", {});
+        REQUIRE(ridx == 0);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 0);
+        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 0);
     }
 
     SECTION("lside_not_exists")
@@ -93,43 +95,49 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         const char* cc = "a";
         std::string s = "B";
         std::string_view sv = "S";
-        rs.add_rule(sv, {cc, s});
-        REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 2);
+        size_t ridx = rs.add_rule(sv, {cc, s});
+        REQUIRE(ridx == 0);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
     }
 
     SECTION("add_rule with precedence")
     {
-        rs.add_rule("S", {"a", "B"}, 5);
-        REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 2);
-        REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol(1, 0, 0).index_ == 1);  // a is 1
-        REQUIRE(rs.get_symbol_type(1, 0, 1) == ptg::symbol_type::non_terminal);
-        REQUIRE(rs.get_symbol(1, 0, 1).index_ == 2);  // B is 2
-        REQUIRE(rs.get_rside_precedence(1, 0) == 5);
+        size_t ridx = rs.add_rule("S", {"a", "B"}, 5);
+        REQUIRE(ridx == 0);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == ptg::symbol_type::terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == ptg::symbol_type::non_terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
+        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 5);
     }
 
     SECTION("empty rside as first prod")
     {
-        rs.add_rule("S", {});
-        rs.add_rule("S", {"a"});
-        REQUIRE(rs.get_nterm_rside_count(1) == 2);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 0);
-        REQUIRE(rs.get_symbol_count(1, 1) == 1);
-        REQUIRE(rs.get_symbol_type(1, 1, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol(1, 1, 0).index_ == 1);  // a is 1
+        size_t ridx0 = rs.add_rule("S", {});
+        size_t ridx1 = rs.add_rule("S", {"a"});
+        REQUIRE(ridx0 == 0);
+        REQUIRE(ridx1 == 1);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx0) == 0);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx1) == 1);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx1, 0) == ptg::symbol_type::terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx1, 0) == a_idx);
     }
 
     SECTION("empty rside as non-first prod")
     {
-        rs.add_rule("S", {"a"});
-        rs.add_rule("S", {});
-        REQUIRE(rs.get_nterm_rside_count(1) == 2);  // S is 1
-        REQUIRE(rs.get_symbol_count(1, 0) == 1);
-        REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol(1, 0, 0).index_ == 1);  // a is 1
-        REQUIRE(rs.get_symbol_count(1, 1) == 0);
+        size_t ridx0 = rs.add_rule("S", {"a"});
+        size_t ridx1 = rs.add_rule("S", {});
+        REQUIRE(ridx0 == 0);
+        REQUIRE(ridx1 == 1);
+        REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx0) == 1);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx0, 0) == ptg::symbol_type::terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, ridx0, 0) == a_idx);
+        REQUIRE(rs.get_symbol_count(s_idx, ridx1) == 0);
     }
 
     SECTION("out of range validations")
@@ -137,27 +145,32 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.get_nterm_rside_count(999),
             std::out_of_range,
-            Message("nterm_idx out of range")
+            Message("Nterm_idx out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            rs.get_symbol_count(1, 0),
+            rs.get_symbol_count(s_idx, 0),
             std::out_of_range,
-            Message("rside_idx out of range")
+            Message("Rside_idx out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            rs.get_symbol(1, 0, 0),
+            rs.get_symbol(s_idx, 0, 0),
             std::out_of_range,
-            Message("rside_idx out of range")
+            Message("Rside_idx out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            rs.get_symbol_type(1, 0, 0),
+            rs.get_symbol_type(s_idx, 0, 0),
             std::out_of_range,
-            Message("rside_idx out of range")
+            Message("Rside_idx out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            rs.get_rside_precedence(1, 0),
+            rs.get_symbol_index(s_idx, 0, 0),
             std::out_of_range,
-            Message("rside_idx out of range")
+            Message("Rside_idx out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            rs.get_rside_precedence(s_idx, 0),
+            std::out_of_range,
+            Message("Rside_idx out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_nterm_name(999),
@@ -170,11 +183,14 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE(rs.get_max_rside_count() == 1);  // Special rule added
 
-        rs.add_rule("S", {"a"});
-        rs.add_rule("S", {});
+        size_t ridx0 = rs.add_rule("S", {"a"});
+        size_t ridx1 = rs.add_rule("S", {});
+        REQUIRE(ridx0 == 0);
+        REQUIRE(ridx1 == 1);
         REQUIRE(rs.get_max_rside_count() == 2);
 
-        rs.add_rule("B", {"a", "B"});
+        size_t bridx = rs.add_rule("B", {"a", "B"});
+        REQUIRE(bridx == 0);
         REQUIRE(rs.get_max_rside_count() == 2);  // Still 2
     }
 
@@ -194,8 +210,8 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("get_nterm_name")
     {
-        REQUIRE(rs.get_nterm_name(1) == "S");
-        REQUIRE(rs.get_nterm_name(2) == "B");
+        REQUIRE(rs.get_nterm_name(s_idx) == "S");
+        REQUIRE(rs.get_nterm_name(b_idx) == "B");
     }
 }
 
@@ -296,5 +312,88 @@ TEST_CASE("ruleset root", "[ruleset]")
             ptg::grammar_error,
             Message("Cannot refer special '$root' symbol.")
         );
+    }
+}
+
+TEST_CASE("ruleset get_rside_part_flat_index", "[ruleset]")
+{
+    using Catch::Matchers::Message;
+
+    SECTION("simple")
+    {
+        ptg::symbol_collection sc;
+        size_t a_nt_idx = sc.add_nterm("A");
+        sc.add_term("x");
+        ptg::ruleset rs(sc, "A");
+        size_t a_r0 = rs.add_rule("A", {"x"});
+
+        REQUIRE(rs.get_max_rside_count() == 1);
+        REQUIRE(rs.get_max_symbol_count() == 1);
+
+        REQUIRE(rs.get_rside_part_flat_index(0, 0, 0) == 0);
+        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 0) == 1);
+    }
+
+    SECTION("larger")
+    {
+        ptg::symbol_collection sc;
+        size_t a_nt_idx = sc.add_nterm("A");
+        size_t b_nt_idx = sc.add_nterm("B");
+        sc.add_term("x");
+        ptg::ruleset rs(sc, "A");
+
+        size_t a_r0 = rs.add_rule("A", {"x", "B", "x"}); // symbols=3, rside=0 for A
+        
+        size_t b_r0 = rs.add_rule("B", {"A"});
+        size_t b_r1 = rs.add_rule("B", {"x"});
+        size_t b_r2 = rs.add_rule("B", {"x", "x"}); // rsides=3 for B
+
+        REQUIRE(rs.get_max_rside_count() == 3);
+        REQUIRE(rs.get_max_symbol_count() == 3);
+
+        REQUIRE(rs.get_rside_part_flat_index(0, 0, 0) == 0); // $root r=0 s=0
+
+        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 0) == 9); // 1*3*3 +0*3 +0
+        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 1) == 10);
+        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 2) == 11);
+        
+        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r0, 0) == 18); // 2*9 +0 +0
+        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r1, 0) == 21); // 18+3
+        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r2, 0) == 24); // 18+6
+    }
+
+    SECTION("out of range")
+    {
+        ptg::symbol_collection sc;
+        size_t a_idx = sc.add_nterm("A");
+        ptg::ruleset rs(sc, "A");
+
+        size_t root_idx = 0;
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_rside_part_flat_index(2, 0, 0),
+            std::out_of_range,
+            Message("Nterm_idx out of range")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            rs.get_rside_part_flat_index(root_idx, 1, 0),
+            std::out_of_range,
+            Message("Rside_idx out of range")
+        ); // rsides=1 for $root -> A
+
+        REQUIRE_THROWS_MATCHES(
+            rs.get_rside_part_flat_index(root_idx, 0, 1),
+            std::out_of_range,
+            Message("Symbol_idx out of range")
+        ); // scount=1 for $root -> A
+
+        size_t a_r0 = rs.add_rule("A", {});
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_rside_part_flat_index(a_idx, a_r0, 0),
+            std::out_of_range,
+            Message("Symbol_idx out of range")
+        );// A r=0 empty
     }
 }

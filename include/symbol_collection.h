@@ -42,12 +42,15 @@ private:
     std::vector<nterm> nterms_;
     std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_;
 
+    void validate_nterm_idx(size_t index) const;
+    void validate_term_idx(size_t index) const;
+    
 public:
     symbol_collection();
     ~symbol_collection() = default;
 
-    void add_term(std::string name, associativity assoc = associativity::left(), size_t prec = 0);
-    void add_nterm(std::string name);
+    size_t add_term(std::string name, associativity assoc = associativity::left(), size_t prec = 0);
+    size_t add_nterm(std::string name);
 
     bool contains(std::string_view name) const;
 

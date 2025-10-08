@@ -9,6 +9,7 @@ namespace ptg
 class nullable
 {
 private:
+    const ruleset& rs_;
     base_index_subset nterms_;
     base_index_subset rside_parts_;
 
@@ -18,8 +19,8 @@ public:
     nullable(const ruleset& rs);
     ~nullable() = default;
 
-    const base_index_subset& get_nterms() const;
-    const base_index_subset& get_rside_parts() const;
+    bool is_nullable_nterm(size_t idx) const;
+    bool is_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 };
 
 } // namespace ptg

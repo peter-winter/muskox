@@ -16,10 +16,7 @@ base_index_subset::base_index_subset(size_t n, bool value)
 
 bool base_index_subset::add(size_t index)
 {
-    if (index >= bits_.size())
-    {
-        throw std::out_of_range("Index out of range");
-    }
+    validate(index);
     if (bits_[index])
     {
         return false;  // Already present
@@ -28,18 +25,34 @@ bool base_index_subset::add(size_t index)
     return true;  // Newly added
 }
 
+bool base_index_subset::remove(size_t index)
+{
+    validate(index);
+    if (!bits_[index])
+    {
+        return false;  // Not removed
+    }
+    bits_[index] = false;   // Removed
+    return true;
+}
+
 bool base_index_subset::contains(size_t index) const
 {
-    if (index >= bits_.size())
-    {
-        throw std::out_of_range("Index out of range");
-    }
+    validate(index);
     return bits_[index];
 }
 
 size_t base_index_subset::get_size() const
 {
     return bits_.size();
+}
+
+void base_index_subset::validate(size_t index) const
+{
+    if (index >= bits_.size())
+    {
+        throw std::out_of_range("Index out of range");
+    }
 }
 
 } // namespace ptg

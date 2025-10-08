@@ -30,13 +30,17 @@ private:
 
     symbol_ref set_root(std::string_view name);
 
-    void add_special_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
+    size_t add_special_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
+    
+    void validate_nterm_idx(size_t nterm_idx) const;
+    void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
+    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
     
 public:
     ruleset(const symbol_collection& symbols, std::string_view root_name);
     ~ruleset() = default;
 
-    void add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
+    size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
 
     std::string to_string() const;
 
@@ -52,6 +56,8 @@ public:
     symbol_ref get_symbol(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 
     symbol_type get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    
+    size_t get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 
     size_t get_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
 
@@ -61,6 +67,8 @@ public:
     size_t get_max_symbol_count() const;
     
     symbol_ref get_root() const;
+
+    size_t get_rside_part_flat_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 };
 
 } // namespace ptg

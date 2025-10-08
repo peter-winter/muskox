@@ -17,7 +17,7 @@ symbol_collection::symbol_collection()
     add_term("$eof", associativity::left(), 0);
 }
 
-void symbol_collection::add_term(std::string name, associativity assoc, size_t prec)
+size_t symbol_collection::add_term(std::string name, associativity assoc, size_t prec)
 {
     if (contains(name))
     {
@@ -26,9 +26,10 @@ void symbol_collection::add_term(std::string name, associativity assoc, size_t p
     size_t index = terms_.size();
     auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::terminal, index});
     terms_.emplace_back(it->first, assoc, prec);
+    return index;
 }
 
-void symbol_collection::add_nterm(std::string name)
+size_t symbol_collection::add_nterm(std::string name)
 {
     if (contains(name))
     {
@@ -37,6 +38,7 @@ void symbol_collection::add_nterm(std::string name)
     size_t index = nterms_.size();
     auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::non_terminal, index});
     nterms_.emplace_back(it->first);
+    return index;
 }
 
 bool symbol_collection::contains(std::string_view name) const
@@ -69,37 +71,25 @@ std::string_view symbol_collection::get_symbol_name(symbol_ref ref) const
 
 std::string_view symbol_collection::get_term_name(size_t index) const
 {
-    if (index >= terms_.size())
-    {
-        throw std::out_of_range("Term index out of range");
-    }
+    validate_term_idx(index);
     return terms_[index].name();
 }
 
 std::string_view symbol_collection::get_nterm_name(size_t index) const
 {
-    if (index >= nterms_.size())
-    {
-        throw std::out_of_range("Nterm index out of range");
-    }
+    validate_nterm_idx(index);
     return nterms_[index].name();
 }
 
 associativity symbol_collection::get_term_assoc(size_t index) const
 {
-    if (index >= terms_.size())
-    {
-        throw std::out_of_range("Term index out of range");
-    }
+    validate_term_idx(index);
     return terms_[index].assoc();
 }
 
 size_t symbol_collection::get_term_prec(size_t index) const
 {
-    if (index >= terms_.size())
-    {
-        throw std::out_of_range("Term index out of range");
-    }
+    validate_term_idx(index);
     return terms_[index].prec();
 }
 
@@ -132,4 +122,20 @@ void symbol_collection::print_symbol_list(std::ostream& os, const symbol_list& s
     }
 }
 
+void symbol_collection::validate_nterm_idx(size_t index) const
+{
+    if (index >= nterms_.size())
+    {
+        throw std::out_of_range("Nterm index out of range");
+    }
+}
+
+void symbol_collection::validate_term_idx(size_t index) const
+{
+    if (index >= terms_.size())
+    {
+        throw std::out_of_range("Term index out of range");
+    }
+}
+    
 } // namespace ptg

@@ -279,4 +279,28 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         sc.print_symbol_list(ss, sl);
         REQUIRE(ss.str().empty() == true);
     }
+
+    SECTION("add_term returns index")
+    {
+        size_t idx1 = sc.add_term("term1");
+        REQUIRE(idx1 == 1);  // $eof is 0
+
+        size_t idx2 = sc.add_term("term2");
+        REQUIRE(idx2 == 2);
+
+        REQUIRE(sc.get_term_name(idx1) == "term1");
+        REQUIRE(sc.get_term_name(idx2) == "term2");
+    }
+
+    SECTION("add_nterm returns index")
+    {
+        size_t idx1 = sc.add_nterm("nterm1");
+        REQUIRE(idx1 == 1);  // $root is 0
+
+        size_t idx2 = sc.add_nterm("nterm2");
+        REQUIRE(idx2 == 2);
+
+        REQUIRE(sc.get_nterm_name(idx1) == "nterm1");
+        REQUIRE(sc.get_nterm_name(idx2) == "nterm2");
+    }
 }
