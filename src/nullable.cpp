@@ -1,10 +1,5 @@
 #include <nullable.h>
 
-#include <grammar_error.h>
-#include <symbol_collection.h>
-
-#include <stdexcept>
-
 namespace ptg
 {
 

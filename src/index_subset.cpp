@@ -1,7 +1,5 @@
 #include <index_subset.h>
 
-#include <stdexcept>
-
 namespace ptg
 {
 

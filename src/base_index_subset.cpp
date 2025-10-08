@@ -1,7 +1,6 @@
-#include <base_index_subset.h>
-
-#include <algorithm>
 #include <stdexcept>
+
+#include <base_index_subset.h>
 
 namespace ptg
 {

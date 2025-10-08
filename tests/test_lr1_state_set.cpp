@@ -1,11 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
+#include <grammar_error.h>
 #include <lr1_state_set.h>
 #include <ruleset.h>
 #include <symbol_collection.h>
 
-#include <grammar_error.h>
+using Catch::Matchers::Message;
 
 TEST_CASE("lr1_state_set validate", "[lr1_state_set]")
 {
@@ -17,6 +18,10 @@ TEST_CASE("lr1_state_set validate", "[lr1_state_set]")
         sc.add_nterm("B");
         ptg::ruleset rs(sc, "A");
         
-        REQUIRE_THROWS_MATCHES([&]{ ptg::lr1_state_set s(rs); }(), ptg::grammar_error, Catch::Matchers::Message("Nonterminal 'A' has no productions."));
+        REQUIRE_THROWS_MATCHES(
+            [&]{ ptg::lr1_state_set s(rs); }(),
+            ptg::grammar_error,
+            Message("Nonterminal 'A' has no productions.")
+        );
     }
 }

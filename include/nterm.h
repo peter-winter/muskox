@@ -1,7 +1,5 @@
 #pragma once
 
-#include <symbol_ref.h>
-
 #include <string_view>
 
 namespace ptg

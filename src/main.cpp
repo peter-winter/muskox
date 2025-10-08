@@ -1,5 +1,3 @@
-#include <parse_table_generator.h>
-#include <index_subset.h>
 #include <grammar_error.h>
 
 #include <iostream>
@@ -13,4 +11,4 @@ int main()
     std::cout << "Hello, parse_table_generator!" << std::endl;
     std::cout << msg << std::endl;
     return 0;
-}
+}   

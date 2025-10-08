@@ -1,9 +1,11 @@
+#include <stdexcept>
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <base_index_subset.h>
 
-#include <stdexcept>
+using Catch::Matchers::Message;
 
 TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
 {
@@ -43,8 +45,16 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
     SECTION("out of range")
     {
         ptg::base_index_subset is(100);
-        REQUIRE_THROWS_MATCHES(is.add(100), std::out_of_range, Catch::Matchers::Message("Index out of range"));
-        REQUIRE_THROWS_MATCHES(is.contains(100), std::out_of_range, Catch::Matchers::Message("Index out of range"));
+        REQUIRE_THROWS_MATCHES(
+            is.add(100),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            is.contains(100),
+            std::out_of_range,
+            Message("Index out of range")
+        );
     }
 
 
@@ -56,7 +66,15 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
 
     SECTION("zero size throws")
     {
-        REQUIRE_THROWS_MATCHES([]{ ptg::base_index_subset(0); }(), std::invalid_argument, Catch::Matchers::Message("Size must be greater than 0"));
-        REQUIRE_THROWS_MATCHES([]{ ptg::base_index_subset(0, true); }(), std::invalid_argument, Catch::Matchers::Message("Size must be greater than 0"));
+        REQUIRE_THROWS_MATCHES(
+            []{ ptg::base_index_subset(0); }(),
+            std::invalid_argument,
+            Message("Size must be greater than 0")
+        );
+        REQUIRE_THROWS_MATCHES(
+            []{ ptg::base_index_subset(0, true); }(),
+            std::invalid_argument,
+            Message("Size must be greater than 0")
+        );
     }
 }
