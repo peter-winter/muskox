@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <ruleset.h>
 #include <symbol_collection.h>
@@ -36,25 +37,25 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("lside_not_exists")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("nonexist", {}), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(rs.add_rule("nonexist", {}), ptg::grammar_error, Catch::Matchers::Message("Left side 'nonexist' does not exist."));
     }
 
     SECTION("lside_term")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("a", {"S"}), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(rs.add_rule("a", {"S"}), ptg::grammar_error, Catch::Matchers::Message("Left side 'a' is a terminal."));
     }
 
     SECTION("rside_not_exist")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("S", {"nonexist"}), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(rs.add_rule("S", {"nonexist"}), ptg::grammar_error, Catch::Matchers::Message("Right side symbol 'nonexist' does not exist."));
     }
     
     SECTION("cannot_refer_special")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("S", {"$eof"}), ptg::grammar_error);
-        REQUIRE_THROWS_AS(rs.add_rule("S", {"$root"}), ptg::grammar_error);
-        REQUIRE_THROWS_AS(rs.add_rule("$eof", {"a"}), ptg::grammar_error);
-        REQUIRE_THROWS_AS(rs.add_rule("$root", {"a"}), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(rs.add_rule("S", {"$eof"}), ptg::grammar_error, Catch::Matchers::Message("Cannot refer special '$eof' symbol."));
+        REQUIRE_THROWS_MATCHES(rs.add_rule("S", {"$root"}), ptg::grammar_error, Catch::Matchers::Message("Cannot refer special '$root' symbol."));
+        REQUIRE_THROWS_MATCHES(rs.add_rule("$eof", {"a"}), ptg::grammar_error, Catch::Matchers::Message("Cannot refer special '$eof' symbol."));
+        REQUIRE_THROWS_MATCHES(rs.add_rule("$root", {"a"}), ptg::grammar_error, Catch::Matchers::Message("Cannot refer special '$root' symbol."));
     }
 
     SECTION("mixed types")
@@ -103,12 +104,12 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("out of range validations")
     {
-        REQUIRE_THROWS_AS(rs.get_nterm_rside_count(999), std::out_of_range);
-        REQUIRE_THROWS_AS(rs.get_symbol_count(1, 0), std::out_of_range);  // no rsides yet
-        REQUIRE_THROWS_AS(rs.get_symbol(1, 0, 0), std::out_of_range);
-        REQUIRE_THROWS_AS(rs.get_symbol_type(1, 0, 0), std::out_of_range);
-        REQUIRE_THROWS_AS(rs.get_rside_precedence(1, 0), std::out_of_range);
-        REQUIRE_THROWS_AS(rs.get_nterm_name(999), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(rs.get_nterm_rside_count(999), std::out_of_range, Catch::Matchers::Message("nterm_idx out of range"));
+        REQUIRE_THROWS_MATCHES(rs.get_symbol_count(1, 0), std::out_of_range, Catch::Matchers::Message("rside_idx out of range"));
+        REQUIRE_THROWS_MATCHES(rs.get_symbol(1, 0, 0), std::out_of_range, Catch::Matchers::Message("rside_idx out of range"));
+        REQUIRE_THROWS_MATCHES(rs.get_symbol_type(1, 0, 0), std::out_of_range, Catch::Matchers::Message("rside_idx out of range"));
+        REQUIRE_THROWS_MATCHES(rs.get_rside_precedence(1, 0), std::out_of_range, Catch::Matchers::Message("rside_idx out of range"));
+        REQUIRE_THROWS_MATCHES(rs.get_nterm_name(999), std::out_of_range, Catch::Matchers::Message("Nterm index out of range"));
     }
 
     SECTION("get_max_rside_count")
@@ -218,16 +219,16 @@ TEST_CASE("ruleset root", "[ruleset]")
 
     SECTION("set invalid name")
     {
-        REQUIRE_THROWS_AS([&]{ ptg::ruleset rs(sc, "nonexist"); }(), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES([&]{ ptg::ruleset rs(sc, "nonexist"); }(), ptg::grammar_error, Catch::Matchers::Message("Root symbol 'nonexist' does not exist."));
     }
 
     SECTION("set term")
     {
-        REQUIRE_THROWS_AS([&]{ ptg::ruleset rs(sc, "a"); }(), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES([&]{ ptg::ruleset rs(sc, "a"); }(), ptg::grammar_error, Catch::Matchers::Message("Root symbol 'a' is a terminal."));
     }
     
     SECTION("set $root")
     {
-        REQUIRE_THROWS_AS([&]{ ptg::ruleset rs(sc, "$root"); }(), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES([&]{ ptg::ruleset rs(sc, "$root"); }(), ptg::grammar_error, Catch::Matchers::Message("Cannot refer special '$root' symbol."));
     }
-}
+}   

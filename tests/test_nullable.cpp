@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <nullable.h>
 #include <ruleset.h>
@@ -9,14 +10,6 @@
 TEST_CASE("nullable sizes", "[nullable]")
 {
     ptg::symbol_collection sc;
-
-    SECTION("with nterms no rules")
-    {
-        sc.add_nterm("A");
-        sc.add_nterm("B");
-        ptg::ruleset rs(sc, "A");
-        REQUIRE_THROWS_AS([&]{ ptg::nullable n(rs); }(), ptg::grammar_error);  // Multiple have no rules
-    }
 
     SECTION("with rules varying rsides and symbols")
     {
@@ -66,5 +59,26 @@ TEST_CASE("nullable sizes", "[nullable]")
         ptg::nullable n(rs);
         REQUIRE(n.get_nterms().get_size() == 4);  // $root + A + B + C
         REQUIRE(n.get_rside_parts().get_size() == 4 * 3 * 4);  // max_rsides=3 (B), max_symbols=4 (C)
+    }
+    
+    SECTION("all set")
+    {
+        sc.add_nterm("A");
+        sc.add_term("x");
+        
+        ptg::ruleset rs(sc, "A");
+        ptg::nullable n(rs);
+        
+        rs.add_rule("A", {"x"});
+
+        for (size_t i = 0; i < n.get_nterms().get_size(); ++i)
+        {
+            REQUIRE(n.get_nterms().contains(i));
+        }
+        
+        for (size_t i = 0; i < n.get_nterms().get_size(); ++i)
+        {
+            REQUIRE(n.get_rside_parts().contains(i));
+        }
     }
 }

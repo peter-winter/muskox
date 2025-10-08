@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 #include <symbol_collection.h>
 
@@ -27,12 +28,12 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
     SECTION("duplicate add throws")
     {
         sc.add_term("dup");
-        REQUIRE_THROWS_AS(sc.add_term("dup"), ptg::grammar_error);
-        REQUIRE_THROWS_AS(sc.add_nterm("dup"), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(sc.add_term("dup"), ptg::grammar_error, Catch::Matchers::Message("Symbol 'dup' already exists."));
+        REQUIRE_THROWS_MATCHES(sc.add_nterm("dup"), ptg::grammar_error, Catch::Matchers::Message("Symbol 'dup' already exists."));
 
         sc.add_nterm("dup2");
-        REQUIRE_THROWS_AS(sc.add_nterm("dup2"), ptg::grammar_error);
-        REQUIRE_THROWS_AS(sc.add_term("dup2"), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(sc.add_nterm("dup2"), ptg::grammar_error, Catch::Matchers::Message("Symbol 'dup2' already exists."));
+        REQUIRE_THROWS_MATCHES(sc.add_term("dup2"), ptg::grammar_error, Catch::Matchers::Message("Symbol 'dup2' already exists."));
     }
 
     SECTION("get_symbol_ref")
@@ -47,7 +48,7 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(ref.type_ == ptg::symbol_type::non_terminal);
         REQUIRE(ref.index_ == 1);  // $root is 0
 
-        REQUIRE_THROWS_AS(sc.get_symbol_ref("unknown"), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_symbol_ref("unknown"), std::out_of_range, Catch::Matchers::Message("Symbol not found"));
     }
 
     SECTION("get_symbol_name")
@@ -62,27 +63,27 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_symbol_name(ref_nterm) == "nterm1");
 
         ptg::symbol_ref invalid_ref { ptg::symbol_type::terminal, 999 };
-        REQUIRE_THROWS_AS(sc.get_symbol_name(invalid_ref), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_symbol_name(invalid_ref), std::out_of_range, Catch::Matchers::Message("Term index out of range"));
 
         invalid_ref.type_ = ptg::symbol_type::non_terminal;
-        REQUIRE_THROWS_AS(sc.get_symbol_name(invalid_ref), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_symbol_name(invalid_ref), std::out_of_range, Catch::Matchers::Message("Nterm index out of range"));
 
         invalid_ref.type_ = static_cast<ptg::symbol_type>(99);
-        REQUIRE_THROWS_AS(sc.get_symbol_name(invalid_ref), std::invalid_argument);
+        REQUIRE_THROWS_MATCHES(sc.get_symbol_name(invalid_ref), std::invalid_argument, Catch::Matchers::Message("Unknown symbol type"));
     }
 
     SECTION("get_term_name")
     {
         sc.add_term("term1");
         REQUIRE(sc.get_term_name(1) == "term1");
-        REQUIRE_THROWS_AS(sc.get_term_name(2), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_term_name(2), std::out_of_range, Catch::Matchers::Message("Term index out of range"));
     }
 
     SECTION("get_nterm_name")
     {
         sc.add_nterm("nterm1");
         REQUIRE(sc.get_nterm_name(1) == "nterm1");
-        REQUIRE_THROWS_AS(sc.get_nterm_name(2), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_nterm_name(2), std::out_of_range, Catch::Matchers::Message("Nterm index out of range"));
     }
 
     SECTION("get_term_assoc and get_term_prec")
@@ -95,8 +96,8 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_term_assoc(2).to_string() == "right");
         REQUIRE(sc.get_term_prec(2) == 20);
 
-        REQUIRE_THROWS_AS(sc.get_term_assoc(3), std::out_of_range);
-        REQUIRE_THROWS_AS(sc.get_term_prec(3), std::out_of_range);
+        REQUIRE_THROWS_MATCHES(sc.get_term_assoc(3), std::out_of_range, Catch::Matchers::Message("Term index out of range"));
+        REQUIRE_THROWS_MATCHES(sc.get_term_prec(3), std::out_of_range, Catch::Matchers::Message("Term index out of range"));
     }
 
     SECTION("rehashing with many adds")
@@ -173,8 +174,8 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_term_assoc(0).to_string() == "left");
         REQUIRE(sc.get_term_prec(0) == 0);
 
-        REQUIRE_THROWS_AS(sc.add_nterm("$root"), ptg::grammar_error);
-        REQUIRE_THROWS_AS(sc.add_term("$eof", ptg::associativity::left(), 0), ptg::grammar_error);
+        REQUIRE_THROWS_MATCHES(sc.add_nterm("$root"), ptg::grammar_error, Catch::Matchers::Message("Symbol '$root' already exists."));
+        REQUIRE_THROWS_MATCHES(sc.add_term("$eof", ptg::associativity::left(), 0), ptg::grammar_error, Catch::Matchers::Message("Symbol '$eof' already exists."));
     }
 
     SECTION("term defaults")

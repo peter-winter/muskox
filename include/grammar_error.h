@@ -16,7 +16,7 @@ struct grammar_error_templates
         "Left side '{}' does not exist.",
         "Left side '{}' is a terminal.",
         "Right side symbol '{}' does not exist.",
-        "Nonterminal {} has no productions.",
+        "Nonterminal '{}' has no productions.",
         "Root symbol '{}' is a terminal.",
         "Root symbol '{}' does not exist.",
         "Cannot refer special '{}' symbol."
