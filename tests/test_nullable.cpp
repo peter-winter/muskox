@@ -29,14 +29,14 @@ TEST_CASE("nullable sizes", "[nullable]")
 
         ptg::ruleset rs(sc, "A");
         
-        rs.add_rule("A", "x");
-        rs.add_rule("A");
+        rs.add_rule("A", {"x"});
+        rs.add_rule("A", {});
 
-        rs.add_rule("B", "x", "y");
-        rs.add_rule("B", "z");
+        rs.add_rule("B", {"x", "y"});
+        rs.add_rule("B", {"z"});
 
-        rs.add_rule("C", "x", "y", "z");
-        rs.add_rule("C");
+        rs.add_rule("C", {"x", "y", "z"});
+        rs.add_rule("C", {});
 
         ptg::nullable n(rs);
         REQUIRE(n.get_nterms().get_size() == 4);  // $root + A + B + C
@@ -55,13 +55,13 @@ TEST_CASE("nullable sizes", "[nullable]")
         
         ptg::ruleset rs(sc, "A");
         
-        rs.add_rule("A", "x");
+        rs.add_rule("A", {"x"});
 
-        rs.add_rule("B");
-        rs.add_rule("B");
-        rs.add_rule("B");  // 3 rsides, 0 symbols
+        rs.add_rule("B", {});
+        rs.add_rule("B", {});
+        rs.add_rule("B", {});  // 3 rsides, 0 symbols
 
-        rs.add_rule("C", "x", "y", "z", "w");  // 1 rside, 4 symbols
+        rs.add_rule("C", {"x", "y", "z", "w"});  // 1 rside, 4 symbols
 
         ptg::nullable n(rs);
         REQUIRE(n.get_nterms().get_size() == 4);  // $root + A + B + C

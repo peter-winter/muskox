@@ -16,7 +16,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("basic add")
     {
-        rs.add_rule("S", "a", "B");
+        rs.add_rule("S", {"a", "B"});
         REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 2);
         REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
@@ -28,7 +28,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty right side")
     {
-        rs.add_rule("S");
+        rs.add_rule("S", {});
         REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 0);
         REQUIRE(rs.get_rside_precedence(1, 0) == 0);
@@ -36,17 +36,25 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("lside_not_exists")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("nonexist"), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("nonexist", {}), ptg::grammar_error);
     }
 
     SECTION("lside_term")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("a", "S"), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("a", {"S"}), ptg::grammar_error);
     }
 
     SECTION("rside_not_exist")
     {
-        REQUIRE_THROWS_AS(rs.add_rule("S", "nonexist"), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("S", {"nonexist"}), ptg::grammar_error);
+    }
+    
+    SECTION("cannot_refer_special")
+    {
+        REQUIRE_THROWS_AS(rs.add_rule("S", {"$eof"}), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("S", {"$root"}), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("$eof", {"a"}), ptg::grammar_error);
+        REQUIRE_THROWS_AS(rs.add_rule("$root", {"a"}), ptg::grammar_error);
     }
 
     SECTION("mixed types")
@@ -54,14 +62,14 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         const char* cc = "a";
         std::string s = "B";
         std::string_view sv = "S";
-        rs.add_rule(sv, cc, s);
+        rs.add_rule(sv, {cc, s});
         REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 2);
     }
 
-    SECTION("add_rule_with_precedence")
+    SECTION("add_rule with precedence")
     {
-        rs.add_rule_with_precedence("S", 5, "a", "B");
+        rs.add_rule("S", {"a", "B"}, 5);
         REQUIRE(rs.get_nterm_rside_count(1) == 1);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 2);
         REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
@@ -73,8 +81,8 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty rside as first prod")
     {
-        rs.add_rule("S");
-        rs.add_rule("S", "a");
+        rs.add_rule("S", {});
+        rs.add_rule("S", {"a"});
         REQUIRE(rs.get_nterm_rside_count(1) == 2);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 0);
         REQUIRE(rs.get_symbol_count(1, 1) == 1);
@@ -84,8 +92,8 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty rside as non-first prod")
     {
-        rs.add_rule("S", "a");
-        rs.add_rule("S");
+        rs.add_rule("S", {"a"});
+        rs.add_rule("S", {});
         REQUIRE(rs.get_nterm_rside_count(1) == 2);  // S is 1
         REQUIRE(rs.get_symbol_count(1, 0) == 1);
         REQUIRE(rs.get_symbol_type(1, 0, 0) == ptg::symbol_type::terminal);
@@ -107,11 +115,11 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE(rs.get_max_rside_count() == 1);  // Special rule added
 
-        rs.add_rule("S", "a");
-        rs.add_rule("S");
+        rs.add_rule("S", {"a"});
+        rs.add_rule("S", {});
         REQUIRE(rs.get_max_rside_count() == 2);
 
-        rs.add_rule("B", "a", "B");
+        rs.add_rule("B", {"a", "B"});
         REQUIRE(rs.get_max_rside_count() == 2);  // Still 2
     }
 
@@ -119,13 +127,13 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE(rs.get_max_symbol_count() == 1);  // Special rule has 1 symbol
 
-        rs.add_rule("S", "a");
+        rs.add_rule("S", {"a"});
         REQUIRE(rs.get_max_symbol_count() == 1);
 
-        rs.add_rule("B", "a", "B");
+        rs.add_rule("B", {"a", "B"});
         REQUIRE(rs.get_max_symbol_count() == 2);
 
-        rs.add_rule("S");
+        rs.add_rule("S", {});
         REQUIRE(rs.get_max_symbol_count() == 2);  // Empty doesn't increase
     }
 
@@ -148,10 +156,10 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     SECTION("basic")
     {
         ptg::ruleset rs(sc, "S");
-        rs.add_rule("S", "a", "B");
-        rs.add_rule("S", "b");
-        rs.add_rule("S");
-        rs.add_rule_with_precedence("B", 3, "c");
+        rs.add_rule("S", {"a", "B"});
+        rs.add_rule("S", {"b"});
+        rs.add_rule("S", {});
+        rs.add_rule("B", {"c"}, 3);
 
         std::string expected =
             "$root : S\n"
@@ -168,8 +176,8 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     SECTION("empty rside as first")
     {
         ptg::ruleset rs(sc, "S");
-        rs.add_rule("S");
-        rs.add_rule("S", "a");
+        rs.add_rule("S", {});
+        rs.add_rule("S", {"a"});
 
         std::string expected_empty_first =
             "$root : S\n"
@@ -183,8 +191,8 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     SECTION("empty rside as non-first")
     {
         ptg::ruleset rs(sc, "S");
-        rs.add_rule("S", "a");
-        rs.add_rule("S");
+        rs.add_rule("S", {"a"});
+        rs.add_rule("S", {});
 
         std::string expected_empty_non_first =
             "$root : S\n"

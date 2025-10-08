@@ -13,8 +13,26 @@ ruleset::ruleset(const symbol_collection& symbols, std::string_view root_name)
 {
 }
 
-void ruleset::add_rule_impl(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)
+void ruleset::add_special_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)
 {
+    symbol_ref lref = symbols_.get_symbol_ref(left);
+    
+    symbol_list rrefs;
+    for (auto r : rights)
+    {
+        rrefs.push_back(symbols_.get_symbol_ref(r));
+    }
+
+    rsides_[lref.index_].emplace_back(std::move(rrefs), precedence);
+}
+
+void ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)
+{
+    if (left[0] == '$')
+    {
+        throw grammar_error(grammar_error::code::cannot_refer_special, left);
+    }
+    
     symbol_ref lref;
     try
     {
@@ -33,6 +51,11 @@ void ruleset::add_rule_impl(std::string_view left, const std::vector<std::string
     symbol_list rrefs;
     for (auto r : rights)
     {
+        if (r[0] == '$')
+        {
+            throw grammar_error(grammar_error::code::cannot_refer_special, r);
+        }
+        
         try
         {
             rrefs.push_back(symbols_.get_symbol_ref(r));
@@ -204,7 +227,7 @@ symbol_ref ruleset::set_root(std::string_view name)
         throw grammar_error(grammar_error::code::root_term, name);
     }
 
-    add_rule_impl("$root", {name});
+    add_special_rule("$root", {name});
 
     return ref;
 }
