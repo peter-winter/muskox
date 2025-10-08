@@ -6,34 +6,23 @@ namespace ptg
 {
 
 index_subset::index_subset(size_t n)
-    : bits_(n, false), indices_()
+    : base_(n), indices_()
 {
-    if (n == 0)
-    {
-        throw std::invalid_argument("Size must be greater than 0");
-    }
 }
 
-void index_subset::add(size_t index)
+bool index_subset::add(size_t index)
 {
-    if (index >= bits_.size())
+    bool inserted = base_.add(index);
+    if (inserted)
     {
-        throw std::out_of_range("Index out of range");
-    }
-    if (!bits_[index])
-    {
-        bits_[index] = true;
         indices_.push_back(index);
     }
+    return inserted;
 }
 
 bool index_subset::contains(size_t index) const
 {
-    if (index >= bits_.size())
-    {
-        throw std::out_of_range("Index out of range");
-    }
-    return bits_[index];
+    return base_.contains(index);
 }
 
 size_t index_subset::get_count() const
@@ -48,7 +37,7 @@ const std::vector<size_t>& index_subset::get_indices() const
 
 size_t index_subset::get_size() const
 {
-    return bits_.size();
+    return base_.get_size();
 }
 
 } // namespace ptg

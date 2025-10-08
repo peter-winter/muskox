@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(Catch2)
 include(Catch)
 
 add_executable(unit_tests
+  test_base_index_subset.cpp
   test_parse_table_generator.cpp
   test_index_subset.cpp
   test_grammar_error.cpp

@@ -6,20 +6,29 @@
 
 TEST_CASE("index_subset basic operations", "[index_subset]")
 {
-    ptg::index_subset is(100);
+    SECTION("default init")
+    {
+        ptg::index_subset is(100);
+        REQUIRE(is.get_count() == 0);
+        REQUIRE(is.contains(42) == false);
+        REQUIRE(is.get_indices().empty() == true);
+    }
 
     SECTION("add and contains")
     {
-        is.add(42);
+        ptg::index_subset is(100);
+        REQUIRE(is.add(42) == true);  // New
         REQUIRE(is.contains(42) == true);
         REQUIRE(is.contains(0) == false);
+        REQUIRE(is.add(42) == false);  // Duplicate
     }
 
     SECTION("multiple adds")
     {
-        is.add(1);
-        is.add(2);
-        is.add(1);  // Duplicate
+        ptg::index_subset is(100);
+        REQUIRE(is.add(1) == true);
+        REQUIRE(is.add(2) == true);
+        REQUIRE(is.add(1) == false);  // Duplicate
         REQUIRE(is.contains(1) == true);
         REQUIRE(is.contains(2) == true);
         REQUIRE(is.contains(3) == false);
@@ -27,33 +36,40 @@ TEST_CASE("index_subset basic operations", "[index_subset]")
 
     SECTION("out of range")
     {
+        ptg::index_subset is(100);
         REQUIRE_THROWS_AS(is.add(100), std::out_of_range);
         REQUIRE_THROWS_AS(is.contains(100), std::out_of_range);
     }
 
     SECTION("get_count")
     {
+        ptg::index_subset is(100);
         REQUIRE(is.get_count() == 0);
-        is.add(0);
+        REQUIRE(is.add(0) == true);
         REQUIRE(is.get_count() == 1);
-        is.add(50);
+        REQUIRE(is.add(50) == true);
         REQUIRE(is.get_count() == 2);
-        is.add(0);  // Duplicate
+        REQUIRE(is.add(0) == false);  // Duplicate
         REQUIRE(is.get_count() == 2);
     }
 
     SECTION("get_indices")
     {
-        is.add(10);
-        is.add(5);
-        is.add(20);
+        ptg::index_subset is(100);
+        REQUIRE(is.add(10) == true);
+        REQUIRE(is.add(5) == true);
+        REQUIRE(is.add(20) == true);
         REQUIRE(is.get_count() == 3);
         const auto& inds = is.get_indices();
+        REQUIRE(inds == std::vector<size_t>{10, 5, 20});
+        REQUIRE(is.add(10) == false);  // Duplicate, no append
+        REQUIRE(is.get_count() == 3);
         REQUIRE(inds == std::vector<size_t>{10, 5, 20});
     }
 
     SECTION("get_size")
     {
+        ptg::index_subset is(100);
         REQUIRE(is.get_size() == 100);
     }
 
