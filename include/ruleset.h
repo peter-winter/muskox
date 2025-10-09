@@ -1,3 +1,4 @@
+// include/ruleset.h
 #pragma once
 
 #include <symbol_collection.h>
@@ -28,17 +29,17 @@ private:
     std::vector<std::vector<rside>> rsides_;
     symbol_ref root_;
 
-    symbol_ref set_root(std::string_view name);
-
-    size_t add_special_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
-    
     void validate_nterm_idx(size_t nterm_idx) const;
     void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
     void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
     
+    symbol_ref set_root(symbol_ref root);
+    
 public:
-    ruleset(const symbol_collection& symbols, std::string_view root_name);
+    ruleset(const symbol_collection& symbols);
     ~ruleset() = default;
+
+    symbol_ref set_root(std::string_view name);
 
     size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace ptg
 {
 
@@ -10,5 +12,10 @@ struct symbol_ref
     symbol_type type_;
     size_t index_;
 };
+
+inline bool operator==(const symbol_ref& lhs, const symbol_ref& rhs)
+{
+    return lhs.type_ == rhs.type_ && lhs.index_ == rhs.index_;
+}
 
 } // namespace ptg

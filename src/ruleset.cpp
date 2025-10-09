@@ -8,47 +8,6 @@
 namespace ptg
 {
 
-symbol_ref ruleset::set_root(std::string_view name)
-{
-    if (name[0] == '$')
-    {
-        throw grammar_error(grammar_error::code::cannot_refer_special, name);
-    }
-    
-    symbol_ref ref;
-    try
-    {
-        ref = symbols_.get_symbol_ref(name);
-    }
-    catch (const std::out_of_range&)
-    {
-        throw grammar_error(grammar_error::code::root_not_exists, name);
-    }
-
-    if (ref.type_ != symbol_type::non_terminal)
-    {
-        throw grammar_error(grammar_error::code::root_term, name);
-    }
-
-    add_special_rule("$root", {name});
-
-    return ref;
-}
-
-size_t ruleset::add_special_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)
-{
-    symbol_ref lref = symbols_.get_symbol_ref(left);
-    
-    symbol_list rrefs;
-    for (auto r : rights)
-    {
-        rrefs.push_back(symbols_.get_symbol_ref(r));
-    }
-
-    rsides_[lref.index_].emplace_back(std::move(rrefs), precedence);
-    return rsides_[lref.index_].size() - 1;
-}
-
 void ruleset::validate_nterm_idx(size_t nterm_idx) const
 {
     if (nterm_idx >= get_nterm_count())
@@ -76,9 +35,56 @@ void ruleset::validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t sym
     }
 }
 
-ruleset::ruleset(const symbol_collection& symbols, std::string_view root_name)
-    : symbols_(symbols), rsides_(symbols.get_nterm_count()), root_(set_root(root_name))
+symbol_ref ruleset::set_root(symbol_ref root)
 {
+    if (rsides_[0].empty())
+    {
+        symbol_list rrefs{root};
+        rsides_[0].emplace_back(std::move(rrefs), 0);
+    }
+    else
+    {
+        rsides_[0][0].symbols_[0] = root;
+    }
+    root_ = root;
+    
+    return root_;
+}
+
+ruleset::ruleset(const symbol_collection& symbols)
+    : symbols_(symbols), rsides_(symbols.get_nterm_count())
+{
+    if (symbols_.get_nterm_count() <= 1)
+    {
+        throw grammar_error(grammar_error::code::no_nterm);
+    }
+    std::string_view root_name = symbols_.get_nterm_name(1);
+    root_ = set_root(root_name);
+}
+
+symbol_ref ruleset::set_root(std::string_view name)
+{
+    if (name[0] == '$')
+    {
+        throw grammar_error(grammar_error::code::cannot_refer_special, name);
+    }
+    
+    symbol_ref ref;
+    try
+    {
+        ref = symbols_.get_symbol_ref(name);
+    }
+    catch (const std::out_of_range&)
+    {
+        throw grammar_error(grammar_error::code::root_not_exists, name);
+    }
+    
+    if (ref.type_ != symbol_type::non_terminal)
+    {
+        throw grammar_error(grammar_error::code::root_term, name);
+    }
+    
+    return set_root(ref);
 }
 
 size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)

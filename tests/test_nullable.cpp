@@ -16,7 +16,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_idx = sc.add_nterm("S");
         sc.add_term("a");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         size_t s_r0 = rs.add_rule("S", {"a"});
 
         ptg::nullable n(rs);
@@ -37,7 +37,7 @@ TEST_CASE("nullable computation", "[nullable]")
     {
         size_t s_idx = sc.add_nterm("S");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("S", {});
 
         ptg::nullable n(rs);
@@ -58,7 +58,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t b_idx = sc.add_nterm("B");
         size_t c_idx = sc.add_nterm("C");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("A", {});
         size_t b_r0 = rs.add_rule("B", {"A"});
         size_t c_r0 = rs.add_rule("C", {"B", "A"});
@@ -95,7 +95,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t b_idx = sc.add_nterm("B");
         sc.add_term("c");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("A", {});
         rs.add_rule("B", {});
         size_t s_r0 = rs.add_rule("S", {"A", "c", "B"});
@@ -124,7 +124,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t a_idx = sc.add_nterm("A");
         sc.add_term("b");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("A", {});
         size_t a_r1 = rs.add_rule("A", {"b"});
         size_t s_r0 = rs.add_rule("S", {"A"});
@@ -159,7 +159,7 @@ TEST_CASE("nullable computation", "[nullable]")
         sc.add_term("x");
         sc.add_term("y");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("A", {});
         rs.add_rule("B", {});
         size_t s_r0 = rs.add_rule("S", {"A", "x", "B", "y"});
@@ -190,7 +190,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t b_idx = sc.add_nterm("B");
         sc.add_term("x");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("A", {});
         rs.add_rule("B", {});
         size_t s_r0 = rs.add_rule("S", {"x", "A", "B"});
@@ -221,7 +221,7 @@ TEST_CASE("nullable computation", "[nullable]")
         sc.add_term("+");
         sc.add_term("id");
 
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         size_t s_r0 = rs.add_rule("S", {"Expr"});
         size_t expr_r0 = rs.add_rule("Expr", {"Expr", "+", "Term"});
         size_t expr_r1 = rs.add_rule("Expr", {"Term"});

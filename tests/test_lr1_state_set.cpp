@@ -16,7 +16,7 @@ TEST_CASE("lr1_state_set validate", "[lr1_state_set]")
     {
         sc.add_nterm("A");
         sc.add_nterm("B");
-        ptg::ruleset rs(sc, "A");
+        ptg::ruleset rs(sc);
         
         REQUIRE_THROWS_MATCHES(
             [&]{ ptg::lr1_state_set s(rs); }(),

@@ -15,7 +15,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     size_t s_idx = sc.add_nterm("S");
     size_t a_idx = sc.add_term("a");
     size_t b_idx = sc.add_nterm("B");
-    ptg::ruleset rs(sc, "S");
+    ptg::ruleset rs(sc);
 
     SECTION("basic add")
     {
@@ -226,7 +226,7 @@ TEST_CASE("ruleset to_string", "[ruleset]")
 
     SECTION("basic")
     {
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("S", {"a", "B"});
         rs.add_rule("S", {"b"});
         rs.add_rule("S", {});
@@ -246,7 +246,7 @@ TEST_CASE("ruleset to_string", "[ruleset]")
 
     SECTION("empty rside as first")
     {
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("S", {});
         rs.add_rule("S", {"a"});
 
@@ -261,7 +261,7 @@ TEST_CASE("ruleset to_string", "[ruleset]")
 
     SECTION("empty rside as non-first")
     {
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         rs.add_rule("S", {"a"});
         rs.add_rule("S", {});
 
@@ -280,17 +280,23 @@ TEST_CASE("ruleset root", "[ruleset]")
     ptg::symbol_collection sc;
     sc.add_nterm("S");
     sc.add_term("a");
+    sc.add_nterm("Other");
     
     SECTION("valid root")
     {
-        ptg::ruleset rs(sc, "S");
+        ptg::ruleset rs(sc);
         REQUIRE(sc.get_symbol_name(rs.get_root()) == "S");
+        REQUIRE(rs.set_root("Other") == ptg::symbol_ref{ptg::symbol_type::non_terminal, 2});
+        REQUIRE(rs.get_root().index_ == 2);
+        REQUIRE(sc.get_symbol_name(rs.get_root()) == "Other");
+        REQUIRE(rs.get_symbol(0, 0, 0) == sc.get_symbol_ref("Other"));
     }
 
     SECTION("set invalid name")
     {
+        ptg::ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
-            [&]{ ptg::ruleset rs(sc, "nonexist"); }(),
+            rs.set_root("nonexist"),
             ptg::grammar_error,
             Message("Root symbol 'nonexist' does not exist.")
         );
@@ -298,8 +304,9 @@ TEST_CASE("ruleset root", "[ruleset]")
 
     SECTION("set term")
     {
+        ptg::ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
-            [&]{ ptg::ruleset rs(sc, "a"); }(),
+            rs.set_root("a"),
             ptg::grammar_error,
             Message("Root symbol 'a' is a terminal.")
         );
@@ -307,10 +314,21 @@ TEST_CASE("ruleset root", "[ruleset]")
     
     SECTION("set $root")
     {
+        ptg::ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
-            [&]{ ptg::ruleset rs(sc, "$root"); }(),
+            rs.set_root("$root"),
             ptg::grammar_error,
             Message("Cannot refer special '$root' symbol.")
+        );
+    }
+
+    SECTION("no nterms")
+    {
+        ptg::symbol_collection empty_sc;
+        REQUIRE_THROWS_MATCHES(
+            [&]{ ptg::ruleset rs(empty_sc); }(),
+            ptg::grammar_error,
+            Message("No nonterminals.")
         );
     }
 }
@@ -324,7 +342,7 @@ TEST_CASE("ruleset get_rside_part_flat_index", "[ruleset]")
         ptg::symbol_collection sc;
         size_t a_nt_idx = sc.add_nterm("A");
         sc.add_term("x");
-        ptg::ruleset rs(sc, "A");
+        ptg::ruleset rs(sc);
         size_t a_r0 = rs.add_rule("A", {"x"});
 
         REQUIRE(rs.get_max_rside_count() == 1);
@@ -340,7 +358,7 @@ TEST_CASE("ruleset get_rside_part_flat_index", "[ruleset]")
         size_t a_nt_idx = sc.add_nterm("A");
         size_t b_nt_idx = sc.add_nterm("B");
         sc.add_term("x");
-        ptg::ruleset rs(sc, "A");
+        ptg::ruleset rs(sc);
 
         size_t a_r0 = rs.add_rule("A", {"x", "B", "x"}); // symbols=3, rside=0 for A
         
@@ -366,7 +384,7 @@ TEST_CASE("ruleset get_rside_part_flat_index", "[ruleset]")
     {
         ptg::symbol_collection sc;
         size_t a_idx = sc.add_nterm("A");
-        ptg::ruleset rs(sc, "A");
+        ptg::ruleset rs(sc);
 
         size_t root_idx = 0;
         
