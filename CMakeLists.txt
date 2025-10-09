@@ -15,8 +15,6 @@ endif()
 
 add_library(${PROJECT_NAME}_lib
   src/parse_table_generator.cpp
-  src/base_index_subset.cpp
-  src/index_subset.cpp
   src/symbol_collection.cpp
   src/ruleset.cpp
   src/nullable.cpp
