@@ -44,8 +44,6 @@ public:
 
     std::string to_string() const;
 
-    size_t get_nterm_count() const;
-
     size_t get_nterm_rside_count(size_t nterm_idx) const;
 
     // Returns the maximum number of rsides across all nterms
@@ -61,14 +59,17 @@ public:
 
     size_t get_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
 
-    std::string_view get_nterm_name(size_t nterm_idx) const;
-
     // Returns the maximum number of symbols in any rside across all rsides
     size_t get_max_symbol_count() const;
     
     symbol_ref get_root() const;
 
     size_t get_rside_part_flat_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+
+    // The ones below delegate to symbol collection
+    size_t get_nterm_count() const;
+    
+    std::string_view get_nterm_name(size_t nterm_idx) const;
 };
 
 } // namespace ptg

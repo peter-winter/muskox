@@ -77,4 +77,62 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
             Message("Size must be greater than 0")
         );
     }
+
+    // New sections for remove method
+    SECTION("remove unset index")
+    {
+        ptg::base_index_subset is(100);
+        REQUIRE(is.contains(42) == false);
+        REQUIRE(is.remove(42) == false);  // Not removed, was false
+        REQUIRE(is.contains(42) == false);
+    }
+
+    SECTION("remove set index")
+    {
+        ptg::base_index_subset is(100);
+        REQUIRE(is.add(42) == true);
+        REQUIRE(is.contains(42) == true);
+        REQUIRE(is.remove(42) == true);  // Removed
+        REQUIRE(is.contains(42) == false);
+        REQUIRE(is.remove(42) == false);  // Already removed
+    }
+
+    SECTION("remove from init true")
+    {
+        ptg::base_index_subset is(100, true);
+        REQUIRE(is.contains(42) == true);
+        REQUIRE(is.remove(42) == true);  // Removed
+        REQUIRE(is.contains(42) == false);
+        REQUIRE(is.remove(42) == false);  // Already removed
+    }
+
+    SECTION("multiple removes")
+    {
+        ptg::base_index_subset is(100);
+        REQUIRE(is.add(1) == true);
+        REQUIRE(is.add(2) == true);
+        REQUIRE(is.contains(1) == true);
+        REQUIRE(is.contains(2) == true);
+
+        REQUIRE(is.remove(1) == true);
+        REQUIRE(is.contains(1) == false);
+        REQUIRE(is.contains(2) == true);
+
+        REQUIRE(is.remove(2) == true);
+        REQUIRE(is.contains(1) == false);
+        REQUIRE(is.contains(2) == false);
+
+        REQUIRE(is.remove(1) == false);  // Already removed
+        REQUIRE(is.remove(3) == false);  // Never set
+    }
+
+    SECTION("remove out of range")
+    {
+        ptg::base_index_subset is(100);
+        REQUIRE_THROWS_MATCHES(
+            is.remove(100),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+    }
 }
