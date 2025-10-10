@@ -35,3 +35,4 @@ else()
 endif()
 
 catch_discover_tests(unit_tests)
+

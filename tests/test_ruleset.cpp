@@ -145,32 +145,32 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.get_nterm_rside_count(999),
             std::out_of_range,
-            Message("Nterm_idx out of range")
+            Message("Nterm index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_symbol_count(s_idx, 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_symbol(s_idx, 0, 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_symbol_type(s_idx, 0, 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_symbol_index(s_idx, 0, 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_rside_precedence(s_idx, 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
         REQUIRE_THROWS_MATCHES(
             rs.get_nterm_name(999),
@@ -330,88 +330,5 @@ TEST_CASE("ruleset root", "[ruleset]")
             ptg::grammar_error,
             Message("No nonterminals.")
         );
-    }
-}
-
-TEST_CASE("ruleset get_rside_part_flat_index", "[ruleset]")
-{
-    using Catch::Matchers::Message;
-
-    SECTION("simple")
-    {
-        ptg::symbol_collection sc;
-        size_t a_nt_idx = sc.add_nterm("A");
-        sc.add_term("x");
-        ptg::ruleset rs(sc);
-        size_t a_r0 = rs.add_rule("A", {"x"});
-
-        REQUIRE(rs.get_max_rside_count() == 1);
-        REQUIRE(rs.get_max_symbol_count() == 1);
-
-        REQUIRE(rs.get_rside_part_flat_index(0, 0, 0) == 0);
-        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 0) == 1);
-    }
-
-    SECTION("larger")
-    {
-        ptg::symbol_collection sc;
-        size_t a_nt_idx = sc.add_nterm("A");
-        size_t b_nt_idx = sc.add_nterm("B");
-        sc.add_term("x");
-        ptg::ruleset rs(sc);
-
-        size_t a_r0 = rs.add_rule("A", {"x", "B", "x"}); // symbols=3, rside=0 for A
-        
-        size_t b_r0 = rs.add_rule("B", {"A"});
-        size_t b_r1 = rs.add_rule("B", {"x"});
-        size_t b_r2 = rs.add_rule("B", {"x", "x"}); // rsides=3 for B
-
-        REQUIRE(rs.get_max_rside_count() == 3);
-        REQUIRE(rs.get_max_symbol_count() == 3);
-
-        REQUIRE(rs.get_rside_part_flat_index(0, 0, 0) == 0); // $root r=0 s=0
-
-        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 0) == 9); // 1*3*3 +0*3 +0
-        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 1) == 10);
-        REQUIRE(rs.get_rside_part_flat_index(a_nt_idx, a_r0, 2) == 11);
-        
-        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r0, 0) == 18); // 2*9 +0 +0
-        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r1, 0) == 21); // 18+3
-        REQUIRE(rs.get_rside_part_flat_index(b_nt_idx, b_r2, 0) == 24); // 18+6
-    }
-
-    SECTION("out of range")
-    {
-        ptg::symbol_collection sc;
-        size_t a_idx = sc.add_nterm("A");
-        ptg::ruleset rs(sc);
-
-        size_t root_idx = 0;
-        
-        REQUIRE_THROWS_MATCHES(
-            rs.get_rside_part_flat_index(2, 0, 0),
-            std::out_of_range,
-            Message("Nterm_idx out of range")
-        );
-
-        REQUIRE_THROWS_MATCHES(
-            rs.get_rside_part_flat_index(root_idx, 1, 0),
-            std::out_of_range,
-            Message("Rside_idx out of range")
-        ); // rsides=1 for $root -> A
-
-        REQUIRE_THROWS_MATCHES(
-            rs.get_rside_part_flat_index(root_idx, 0, 1),
-            std::out_of_range,
-            Message("Symbol_idx out of range")
-        ); // scount=1 for $root -> A
-
-        size_t a_r0 = rs.add_rule("A", {});
-        
-        REQUIRE_THROWS_MATCHES(
-            rs.get_rside_part_flat_index(a_idx, a_r0, 0),
-            std::out_of_range,
-            Message("Symbol_idx out of range")
-        );// A r=0 empty
     }
 }

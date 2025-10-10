@@ -51,6 +51,9 @@ public:
     }
 
     ~flat_indexer() = default;
+    flat_indexer(const flat_indexer&) = default;
+    flat_indexer& operator = (const flat_indexer&) = default;
+    flat_indexer(flat_indexer&&) = default;
 
     template <typename... Idx>
     size_t to_flat(Idx... indices) const
@@ -85,5 +88,45 @@ public:
         }
     }
 };
+
+template<>
+class flat_indexer<1>
+{
+public:
+    flat_indexer(const std::array<size_t, 1>& sizes)
+        :size_(sizes[0])
+    {
+        if (size_ == 0)
+        {
+            throw std::invalid_argument("Size must be greater than 0");
+        }
+    }
+    
+    size_t to_flat(size_t idx) const
+    {
+        if (idx >= size_)
+        {
+            throw std::out_of_range("Index out of range");
+        }
+        return idx;
+    }
+    
+    size_t get_total_size() const
+    {
+        return size_;
+    }
+
+    void validate_sizes(const flat_indexer<1>& other) const
+    {
+        if (size_ != other.size_)
+        {
+            throw std::invalid_argument("Sizes don't match");
+        }
+    }
+    
+private:
+    std::size_t size_;
+};
+
 
 } // namespace ptg

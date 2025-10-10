@@ -61,8 +61,6 @@ public:
     
     symbol_ref get_root() const;
 
-    size_t get_rside_part_flat_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
-
     // The ones below delegate to symbol collection
     size_t get_nterm_count() const;
     

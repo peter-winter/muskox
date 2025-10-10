@@ -276,7 +276,7 @@ TEST_CASE("nullable computation", "[nullable]")
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_nterm(rs.get_nterm_count()),  // Invalid nterm_idx
             std::out_of_range,
-            Message("Nterm_idx out of range")
+            Message("Nterm index out of range")
         );
     }
 
@@ -293,19 +293,19 @@ TEST_CASE("nullable computation", "[nullable]")
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_rside_part(rs.get_nterm_count(), 0, 0),
             std::out_of_range,
-            Message("Nterm_idx out of range")
+            Message("Nterm index out of range")
         );
 
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_rside_part(0, rs.get_nterm_rside_count(0), 0),
             std::out_of_range,
-            Message("Rside_idx out of range")
+            Message("Rside index out of range")
         );
 
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_rside_part(0, 0, rs.get_symbol_count(0, 0)),
             std::out_of_range,
-            Message("Symbol_idx out of range")
+            Message("Symbol index out of range")
         );
     }
 }

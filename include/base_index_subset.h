@@ -22,6 +22,9 @@ public:
     }
 
     ~base_index_subset() = default;
+    base_index_subset(const base_index_subset&) = default;
+    base_index_subset& operator = (const base_index_subset&) = default;
+    base_index_subset(base_index_subset&&) = default;
 
     template <typename... Idx>
     bool add(Idx... indices)

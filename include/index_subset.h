@@ -20,7 +20,10 @@ public:
     {}
         
     ~index_subset() = default;
-
+    index_subset(const index_subset&) = default;
+    index_subset& operator = (const index_subset&) = default;
+    index_subset(index_subset&&) = default;
+    
     bool add(size_t idx)
     {
         bool inserted = base_.add(idx);
