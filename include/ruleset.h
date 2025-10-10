@@ -70,6 +70,8 @@ public:
     // The ones below delegate to symbol collection
     size_t get_nterm_count() const;
     
+    size_t get_term_count() const;
+    
     std::string_view get_nterm_name(size_t nterm_idx) const;
 };
 

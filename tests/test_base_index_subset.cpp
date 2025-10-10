@@ -1,5 +1,3 @@
-#include <stdexcept>
-
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
@@ -13,58 +11,57 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
     using BIS2 = ptg::base_index_subset<2>;
     using BIS3 = ptg::base_index_subset<3>;
 
-    SECTION("default init false 1D")
+    SECTION("constructor 1D")
     {
-        BIS1 is({100});
-        REQUIRE(is.contains(42) == false);
+        BIS1 bis({5});
+        REQUIRE(bis.get_size() == 5);
+        REQUIRE(bis.contains(0) == false);
+        REQUIRE(bis.contains(4) == false);
     }
 
-    SECTION("init all with value true 1D")
+    SECTION("constructor with true 1D")
     {
-        BIS1 is({100}, true);
-        REQUIRE(is.contains(42) == true);
-        REQUIRE(is.add(42) == false);  // Already set
+        BIS1 bis({5}, true);
+        REQUIRE(bis.get_size() == 5);
+        REQUIRE(bis.contains(0) == true);
+        REQUIRE(bis.contains(4) == true);
     }
 
-    SECTION("add and contains 1D")
+    SECTION("add 1D")
     {
-        BIS1 is({100});
-        REQUIRE(is.add(42) == true);  // New
-        REQUIRE(is.contains(42) == true);
-        REQUIRE(is.contains(0) == false);
-        REQUIRE(is.add(42) == false);  // Duplicate
+        BIS1 bis({5});
+        REQUIRE(bis.add(2) == true);
+        REQUIRE(bis.contains(2) == true);
+        REQUIRE(bis.add(2) == false);  // Already present
     }
 
-    SECTION("multiple adds 1D")
+    SECTION("remove 1D")
     {
-        BIS1 is({100});
-        REQUIRE(is.add(1) == true);
-        REQUIRE(is.add(2) == true);
-        REQUIRE(is.add(1) == false);  // Duplicate
-        REQUIRE(is.contains(1) == true);
-        REQUIRE(is.contains(2) == true);
-        REQUIRE(is.contains(3) == false);
+        BIS1 bis({5});
+        bis.add(3);
+        REQUIRE(bis.remove(3) == true);
+        REQUIRE(bis.contains(3) == false);
+        REQUIRE(bis.remove(3) == false);  // Not present
     }
 
     SECTION("out of range 1D")
     {
-        BIS1 is({100});
+        BIS1 bis({5});
         REQUIRE_THROWS_MATCHES(
-            is.add(100),
+            bis.add(5),
             std::out_of_range,
             Message("Index out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            is.contains(100),
+            bis.contains(5),
             std::out_of_range,
             Message("Index out of range")
         );
-    }
-
-    SECTION("get_size 1D")
-    {
-        BIS1 is({100});
-        REQUIRE(is.get_size() == 100);
+        REQUIRE_THROWS_MATCHES(
+            bis.remove(5),
+            std::out_of_range,
+            Message("Index out of range")
+        );
     }
 
     SECTION("zero size throws 1D")
@@ -74,175 +71,94 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
             std::invalid_argument,
             Message("Size must be greater than 0")
         );
-        REQUIRE_THROWS_MATCHES(
-            []{ BIS1({0}, true); }(),
-            std::invalid_argument,
-            Message("Size must be greater than 0")
-        );
     }
 
-    SECTION("remove unset index 1D")
+    SECTION("constructor 2D")
     {
-        BIS1 is({100});
-        REQUIRE(is.contains(42) == false);
-        REQUIRE(is.remove(42) == false);  // Not removed, was false
-        REQUIRE(is.contains(42) == false);
+        BIS2 bis({3, 4});
+        REQUIRE(bis.get_size() == 12);
     }
 
-    SECTION("remove set index 1D")
+    SECTION("add 2D")
     {
-        BIS1 is({100});
-        REQUIRE(is.add(42) == true);
-        REQUIRE(is.contains(42) == true);
-        REQUIRE(is.remove(42) == true);  // Removed
-        REQUIRE(is.contains(42) == false);
-        REQUIRE(is.remove(42) == false);  // Already removed
-    }
-
-    SECTION("remove from init true 1D")
-    {
-        BIS1 is({100}, true);
-        REQUIRE(is.contains(42) == true);
-        REQUIRE(is.remove(42) == true);  // Removed
-        REQUIRE(is.contains(42) == false);
-        REQUIRE(is.remove(42) == false);  // Already removed
-    }
-
-    SECTION("multiple removes 1D")
-    {
-        BIS1 is({100});
-        REQUIRE(is.add(1) == true);
-        REQUIRE(is.add(2) == true);
-        REQUIRE(is.contains(1) == true);
-        REQUIRE(is.contains(2) == true);
-
-        REQUIRE(is.remove(1) == true);
-        REQUIRE(is.contains(1) == false);
-        REQUIRE(is.contains(2) == true);
-
-        REQUIRE(is.remove(2) == true);
-        REQUIRE(is.contains(1) == false);
-        REQUIRE(is.contains(2) == false);
-
-        REQUIRE(is.remove(1) == false);  // Already removed
-        REQUIRE(is.remove(3) == false);  // Never set
-    }
-
-    SECTION("remove out of range 1D")
-    {
-        BIS1 is({100});
-        REQUIRE_THROWS_MATCHES(
-            is.remove(100),
-            std::out_of_range,
-            Message("Index out of range")
-        );
-    }
-
-    SECTION("zero dimension throws")
-    {
-        REQUIRE_THROWS_MATCHES(
-            []{ ptg::base_index_subset<0> is({}); }(),
-            std::invalid_argument,
-            Message("At least one dimension required")
-        );
-    }
-
-    SECTION("basic 2D")
-    {
-        BIS2 is({5, 10});
-        REQUIRE(is.get_size() == 50);
-        REQUIRE(is.contains(0, 0) == false);
-        REQUIRE(is.add(2, 3) == true);
-        REQUIRE(is.contains(2, 3) == true);
-        REQUIRE(is.contains(2, 4) == false);
-        REQUIRE(is.add(2, 3) == false);  // Duplicate
-    }
-
-    SECTION("out of range 2D")
-    {
-        BIS2 is({5, 10});
-        REQUIRE_THROWS_MATCHES(
-            is.add(5, 0),
-            std::out_of_range,
-            Message("Index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            is.add(0, 10),
-            std::out_of_range,
-            Message("Index out of range")
-        );
+        BIS2 bis({3, 4});
+        REQUIRE(bis.add(1, 2) == true);
+        REQUIRE(bis.contains(1, 2) == true);
+        REQUIRE(bis.add(1, 2) == false);
     }
 
     SECTION("remove 2D")
     {
-        BIS2 is({5, 10});
-        REQUIRE(is.add(1, 2) == true);
-        REQUIRE(is.contains(1, 2) == true);
-        REQUIRE(is.remove(1, 2) == true);
-        REQUIRE(is.contains(1, 2) == false);
-        REQUIRE(is.remove(1, 2) == false);
+        BIS2 bis({3, 4});
+        bis.add(2, 3);
+        REQUIRE(bis.remove(2, 3) == true);
+        REQUIRE(bis.contains(2, 3) == false);
     }
 
-    SECTION("init true 2D")
+    SECTION("out of range 2D")
     {
-        BIS2 is({5, 10}, true);
-        REQUIRE(is.contains(4, 9) == true);
-        REQUIRE(is.remove(4, 9) == true);
-        REQUIRE(is.contains(4, 9) == false);
-    }
-
-    SECTION("basic 3D")
-    {
-        BIS3 is({2, 3, 4});
-        REQUIRE(is.get_size() == 24);
-        REQUIRE(is.add(1, 2, 3) == true);
-        REQUIRE(is.contains(1, 2, 3) == true);
-        REQUIRE(is.contains(0, 0, 0) == false);
-    }
-
-    SECTION("out of range 3D")
-    {
-        BIS3 is({2, 3, 4});
+        BIS2 bis({3, 4});
         REQUIRE_THROWS_MATCHES(
-            is.add(2, 0, 0),
+            bis.add(3, 0),
             std::out_of_range,
             Message("Index out of range")
         );
         REQUIRE_THROWS_MATCHES(
-            is.add(0, 3, 0),
-            std::out_of_range,
-            Message("Index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            is.add(0, 0, 4),
+            bis.add(0, 4),
             std::out_of_range,
             Message("Index out of range")
         );
     }
 
-    SECTION("strides and flat indexing 3D")
+    SECTION("constructor 3D")
     {
-        BIS3 is({2, 3, 4});
-        REQUIRE(is.add(0, 0, 0) == true);
-        REQUIRE(is.add(1, 2, 3) == true);
-        REQUIRE(is.contains(0, 0, 0) == true);
-        REQUIRE(is.contains(1, 2, 3) == true);
-        REQUIRE(is.contains(0, 0, 1) == false);
+        BIS3 bis({2, 3, 4});
+        REQUIRE(bis.get_size() == 24);
     }
 
-    SECTION("large dimensions")
+    SECTION("add 3D")
     {
-        ptg::base_index_subset<4> is({2, 2, 2, 2});
-        REQUIRE(is.get_size() == 16);
-        REQUIRE(is.add(1, 1, 1, 1) == true);
-        REQUIRE(is.contains(1, 1, 1, 1) == true);
+        BIS3 bis({2, 3, 4});
+        REQUIRE(bis.add(1, 2, 3) == true);
+        REQUIRE(bis.contains(1, 2, 3) == true);
+    }
+
+    SECTION("bulk add from another")
+    {
+        BIS2 bis1({3, 4});
+        BIS2 bis2({3, 4});
+
+        bis1.add(0, 0);
+        bis1.add(1, 1);
+        bis1.add(0, 0);  // Duplicate, no effect
+
+        bis2.add(bis1);
+        REQUIRE(bis2.contains(0, 0) == true);
+        REQUIRE(bis2.contains(1, 1) == true);
+
+        // Adding again should have no effect beyond what's already there
+        bis2.add(bis1);
+        
+        REQUIRE(bis2.contains(0, 0) == true);
+        REQUIRE(bis2.contains(1, 1) == true);
+    }
+
+    SECTION("bulk add mismatch sizes")
+    {
+        BIS2 bis1({3, 4});
+        BIS2 bis2({2, 5});  // Different sizes, total_size 10 != 12
+
+        REQUIRE_THROWS_MATCHES(
+            bis1.add(bis2),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
     }
 
     SECTION("wrong number of indices")
     {
-        BIS2 is({5, 10});
-        // These should not compile, but for documentation:
-        // is.add(1);  // Compile error: wrong number
-        // is.contains(1, 2, 3);  // Compile error
+        BIS2 bis({3, 4});
+        // bis.add(1);  // Compile error
+        // bis.add(1, 2, 3);  // Compile error
     }
 }

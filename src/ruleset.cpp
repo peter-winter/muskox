@@ -248,6 +248,11 @@ size_t ruleset::get_nterm_count() const
     return symbols_.get_nterm_count();
 }
 
+size_t ruleset::get_term_count() const
+{
+    return symbols_.get_term_count();
+}
+
 std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
 {
     return symbols_.get_nterm_name(nterm_idx);

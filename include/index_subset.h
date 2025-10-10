@@ -7,39 +7,46 @@
 namespace ptg
 {
 
-template <size_t Dim>
 class index_subset
 {
 private:
-    base_index_subset<Dim> base_;
+    base_index_subset<1> base_;
     
-    using element_type = std::conditional_t<Dim == 1, std::size_t, std::array<size_t, Dim>>;
-    std::vector<element_type> indices_;
+    std::vector<size_t> indices_;
 
 public:
-    index_subset(const std::array<size_t, Dim>& sizes)
-        : base_(sizes), indices_()
+    index_subset(size_t size)
+        : base_({size}), indices_()
     {}
         
     ~index_subset() = default;
 
-    template <typename... Idx>
-    bool add(Idx... indices)
+    bool add(size_t idx)
     {
-        static_assert(sizeof...(Idx) == Dim, "Wrong number of indices");
-        bool inserted = base_.add(indices...);
+        bool inserted = base_.add(idx);
         if (inserted)
         {
-            indices_.push_back({static_cast<size_t>(indices)...});
+            indices_.push_back(idx);
         }
         return inserted;
     }
     
-    template <typename... Idx>
-    bool contains(Idx... indices) const
+    void add(const index_subset& other)
     {
-        static_assert(sizeof...(Idx) == Dim, "Wrong number of indices");
-        return base_.contains(indices...);
+        if (base_.get_size() != other.base_.get_size())
+        {
+            throw std::invalid_argument("Sizes don't match");
+        }
+        
+        for (const auto& idx : other.indices_)
+        {
+            add(idx);
+        }
+    }
+    
+    bool contains(size_t idx) const
+    {
+        return base_.contains(idx);
     }
     
     size_t get_count() const
@@ -47,7 +54,7 @@ public:
         return indices_.size();
     }
 
-    const std::vector<element_type>& get_indices() const
+    const std::vector<size_t>& get_indices() const
     {
         return indices_;
     }

@@ -6,7 +6,7 @@ namespace ptg
 {
 
 lr1_state_set::lr1_state_set(const ruleset& rs)
-    : rs_(validate(rs)), nullables_(rs)
+    : rs_(validate(rs)), null_(rs)
 {
 }
 

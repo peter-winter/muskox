@@ -10,7 +10,7 @@ class lr1_state_set
 {
 private:
     const ruleset& rs_;
-    nullable nullables_;
+    nullable null_;
 
     const ruleset& validate(const ruleset& rs) const;
     

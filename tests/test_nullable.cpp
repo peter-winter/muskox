@@ -5,12 +5,10 @@
 #include <ruleset.h>
 #include <symbol_collection.h>
 
-#include <grammar_error.h>
-
 TEST_CASE("nullable computation", "[nullable]")
 {
     ptg::symbol_collection sc;
-
+    
     SECTION("no nullables")
     {
         size_t s_idx = sc.add_nterm("S");
@@ -20,6 +18,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r0 = rs.add_rule("S", {"a"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -41,6 +40,7 @@ TEST_CASE("nullable computation", "[nullable]")
         rs.add_rule("S", {});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -65,6 +65,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r0 = rs.add_rule("S", {"C"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -101,6 +102,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r0 = rs.add_rule("S", {"A", "c", "B"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -131,6 +133,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r1 = rs.add_rule("S", {"b"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -165,6 +168,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r0 = rs.add_rule("S", {"A", "x", "B", "y"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -196,6 +200,7 @@ TEST_CASE("nullable computation", "[nullable]")
         size_t s_r0 = rs.add_rule("S", {"x", "A", "B"});
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 
@@ -229,6 +234,7 @@ TEST_CASE("nullable computation", "[nullable]")
         rs.add_rule("Term", {});  // Make Term nullable for test
 
         ptg::nullable n(rs);
+        n.calculate_all();
 
         size_t root_idx = 0;
 

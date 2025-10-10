@@ -20,7 +20,11 @@ add_executable(unit_tests
   test_ruleset.cpp
   test_nullable.cpp
   test_lr1_state_set.cpp
+  test_firsts.cpp
+  test_vector_n.cpp
+  test_flat_indexer.cpp
 )
+
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain parse_table_generator_lib)
 target_include_directories(unit_tests PRIVATE ../include)
 
