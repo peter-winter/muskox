@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
+using Catch::Matchers::Message;
+
 #include <nullable.h>
 #include <ruleset.h>
 #include <symbol_collection.h>
@@ -259,5 +261,51 @@ TEST_CASE("nullable computation", "[nullable]")
 
         // Term -> id (r=0, scount=1)
         REQUIRE_FALSE(n.is_nullable_rside_part(term_idx, term_r0, 0));
+    }
+    
+    SECTION("invalid indices in is_nullable_nterm")
+    {
+        sc.add_nterm("S");
+        sc.add_term("a");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"a"});
+
+        ptg::nullable null(rs);
+
+        REQUIRE_THROWS_MATCHES(
+            null.is_nullable_nterm(rs.get_nterm_count()),  // Invalid nterm_idx
+            std::out_of_range,
+            Message("Nterm_idx out of range")
+        );
+    }
+
+    SECTION("invalid indices in is_nullable_rside_part")
+    {
+        sc.add_nterm("S");
+        sc.add_term("a");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"a"});
+
+        ptg::nullable null(rs);
+
+        REQUIRE_THROWS_MATCHES(
+            null.is_nullable_rside_part(rs.get_nterm_count(), 0, 0),
+            std::out_of_range,
+            Message("Nterm_idx out of range")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            null.is_nullable_rside_part(0, rs.get_nterm_rside_count(0), 0),
+            std::out_of_range,
+            Message("Rside_idx out of range")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            null.is_nullable_rside_part(0, 0, rs.get_symbol_count(0, 0)),
+            std::out_of_range,
+            Message("Symbol_idx out of range")
+        );
     }
 }

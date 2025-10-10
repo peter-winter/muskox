@@ -28,10 +28,6 @@ private:
     const symbol_collection& symbols_;
     std::vector<std::vector<rside>> rsides_;
     symbol_ref root_;
-
-    void validate_nterm_idx(size_t nterm_idx) const;
-    void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
-    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
     
     symbol_ref set_root(symbol_ref root);
     
@@ -73,6 +69,10 @@ public:
     size_t get_term_count() const;
     
     std::string_view get_nterm_name(size_t nterm_idx) const;
+    
+    void validate_nterm_idx(size_t nterm_idx) const;
+    void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
+    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 };
 
 } // namespace ptg

@@ -115,11 +115,13 @@ bool nullable::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t s
     
 bool nullable::is_nullable_nterm(size_t idx) const
 {
+    rs_.validate_nterm_idx(idx);
     return nterms_.contains(idx);
 }
 
 bool nullable::is_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
+    rs_.validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
     return rside_parts_.contains(nterm_idx, rside_idx, symbol_idx);
 }
 
