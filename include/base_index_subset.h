@@ -1,3 +1,4 @@
+// include/base_index_subset.h
 #pragma once
 
 #include <flat_indexer.h>
@@ -40,7 +41,7 @@ public:
 
     void add(const base_index_subset<Dim>& other)
     {
-        indexer_.validate_sizes(other.indexer_);
+        validate_sizes(other);
         
         for (size_t i = 0; i < bits_.size(); ++i)
         {
@@ -70,6 +71,11 @@ public:
     size_t get_size() const
     {
         return indexer_.get_total_size();
+    }
+
+    void validate_sizes(const base_index_subset<Dim>& other) const
+    {
+        indexer_.validate_sizes(other.indexer_);
     }
 };
 

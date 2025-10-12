@@ -20,6 +20,7 @@ add_library(${PROJECT_NAME}_lib
   src/nullable.cpp
   src/lr1_state_set.cpp
   src/firsts.cpp
+  src/closure.cpp
 )
 target_include_directories(${PROJECT_NAME}_lib PUBLIC include)
 target_compile_options(${PROJECT_NAME}_lib PRIVATE ${WARNING_OPTIONS})

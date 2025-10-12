@@ -105,22 +105,26 @@ size_t symbol_collection::get_nterm_count() const
 
 void symbol_collection::print_symbol_list(std::ostream& os, const symbol_list& sl) const
 {
-    if (sl.empty())
+    print_symbol_list_from_to(os, sl, 0, sl.size());
+}
+
+void symbol_collection::print_symbol_list_from_to(std::ostream& os, const symbol_list& sl, size_t start, size_t end) const
+{
+    if (sl.empty() || start >= end)
     {
         return;
     }
 
-    bool first = true;
-    for (const auto& sym : sl)
+    for (size_t i = start; i < sl.size() && i < end; ++i)
     {
-        if (!first)
+        if (i != start)
         {
             os << " ";
         }
-        first = false;
-        os << get_symbol_name(sym);
+        os << get_symbol_name(sl[i]);
     }
 }
+
 
 void symbol_collection::validate_nterm_idx(size_t index) const
 {

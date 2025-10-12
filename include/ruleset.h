@@ -3,9 +3,11 @@
 
 #include <symbol_collection.h>
 #include <symbol_list.h>
+#include <lr1_set_item.h>
 
 #include <string_view>
 #include <vector>
+#include <array>
 
 namespace ptg
 {
@@ -39,8 +41,6 @@ public:
 
     size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
 
-    std::string to_string() const;
-
     size_t get_nterm_rside_count(size_t nterm_idx) const;
 
     // Returns the maximum number of rsides across all nterms
@@ -71,6 +71,12 @@ public:
     void validate_nterm_idx(size_t nterm_idx) const;
     void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
     void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    
+    std::array<size_t, 3> get_rside_part_space_dims() const;
+    std::array<size_t, 4> get_lr1_set_item_space_dims() const;
+    
+    std::string to_string() const;
+    std::string lr1_set_item_to_string(const lr1_set_item& item) const;
 };
 
 } // namespace ptg

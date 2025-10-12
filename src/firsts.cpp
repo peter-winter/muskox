@@ -7,14 +7,14 @@ firsts::firsts(const ruleset& rs)
     : rs_(rs),
       null_(rs),
       nterms_({rs.get_nterm_count()}, std::nullopt),
-      rside_parts_({rs.get_nterm_count(), rs.get_max_rside_count(), rs.get_max_symbol_count()}, std::nullopt)
+      rside_parts_(rs.get_rside_part_space_dims(), std::nullopt)
 { 
 }
 
 void firsts::calculate_all()
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts({rs_.get_nterm_count(), rs_.get_max_rside_count(), rs_.get_max_symbol_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
 
     for (size_t nterm_idx = 0; nterm_idx < rs_.get_nterm_count(); ++nterm_idx)
     {
@@ -31,6 +31,27 @@ void firsts::calculate_all()
             }
         }
     }
+}
+
+const firsts::opt_subset& firsts::calculate_nterm(size_t nterm_idx)
+{
+    base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    
+    return calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
+}
+
+const firsts::opt_subset& firsts::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
+{
+    base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    
+    return calculate_rside_part_impl(nterm_idx, rside_idx, symbol_start_idx, calculating_nterms, calculating_rside_parts);
+}
+
+bool firsts::calculate_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
+{
+    return null_.calculate_rside_part(nterm_idx, rside_idx, symbol_idx);
 }
 
 const firsts::opt_subset& firsts::calculate_nterm_impl(
@@ -50,7 +71,7 @@ const firsts::opt_subset& firsts::calculate_nterm_impl(
         return result;
     }
     
-    index_subset temp(rs_.get_term_count());
+    index_subset<1> temp(rs_.get_term_count());
             
     for (size_t rside_idx = 0; rside_idx < rs_.get_nterm_rside_count(nterm_idx); ++rside_idx)
     {
@@ -89,11 +110,11 @@ const firsts::opt_subset& firsts::calculate_rside_part_impl(
         return result;
     }
     
-    index_subset temp(rs_.get_term_count());
+    index_subset<1> temp(rs_.get_term_count());
     
     for (size_t symbol_idx = symbol_start_idx; symbol_idx < rs_.get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
     {
-        auto ref = rs_.get_symbol(nterm_idx, rside_idx, symbol_idx);
+        const auto& ref = rs_.get_symbol(nterm_idx, rside_idx, symbol_idx);
         if (ref.type_ == symbol_type::terminal)
         {
             temp.add(ref.index_);

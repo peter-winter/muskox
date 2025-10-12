@@ -85,15 +85,18 @@ nullable::nullable(const ruleset& rs)
 
 void nullable::calculate_all()
 {
+    base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    
     for (size_t nterm_idx = 0; nterm_idx < rs_.get_nterm_count(); ++nterm_idx)
     {
-        calculate_nterm(nterm_idx);
+        calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
 
         for (size_t rside_idx = 0; rside_idx < rs_.get_nterm_rside_count(nterm_idx); ++rside_idx)
         {
             for (size_t symbol_idx = 0; symbol_idx < rs_.get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
             {
-                calculate_rside_part(nterm_idx, rside_idx, symbol_idx);
+                calculate_rside_part_impl(nterm_idx, rside_idx, symbol_idx, calculating_nterms, calculating_rside_parts);
             }
         }
     }
@@ -102,14 +105,14 @@ void nullable::calculate_all()
 bool nullable::calculate_nterm(size_t nterm_idx)
 {    
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts({rs_.get_nterm_count(), rs_.get_max_rside_count(), rs_.get_max_symbol_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
     return calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
 }
 
 bool nullable::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts({rs_.get_nterm_count(), rs_.get_max_rside_count(), rs_.get_max_symbol_count()});
+    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
     return calculate_rside_part_impl(nterm_idx, rside_idx, symbol_idx, calculating_nterms, calculating_rside_parts);
 }
     

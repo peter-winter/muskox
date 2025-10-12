@@ -131,47 +131,6 @@ size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_vi
     return rsides_[lref.index_].size() - 1;
 }
 
-std::string ruleset::to_string() const
-{
-    std::stringstream ss;
-    for (size_t i = 0; i < symbols_.get_nterm_count(); ++i)
-    {
-        const auto& rside_group = rsides_[i];
-        if (rside_group.empty())
-        {
-            continue;
-        }
-        
-        std::string_view left = symbols_.get_nterm_name(i);
-
-        ss << left << " : ";
-        size_t indent = left.size() + 1;
-        bool first = true;
-        for (const auto& rs : rside_group)
-        {
-            if (!first)
-            {
-                ss << "\n" << std::string(indent, ' ') << "| ";
-            }
-            
-            first = false;
-
-            symbols_.print_symbol_list(ss, rs.symbols_);
-
-            if (rs.precedence_ != 0)
-            {
-                if (!rs.symbols_.empty())
-                {
-                    ss << " ";
-                }
-                ss << "[" << rs.precedence_ << "]";
-            }
-        }
-        ss << "\n" << std::string(indent, ' ') << ";\n\n";
-    }
-    return ss.str();
-}
-
 size_t ruleset::get_nterm_rside_count(size_t nterm_idx) const
 {
     validate_nterm_idx(nterm_idx);
@@ -248,5 +207,71 @@ std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
 {
     return symbols_.get_nterm_name(nterm_idx);
 }
+
+std::array<size_t, 3> ruleset::get_rside_part_space_dims() const
+{
+    return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count()};
+}
+
+std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
+{
+    return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count() + 1, get_term_count()};
+}
+
+std::string ruleset::to_string() const
+{
+    std::stringstream ss;
+    for (size_t i = 0; i < symbols_.get_nterm_count(); ++i)
+    {
+        const auto& rside_group = rsides_[i];
+        if (rside_group.empty())
+        {
+            continue;
+        }
+        
+        std::string_view left = symbols_.get_nterm_name(i);
+
+        ss << left << " : ";
+        size_t indent = left.size() + 1;
+        bool first = true;
+        for (const auto& rs : rside_group)
+        {
+            if (!first)
+            {
+                ss << "\n" << std::string(indent, ' ') << "| ";
+            }
+            
+            first = false;
+
+            symbols_.print_symbol_list(ss, rs.symbols_);
+
+            if (rs.precedence_ != 0)
+            {
+                if (!rs.symbols_.empty())
+                {
+                    ss << " ";
+                }
+                ss << "[" << rs.precedence_ << "]";
+            }
+        }
+        ss << "\n" << std::string(indent, ' ') << ";\n\n";
+    }
+    return ss.str();
+}
+
+std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
+{
+    std::stringstream ss;
     
+    std::string_view left = symbols_.get_nterm_name(item.nterm_idx_);
+    ss << left << " : ";
+    const auto& rs = rsides_[item.nterm_idx_][item.rside_idx_];
+    symbols_.print_symbol_list_from_to(ss, rs.symbols_, 0, item.symbol_idx_);
+    ss << " . ";
+    symbols_.print_symbol_list_from_to(ss, rs.symbols_, item.symbol_idx_, rs.symbols_.size());
+    ss << " | " << symbols_.get_term_name(item.lookahead_idx_) << "\n";
+    
+    return ss.str();
+}
+        
 } // namespace ptg

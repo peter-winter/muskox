@@ -1,3 +1,4 @@
+// tests/test_index_subset.cpp
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
@@ -7,112 +8,188 @@ using Catch::Matchers::Message;
 
 TEST_CASE("index_subset basic operations", "[index_subset]")
 {
-    SECTION("add and contains")
+    SECTION("1D specialization")
     {
-        ptg::index_subset is(100);
-        REQUIRE(is.add(42) == true);  // New
-        REQUIRE(is.contains(42) == true);
-        REQUIRE(is.contains(0) == false);
-        REQUIRE(is.add(42) == false);  // Duplicate
-    }
-
-    SECTION("multiple adds")
-    {
-        ptg::index_subset is(100);
-        REQUIRE(is.add(1) == true);
-        REQUIRE(is.add(2) == true);
-        REQUIRE(is.add(1) == false);  // Duplicate
-        REQUIRE(is.contains(1) == true);
-        REQUIRE(is.contains(2) == true);
-        REQUIRE(is.contains(3) == false);
-    }
-
-    SECTION("out of range")
-    {
-        ptg::index_subset is(100);
-        REQUIRE_THROWS_MATCHES(
-            is.add(100),
-            std::out_of_range,
-            Message("Index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            is.contains(100),
-            std::out_of_range,
-            Message("Index out of range")
-        );
-    }
-
-    SECTION("get_count")
-    {
-        ptg::index_subset is(100);
+        ptg::index_subset<1> is({10});
+        REQUIRE(is.get_size() == 10);
         REQUIRE(is.get_count() == 0);
-        REQUIRE(is.add(0) == true);
+
+        bool added1 = is.add(3);
+        REQUIRE(added1 == true);
+        REQUIRE(is.contains(3) == true);
         REQUIRE(is.get_count() == 1);
-        REQUIRE(is.add(50) == true);
+
+        bool added2 = is.add(3);
+        REQUIRE(added2 == false);
+        REQUIRE(is.get_count() == 1);
+
+        bool added3 = is.add(7);
+        REQUIRE(added3 == true);
+        REQUIRE(is.contains(7) == true);
         REQUIRE(is.get_count() == 2);
-        REQUIRE(is.add(0) == false);  // Duplicate
-        REQUIRE(is.get_count() == 2);
-    }
 
-    SECTION("get_indices")
-    {
-        ptg::index_subset is(100);
-        REQUIRE(is.add(10) == true);
-        REQUIRE(is.add(5) == true);
-        REQUIRE(is.add(20) == true);
-        REQUIRE(is.get_count() == 3);
-        const auto& inds = is.get_indices();
-        REQUIRE(inds == std::vector<size_t>{10, 5, 20});
-        REQUIRE(is.add(10) == false);  // Duplicate, no append
-        REQUIRE(is.get_count() == 3);
-        REQUIRE(inds == std::vector<size_t>{10, 5, 20});
-    }
+        const auto& indices = is.get_indices();
+        REQUIRE(indices.size() == 2);
+        REQUIRE(indices[0] == 3);
+        REQUIRE(indices[1] == 7);
 
-    SECTION("get_size")
-    {
-        ptg::index_subset is(100);
-        REQUIRE(is.get_size() == 100);
-    }
+        ptg::index_subset<1> other({10});
+        other.add(1);
+        other.add(4);
 
-    SECTION("zero size throws")
-    {
+        is.add(4);
+        is.add(6);
+
+        is.add(other);
+
+        REQUIRE(is.get_count() == 5);
+        REQUIRE(is.contains(1) == true);
+        REQUIRE(is.contains(3) == true);
+        REQUIRE(is.contains(4) == true);
+        REQUIRE(is.contains(6) == true);
+        REQUIRE(is.contains(7) == true);
+
+        ptg::index_subset<1> other_diff({5});
         REQUIRE_THROWS_MATCHES(
-            []{ ptg::index_subset(0); }(),
-            std::invalid_argument,
-            Message("Size must be greater than 0")
-        );
-    }
-    
-    SECTION("bulk add from another")
-    {
-        ptg::index_subset bis1(3);
-        ptg::index_subset bis2(3);
-
-        bis1.add(0);
-        bis1.add(1);
-        bis1.add(0);  // Duplicate, no effect
-
-        bis2.add(bis1);
-        REQUIRE(bis2.contains(0) == true);
-        REQUIRE(bis2.contains(1) == true);
-        const auto& inds = bis2.get_indices();
-        REQUIRE(inds == std::vector<size_t>{0, 1});
-
-        // Adding again should have no effect beyond what's already there
-        bis2.add(bis1);
-        REQUIRE_FALSE(bis2.contains(2));
-        REQUIRE(inds == std::vector<size_t>{0, 1});
-    }
-
-    SECTION("bulk add mismatch sizes")
-    {
-        ptg::index_subset bis1(3);
-        ptg::index_subset bis2(2);  // Different sizes
-
-        REQUIRE_THROWS_MATCHES(
-            bis1.add(bis2),
+            is.add(other_diff),
             std::invalid_argument,
             Message("Sizes don't match")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            is.add(10),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            is.contains(10),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+    }
+
+    SECTION("2D general")
+    {
+        ptg::index_subset<2> is({3, 4});
+        REQUIRE(is.get_size() == 12);
+        REQUIRE(is.get_count() == 0);
+
+        bool added1 = is.add(1, 2);
+        REQUIRE(added1 == true);
+        REQUIRE(is.contains(1, 2) == true);
+        REQUIRE(is.get_count() == 1);
+
+        bool added2 = is.add(1, 2);
+        REQUIRE(added2 == false);
+        REQUIRE(is.get_count() == 1);
+
+        bool added3 = is.add(0, 3);
+        REQUIRE(added3 == true);
+        REQUIRE(is.contains(0, 3) == true);
+        REQUIRE(is.get_count() == 2);
+
+        const auto& indices = is.get_indices();
+        REQUIRE(indices.size() == 2);
+        REQUIRE(indices[0] == std::array<size_t, 2>{1, 2});
+        REQUIRE(indices[1] == std::array<size_t, 2>{0, 3});
+
+        ptg::index_subset<2> other({3, 4});
+        other.add(2, 1);
+        other.add(0, 0);
+
+        is.add(0, 0);
+        is.add(2, 2);
+
+        is.add(other);
+
+        REQUIRE(is.get_count() == 5);
+        REQUIRE(is.contains(0, 0) == true);
+        REQUIRE(is.contains(0, 3) == true);
+        REQUIRE(is.contains(1, 2) == true);
+        REQUIRE(is.contains(2, 1) == true);
+        REQUIRE(is.contains(2, 2) == true);
+
+        ptg::index_subset<2> other_diff({3, 5});
+        REQUIRE_THROWS_MATCHES(
+            is.add(other_diff),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            is.add(3, 0),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            is.contains(0, 4),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+    }
+
+    SECTION("3D general")
+    {
+        ptg::index_subset<3> is({2, 3, 4});
+        REQUIRE(is.get_size() == 24);
+        REQUIRE(is.get_count() == 0);
+
+        bool added1 = is.add(1, 2, 3);
+        REQUIRE(added1 == true);
+        REQUIRE(is.contains(1, 2, 3) == true);
+        REQUIRE(is.get_count() == 1);
+
+        bool added2 = is.add(1, 2, 3);
+        REQUIRE(added2 == false);
+        REQUIRE(is.get_count() == 1);
+
+        bool added3 = is.add(0, 0, 0);
+        REQUIRE(added3 == true);
+        REQUIRE(is.contains(0, 0, 0) == true);
+        REQUIRE(is.get_count() == 2);
+
+        const auto& indices = is.get_indices();
+        REQUIRE(indices.size() == 2);
+        REQUIRE(indices[0] == std::array<size_t, 3>{1, 2, 3});
+        REQUIRE(indices[1] == std::array<size_t, 3>{0, 0, 0});
+
+        ptg::index_subset<3> other({2, 3, 4});
+        other.add(1, 1, 1);
+        other.add(0, 2, 3);
+
+        is.add(0, 2, 3);
+        is.add(1, 0, 2);
+
+        is.add(other);
+
+        REQUIRE(is.get_count() == 5);
+        REQUIRE(is.contains(0, 0, 0) == true);
+        REQUIRE(is.contains(0, 2, 3) == true);
+        REQUIRE(is.contains(1, 0, 2) == true);
+        REQUIRE(is.contains(1, 1, 1) == true);
+        REQUIRE(is.contains(1, 2, 3) == true);
+
+        ptg::index_subset<3> other_diff({2, 3, 5});
+        REQUIRE_THROWS_MATCHES(
+            is.add(other_diff),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
+
+        REQUIRE_THROWS_MATCHES(
+            is.add(2, 0, 0),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            is.contains(0, 3, 0),
+            std::out_of_range,
+            Message("Index out of range")
+        );
+        REQUIRE_THROWS_MATCHES(
+            is.contains(0, 0, 4),
+            std::out_of_range,
+            Message("Index out of range")
         );
     }
 }
