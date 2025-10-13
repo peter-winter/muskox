@@ -16,25 +16,25 @@ TEST_CASE("closure computation", "[closure]")
 {
     ptg::symbol_collection sc;
 
-    size_t eof_idx = sc.get_symbol_ref("$eof").index_;
+    [[maybe_unused]] size_t eof_idx = sc.get_symbol_ref("$eof").index_;
 
-    size_t a_idx = sc.add_term("a");
-    size_t b_idx = sc.add_term("b");
-    size_t plus_idx = sc.add_term("+");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");
+    [[maybe_unused]] size_t plus_idx = sc.add_term("+");
 
-    size_t s_idx = sc.add_nterm("S");
-    size_t expr_idx = sc.add_nterm("Expr");
-    size_t term_idx = sc.add_nterm("Term");
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
+    [[maybe_unused]] size_t term_idx = sc.add_nterm("Term");
 
     ptg::ruleset rs(sc);
-    size_t s_r0 = rs.add_rule("S", {"Expr"});
-    size_t expr_r0 = rs.add_rule("Expr", {"Expr", "+", "Term"});
-    size_t expr_r1 = rs.add_rule("Expr", {"Term"});
-    size_t term_r0 = rs.add_rule("Term", {"a"});
-    size_t term_r1 = rs.add_rule("Term", {"b"});
-    size_t term_r2 = rs.add_rule("Term", {});
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
+    [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"Expr", "+", "Term"});
+    [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"Term"});
+    [[maybe_unused]] size_t term_r0 = rs.add_rule("Term", {"a"});
+    [[maybe_unused]] size_t term_r1 = rs.add_rule("Term", {"b"});
+    [[maybe_unused]] size_t term_r2 = rs.add_rule("Term", {});
 
-    size_t root_idx = 0;
+    [[maybe_unused]] size_t root_idx = 0;
 
     SECTION("item at end")
     {

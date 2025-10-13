@@ -14,8 +14,8 @@ TEST_CASE("lr1_state_set validate", "[lr1_state_set]")
 
     SECTION("with nterms no rules")
     {
-        sc.add_nterm("A");
-        sc.add_nterm("B");
+        [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
+        [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         ptg::ruleset rs(sc);
         
         REQUIRE_THROWS_MATCHES(
