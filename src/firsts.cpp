@@ -1,4 +1,5 @@
 #include <firsts.h>
+#include <grammar_error.h>
 
 namespace ptg
 {
@@ -38,7 +39,15 @@ const firsts::opt_subset& firsts::calculate_nterm(size_t nterm_idx)
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
     base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
     
-    return calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
+    const auto& result = calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
+    
+    if (!result.has_value()/* && left_recursion_nterms_.contains(nterm_idx)*/)
+    {
+        std::string_view name = rs_.get_nterm_name(nterm_idx);
+        throw grammar_error(grammar_error::code::nterm_unsolvable_left_recursion, name);
+    }
+    
+    return result;
 }
 
 const firsts::opt_subset& firsts::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
@@ -72,7 +81,8 @@ const firsts::opt_subset& firsts::calculate_nterm_impl(
     }
     
     index_subset<1> temp(rs_.get_term_count());
-            
+    bool detected_left_recursion = false;
+    
     for (size_t rside_idx = 0; rside_idx < rs_.get_nterm_rside_count(nterm_idx); ++rside_idx)
     {
         const auto& part_result = calculate_rside_part_impl(nterm_idx, rside_idx, 0, calculating_nterms, calculating_rside_parts);
@@ -80,9 +90,14 @@ const firsts::opt_subset& firsts::calculate_nterm_impl(
         {
             temp.add(part_result.value());
         }
+        else
+        {
+            detected_left_recursion = true;
+        }
     }
     
-    if (temp.get_count() > 0)
+    // if any of the rsides gives results, don't care about detection
+    if (!detected_left_recursion || temp.get_count() > 0)
     {
         result.emplace(std::move(temp));
     }
@@ -111,6 +126,7 @@ const firsts::opt_subset& firsts::calculate_rside_part_impl(
     }
     
     index_subset<1> temp(rs_.get_term_count());
+    bool detected_left_recursion = false;
     
     for (size_t symbol_idx = symbol_start_idx; symbol_idx < rs_.get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
     {
@@ -126,6 +142,10 @@ const firsts::opt_subset& firsts::calculate_rside_part_impl(
         {
             temp.add(nterm_res.value());
         }
+        else
+        {
+            detected_left_recursion = true;
+        }
         
         if (!null_.calculate_nterm(ref.index_))
         {
@@ -133,7 +153,10 @@ const firsts::opt_subset& firsts::calculate_rside_part_impl(
         }
     }
     
-    if (temp.get_count() > 0)
+    // for empty rsides (obviously no detection, empty loop) -> add empty subset
+    // if not empty rside and terms in temp added -> add them
+    // if not empty rside and detection -> add only if some terms in temp
+    if (!detected_left_recursion || temp.get_count() > 0)
     {
         result.emplace(std::move(temp));
     }

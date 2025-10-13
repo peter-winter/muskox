@@ -18,7 +18,7 @@ private:
     using opt_subset = std::optional<index_subset<1>>;
     vector_n<opt_subset, 1> nterms_;
     vector_n<opt_subset, 3> rside_parts_;
-
+    
     const opt_subset& calculate_nterm_impl(
         size_t nterm_idx, 
         base_index_subset<1>& calculating_nterms, 

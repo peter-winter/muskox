@@ -34,7 +34,7 @@ struct grammar_error_templates
         "Root symbol '{}' does not exist.",
         "Cannot refer special '{}' symbol.",
         "No nonterminals.",
-        "Nonterminal {} has unsolvable left recursion."
+        "Nonterminal '{}' has unsolvable left recursion."
     };
 };
 
