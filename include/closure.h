@@ -16,12 +16,14 @@ private:
     const ruleset& rs_;
     using opt_subset = std::optional<index_subset<4>>;
     vector_n<opt_subset, 4> lr1_item_closures_;
+    vector_n<opt_subset, 4> lr1_item_full_closures_;
     
 public:
     closure(const ruleset& rs);
     ~closure() = default;
 
     const opt_subset& calculate(const lr1_set_item& item);
+    const opt_subset& calculate_full(const lr1_set_item& item);
 };
 
 } // namespace ptg

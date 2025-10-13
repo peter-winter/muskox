@@ -1,11 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
-using Catch::Matchers::Message;
-
+#include <grammar_error.h>
 #include <nullable.h>
 #include <ruleset.h>
 #include <symbol_collection.h>
+
+using Catch::Matchers::Message;
 
 TEST_CASE("nullable computation", "[nullable]")
 {
@@ -307,5 +308,173 @@ TEST_CASE("nullable computation", "[nullable]")
             std::out_of_range,
             Message("Symbol index out of range")
         );
+    }
+
+    SECTION("individual calculate_nterm - nullable")
+    {
+        size_t s_idx = sc.add_nterm("S");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {});
+
+        ptg::nullable n(rs);
+
+        size_t root_idx = 0;
+
+        REQUIRE(n.calculate_nterm(s_idx) == true);
+        REQUIRE(n.is_nullable_nterm(s_idx) == true);
+
+        REQUIRE(n.calculate_nterm(root_idx) == true);
+        REQUIRE(n.is_nullable_nterm(root_idx) == true);
+    }
+
+    SECTION("individual calculate_nterm - not nullable")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_term("a");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"a"});
+
+        ptg::nullable n(rs);
+
+        size_t root_idx = 0;
+
+        REQUIRE(n.calculate_nterm(s_idx) == false);
+        REQUIRE(n.is_nullable_nterm(s_idx) == false);
+
+        REQUIRE(n.calculate_nterm(root_idx) == false);
+        REQUIRE(n.is_nullable_nterm(root_idx) == false);
+    }
+
+    SECTION("individual calculate_rside_part - nullable")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+        sc.add_nterm("B");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {});
+        rs.add_rule("B", {});
+        size_t s_r0 = rs.add_rule("S", {"A", "B"});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == true);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == true);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 1) == true);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 1) == true);
+    }
+
+    SECTION("individual calculate_rside_part - not nullable")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+        sc.add_term("b");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {});
+        size_t s_r0 = rs.add_rule("S", {"A", "b"});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == false);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == false);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 1) == false);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 1) == false);
+    }
+
+    SECTION("calculate_nterm with left recursion")
+    {
+        size_t a_idx = sc.add_nterm("A");
+        sc.add_term("b");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"A", "b"});
+        rs.add_rule("A", {});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_nterm(a_idx) == true);  // Because of epsilon rule
+        REQUIRE(n.is_nullable_nterm(a_idx) == true);
+    }
+
+    SECTION("calculate_nterm with left recursion no epsilon - returns false")
+    {
+        size_t a_idx = sc.add_nterm("A");
+        sc.add_term("b");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"A", "b"});
+        rs.add_rule("A", {"b"});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_nterm(a_idx) == false);
+        REQUIRE(n.is_nullable_nterm(a_idx) == false);
+    }
+
+    SECTION("calculate_rside_part with recursion")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"A"});
+        rs.add_rule("A", {"S"});
+        rs.add_rule("A", {});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == true);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == true);
+
+        REQUIRE(n.calculate_nterm(s_idx) == true);
+        REQUIRE(n.is_nullable_nterm(s_idx) == true);
+    }
+
+    SECTION("calculate_rside_part with unresolved recursion returns false")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"A"});
+        rs.add_rule("A", {"S"});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == false);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == false);
+
+        REQUIRE(n.calculate_nterm(s_idx) == false);
+        REQUIRE(n.is_nullable_nterm(s_idx) == false);
+    }
+
+    SECTION("mix individual and all")
+    {
+        size_t s_idx = sc.add_nterm("S");
+        size_t a_idx = sc.add_nterm("A");
+        size_t b_idx = sc.add_nterm("B");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {});
+        rs.add_rule("B", {"A"});
+        size_t s_r0 = rs.add_rule("S", {"B"});
+
+        ptg::nullable n(rs);
+
+        REQUIRE(n.calculate_nterm(a_idx) == true);
+        REQUIRE(n.is_nullable_nterm(a_idx) == true);
+
+        REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == true);
+        REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == true);
+
+        n.calculate_all();
+
+        REQUIRE(n.is_nullable_nterm(s_idx) == true);
+        REQUIRE(n.is_nullable_nterm(b_idx) == true);
     }
 }

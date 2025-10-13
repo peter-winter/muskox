@@ -8,334 +8,93 @@
 
 using Catch::Matchers::Message;
 
-TEST_CASE("firsts class", "[firsts]")
+TEST_CASE("firsts computation", "[firsts]")
 {
-    SECTION("simple grammar with terminals only")
+    ptg::symbol_collection sc;
+
+    SECTION("basic firsts")
     {
-        ptg::symbol_collection sc;
+        size_t a_idx = sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+        size_t c_idx = sc.add_term("c");
+
         size_t s_idx = sc.add_nterm("S");
+        size_t expr_idx = sc.add_nterm("Expr");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"Expr"});
+        rs.add_rule("Expr", {"a"});
+        rs.add_rule("Expr", {"b", "Expr"});
+        rs.add_rule("Expr", {"c"});
+
+        ptg::firsts f(rs);
+        f.calculate_all();
+
+        auto& s_first = f.get_nterm_firsts(s_idx);
+        REQUIRE(s_first.has_value());
+        std::vector<size_t> s_got = s_first.value().get_indices();
+        REQUIRE(s_got == std::vector<size_t>{a_idx, b_idx, c_idx});
+
+        auto& expr_first = f.get_nterm_firsts(expr_idx);
+        REQUIRE(expr_first.has_value());
+        std::vector<size_t> expr_got = expr_first.value().get_indices();
+        REQUIRE(expr_got == std::vector<size_t>{a_idx, b_idx, c_idx});
+    }
+
+    SECTION("epsilon production")
+    {
+        size_t a_idx = sc.add_term("a");
+
+        size_t s_idx = sc.add_nterm("S");
+        size_t a_nt_idx = sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"A"});
+        rs.add_rule("A", {"a"});
+        rs.add_rule("A", {});
+
+        ptg::firsts f(rs);
+        f.calculate_all();
+
+        auto& s_first = f.get_nterm_firsts(s_idx);
+        REQUIRE(s_first.has_value());
+        REQUIRE(s_first.value().get_count() == 1);
+        REQUIRE(s_first.value().contains(a_idx));
+
+        auto& a_first = f.get_nterm_firsts(a_nt_idx);
+        REQUIRE(a_first.has_value());
+        REQUIRE(a_first.value().get_count() == 1);
+        REQUIRE(a_first.value().contains(a_idx));
+    }
+
+    SECTION("nullable chain")
+    {
         size_t a_idx = sc.add_term("a");
         size_t b_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
-        size_t s_r0 = rs.add_rule("S", {"a"});
-        size_t s_r1 = rs.add_rule("S", {"b"});
-
-        ptg::firsts f(rs);
-        f.calculate_all();
-
-        size_t root_idx = 0;
-
-        // FIRST($root) = FIRST(S) = {a, b}
-        const auto& root_firsts = f.get_nterm_firsts(root_idx);
-        REQUIRE(root_firsts.has_value());
-        REQUIRE(root_firsts.value().get_count() == 2);
-        REQUIRE(root_firsts.value().contains(a_idx));
-        REQUIRE(root_firsts.value().contains(b_idx));
-
-        // FIRST(S) = {a, b}
-        const auto& s_firsts = f.get_nterm_firsts(s_idx);
-        REQUIRE(s_firsts.has_value());
-        REQUIRE(s_firsts.value().get_count() == 2);
-        REQUIRE(s_firsts.value().contains(a_idx));
-        REQUIRE(s_firsts.value().contains(b_idx));
-
-        // $root -> S (r=0, symbols: S)
-        const auto& root_r0_p0 = f.get_rside_part_firsts(root_idx, 0, 0);
-        REQUIRE(root_r0_p0.has_value());
-        REQUIRE(root_r0_p0.value().get_count() == 2);
-        REQUIRE(root_r0_p0.value().contains(a_idx));
-        REQUIRE(root_r0_p0.value().contains(b_idx));
-
-        // S -> a (r=0, symbols: a)
-        const auto& s_r0_p0 = f.get_rside_part_firsts(s_idx, s_r0, 0);
-        REQUIRE(s_r0_p0.has_value());
-        REQUIRE(s_r0_p0.value().get_count() == 1);
-        REQUIRE(s_r0_p0.value().contains(a_idx));
-
-        // S -> b (r=1, symbols: b)
-        const auto& s_r1_p0 = f.get_rside_part_firsts(s_idx, s_r1, 0);
-        REQUIRE(s_r1_p0.has_value());
-        REQUIRE(s_r1_p0.value().get_count() == 1);
-        REQUIRE(s_r1_p0.value().contains(b_idx));
-    }
-
-    SECTION("grammar with epsilon production")
-    {
-        ptg::symbol_collection sc;
         size_t s_idx = sc.add_nterm("S");
-        size_t a_idx = sc.add_nterm("A");
-        size_t x_idx = sc.add_term("x");
-        size_t y_idx = sc.add_term("y");
+        sc.add_nterm("X");
+        sc.add_nterm("Y");
+        sc.add_nterm("Z");
 
         ptg::ruleset rs(sc);
-        rs.add_rule("S", {"A", "y"});
-        rs.add_rule("A", {"x"});
-        rs.add_rule("A", {});
+        rs.add_rule("S", {"X", "b"});
+        rs.add_rule("X", {"Y"});
+        rs.add_rule("Y", {"Z"});
+        rs.add_rule("Z", {"a"});
+        rs.add_rule("Z", {});
 
         ptg::firsts f(rs);
         f.calculate_all();
 
-        size_t root_idx = 0;
-
-        // FIRST($root) = FIRST(S) = {x, y}
-        const auto& root_firsts = f.get_nterm_firsts(root_idx);
-        REQUIRE(root_firsts.has_value());
-        REQUIRE(root_firsts.value().contains(x_idx));
-        REQUIRE(root_firsts.value().contains(y_idx));
-        REQUIRE(root_firsts.value().get_count() == 2);
-
-        // FIRST(S) = {x, y}
-        const auto& s_firsts = f.get_nterm_firsts(s_idx);
-        REQUIRE(s_firsts.has_value());
-        REQUIRE(s_firsts.value().get_count() == 2);
-        REQUIRE(s_firsts.value().contains(x_idx));
-        REQUIRE(s_firsts.value().contains(y_idx));
-
-        // FIRST(A) = {x}
-        const auto& a_firsts = f.get_nterm_firsts(a_idx);
-        REQUIRE(a_firsts.has_value());
-        REQUIRE(a_firsts.value().get_count() == 1);
-        REQUIRE(a_firsts.value().contains(x_idx));
-
-        // $root -> S (r=0, p0: S)
-        const auto& root_r0_p0 = f.get_rside_part_firsts(root_idx, 0, 0);
-        REQUIRE(root_r0_p0.has_value());
-        REQUIRE(root_r0_p0.value().get_count() == 2);
-        REQUIRE(root_r0_p0.value().contains(x_idx));
-        REQUIRE(root_r0_p0.value().contains(y_idx));
-
-        // S -> A y (r=0, symbols: A y)
-        // p0: A y -> {x, y} (since A nullable)
-        const auto& s_r0_p0 = f.get_rside_part_firsts(s_idx, 0, 0);
-        REQUIRE(s_r0_p0.has_value());
-        REQUIRE(s_r0_p0.value().get_count() == 2);
-        REQUIRE(s_r0_p0.value().contains(x_idx));
-        REQUIRE(s_r0_p0.value().contains(y_idx));
-
-        // p1: y -> {y}
-        const auto& s_r0_p1 = f.get_rside_part_firsts(s_idx, 0, 1);
-        REQUIRE(s_r0_p1.has_value());
-        REQUIRE(s_r0_p1.value().get_count() == 1);
-        REQUIRE(s_r0_p1.value().contains(y_idx));
-
-        // A -> x (r=0, p0: x) -> {x}
-        const auto& a_r0_p0 = f.get_rside_part_firsts(a_idx, 0, 0);
-        REQUIRE(a_r0_p0.has_value());
-        REQUIRE(a_r0_p0.value().get_count() == 1);
-        REQUIRE(a_r0_p0.value().contains(x_idx));
-
-        // A -> eps (r=1, no symbols, but cannot query p0 since symbol_count=0)
-    }
-
-    SECTION("chain of nullable non-terminals")
-    {
-        ptg::symbol_collection sc;
-        size_t s_idx = sc.add_nterm("S");
-        size_t a_idx = sc.add_nterm("A");
-        size_t b_idx = sc.add_nterm("B");
-        size_t x_idx = sc.add_term("x");
-        size_t y_idx = sc.add_term("y");
-        size_t z_idx = sc.add_term("z");
-
-        ptg::ruleset rs(sc);
-        size_t s_r0 = rs.add_rule("S", {"A", "B", "z"});
-        rs.add_rule("A", {"x"});
-        rs.add_rule("A", {});
-        rs.add_rule("B", {"y"});
-        rs.add_rule("B", {});
-
-        ptg::firsts f(rs);
-        f.calculate_all();
-
-        size_t root_idx = 0;
-
-        // FIRST($root) = FIRST(S) = {x, y, z}
-        const auto& root_firsts = f.get_nterm_firsts(root_idx);
-        REQUIRE(root_firsts.has_value());
-        REQUIRE(root_firsts.value().get_count() == 3);
-        REQUIRE(root_firsts.value().contains(x_idx));
-        REQUIRE(root_firsts.value().contains(y_idx));
-        REQUIRE(root_firsts.value().contains(z_idx));
-
-        // FIRST(S) = {x, y, z}
-        const auto& s_firsts = f.get_nterm_firsts(s_idx);
-        REQUIRE(s_firsts.has_value());
-        REQUIRE(s_firsts.value().get_count() == 3);
-        REQUIRE(s_firsts.value().contains(x_idx));
-        REQUIRE(s_firsts.value().contains(y_idx));
-        REQUIRE(s_firsts.value().contains(z_idx));
-
-        // FIRST(A) = {x}
-        const auto& a_firsts = f.get_nterm_firsts(a_idx);
-        REQUIRE(a_firsts.has_value());
-        REQUIRE(a_firsts.value().get_count() == 1);
-        REQUIRE(a_firsts.value().contains(x_idx));
-
-        // FIRST(B) = {y}
-        const auto& b_firsts = f.get_nterm_firsts(b_idx);
-        REQUIRE(b_firsts.has_value());
-        REQUIRE(b_firsts.value().get_count() == 1);
-        REQUIRE(b_firsts.value().contains(y_idx));
-
-        // S -> A B z (r=0)
-        // p0: A B z -> {x, y, z}
-        const auto& s_r0_p0 = f.get_rside_part_firsts(s_idx, s_r0, 0);
-        REQUIRE(s_r0_p0.has_value());
-        REQUIRE(s_r0_p0.value().get_count() == 3);
-        REQUIRE(s_r0_p0.value().contains(x_idx));
-        REQUIRE(s_r0_p0.value().contains(y_idx));
-        REQUIRE(s_r0_p0.value().contains(z_idx));
-
-        // p1: B z -> {y, z}
-        const auto& s_r0_p1 = f.get_rside_part_firsts(s_idx, s_r0, 1);
-        REQUIRE(s_r0_p1.has_value());
-        REQUIRE(s_r0_p1.value().get_count() == 2);
-        REQUIRE(s_r0_p1.value().contains(y_idx));
-        REQUIRE(s_r0_p1.value().contains(z_idx));
-
-        // p2: z -> {z}
-        const auto& s_r0_p2 = f.get_rside_part_firsts(s_idx, s_r0, 2);
-        REQUIRE(s_r0_p2.has_value());
-        REQUIRE(s_r0_p2.value().get_count() == 1);
-        REQUIRE(s_r0_p2.value().contains(z_idx));
-    }
-
-    SECTION("non-nullable in chain")
-    {
-        ptg::symbol_collection sc;
-        size_t s_idx = sc.add_nterm("S");
-        sc.add_nterm("A");
-        sc.add_nterm("B");
-        size_t x_idx = sc.add_term("x");
-        size_t y_idx = sc.add_term("y");
-        size_t z_idx = sc.add_term("z");
-
-        ptg::ruleset rs(sc);
-        size_t s_r0 = rs.add_rule("S", {"A", "B", "z"});
-        rs.add_rule("A", {"x"});
-        rs.add_rule("A", {});
-        rs.add_rule("B", {"y"});  // B not nullable
-
-        ptg::firsts f(rs);
-        f.calculate_all();
-
-        // FIRST(S) = {x, y}
-        const auto& s_firsts = f.get_nterm_firsts(s_idx);
-        REQUIRE(s_firsts.has_value());
-        REQUIRE(s_firsts.value().get_count() == 2);
-        REQUIRE(s_firsts.value().contains(x_idx));
-        REQUIRE(s_firsts.value().contains(y_idx));
-
-        // S -> A B z
-        // p0: A B z -> {x, y} (A null, then B first {y}, B not null, stop)
-        const auto& s_r0_p0 = f.get_rside_part_firsts(s_idx, s_r0, 0);
-        REQUIRE(s_r0_p0.has_value());
-        REQUIRE(s_r0_p0.value().get_count() == 2);
-        REQUIRE(s_r0_p0.value().contains(x_idx));
-        REQUIRE(s_r0_p0.value().contains(y_idx));
-
-        // p1: B z -> {y}
-        const auto& s_r0_p1 = f.get_rside_part_firsts(s_idx, s_r0, 1);
-        REQUIRE(s_r0_p1.has_value());
-        REQUIRE(s_r0_p1.value().get_count() == 1);
-        REQUIRE(s_r0_p1.value().contains(y_idx));
-
-        // p2: z -> {z}
-        const auto& s_r0_p2 = f.get_rside_part_firsts(s_idx, s_r0, 2);
-        REQUIRE(s_r0_p2.has_value());
-        REQUIRE(s_r0_p2.value().get_count() == 1);
-        REQUIRE(s_r0_p2.value().contains(z_idx));
-    }
-
-    SECTION("expression grammar")
-    {
-        ptg::symbol_collection sc;
-        size_t expr_idx = sc.add_nterm("Expr");
-        size_t term_idx = sc.add_nterm("Term");
-        size_t factor_idx = sc.add_nterm("Factor");
-        size_t plus_idx = sc.add_term("+");
-        sc.add_term("*");
-        size_t lparen_idx = sc.add_term("(");
-        size_t rparen_idx = sc.add_term(")");
-        size_t id_idx = sc.add_term("id");
-
-        ptg::ruleset rs(sc);
-        rs.set_root("Expr");
-        size_t expr_r0 = rs.add_rule("Expr", {"Expr", "+", "Term"});
-        rs.add_rule("Expr", {"Term"});
-        rs.add_rule("Term", {"Term", "*", "Factor"});
-        rs.add_rule("Term", {"Factor"});
-        size_t factor_r0 = rs.add_rule("Factor", {"(", "Expr", ")"});
-        rs.add_rule("Factor", {"id"});
-
-        ptg::firsts f(rs);
-        f.calculate_all();
-
-        // Common FIRST for Expr, Term, Factor = {(, id}
-        const auto& expr_firsts = f.get_nterm_firsts(expr_idx);
-        REQUIRE(expr_firsts.has_value());
-        REQUIRE(expr_firsts.value().get_count() == 2);
-        REQUIRE(expr_firsts.value().contains(lparen_idx));
-        REQUIRE(expr_firsts.value().contains(id_idx));
-
-        const auto& term_firsts = f.get_nterm_firsts(term_idx);
-        REQUIRE(term_firsts.has_value());
-        REQUIRE(term_firsts.value().get_count() == 2);
-        REQUIRE(term_firsts.value().contains(lparen_idx));
-        REQUIRE(term_firsts.value().contains(id_idx));
-
-        const auto& factor_firsts = f.get_nterm_firsts(factor_idx);
-        REQUIRE(factor_firsts.has_value());
-        REQUIRE(factor_firsts.value().get_count() == 2);
-        REQUIRE(factor_firsts.value().contains(lparen_idx));
-        REQUIRE(factor_firsts.value().contains(id_idx));
-
-        // Expr -> Expr + Term (r=0)
-        // p0: Expr + Term -> {(, id} (since Expr not nullable)
-        const auto& expr_r0_p0 = f.get_rside_part_firsts(expr_idx, expr_r0, 0);
-        REQUIRE(expr_r0_p0.has_value());
-        REQUIRE(expr_r0_p0.value().contains(lparen_idx));
-        REQUIRE(expr_r0_p0.value().contains(id_idx));
-        REQUIRE(expr_r0_p0.value().get_count() == 2);
-
-        // p1: + Term -> {+}
-        const auto& expr_r0_p1 = f.get_rside_part_firsts(expr_idx, expr_r0, 1);
-        REQUIRE(expr_r0_p1.has_value());
-        REQUIRE(expr_r0_p1.value().get_count() == 1);
-        REQUIRE(expr_r0_p1.value().contains(plus_idx));
-
-        // p2: Term -> {(, id}
-        const auto& expr_r0_p2 = f.get_rside_part_firsts(expr_idx, expr_r0, 2);
-        REQUIRE(expr_r0_p2.has_value());
-        REQUIRE(expr_r0_p2.value().get_count() == 2);
-        REQUIRE(expr_r0_p2.value().contains(lparen_idx));
-        REQUIRE(expr_r0_p2.value().contains(id_idx));
-
-        // Factor -> ( Expr ) (r=0)
-        // p0: ( Expr ) -> {(}
-        const auto& factor_r0_p0 = f.get_rside_part_firsts(factor_idx, factor_r0, 0);
-        REQUIRE(factor_r0_p0.has_value());
-        REQUIRE(factor_r0_p0.value().get_count() == 1);
-        REQUIRE(factor_r0_p0.value().contains(lparen_idx));
-
-        // p1: Expr ) -> {(, id}
-        const auto& factor_r0_p1 = f.get_rside_part_firsts(factor_idx, factor_r0, 1);
-        REQUIRE(factor_r0_p1.has_value());
-        REQUIRE(factor_r0_p1.value().get_count() == 2);
-        REQUIRE(factor_r0_p1.value().contains(lparen_idx));
-        REQUIRE(factor_r0_p1.value().contains(id_idx));
-
-        // p2: ) -> {)}
-        const auto& factor_r0_p2 = f.get_rside_part_firsts(factor_idx, factor_r0, 2);
-        REQUIRE(factor_r0_p2.has_value());
-        REQUIRE(factor_r0_p2.value().get_count() == 1);
-        REQUIRE(factor_r0_p2.value().contains(rparen_idx));
+        auto& s_first = f.get_nterm_firsts(s_idx);
+        REQUIRE(s_first.has_value());
+        std::vector<size_t> s_got = s_first.value().get_indices();
+        REQUIRE(s_got == std::vector<size_t>{a_idx, b_idx});
     }
 
     SECTION("invalid indices")
     {
-        ptg::symbol_collection sc;
         sc.add_nterm("S");
         sc.add_term("a");
 
@@ -343,46 +102,345 @@ TEST_CASE("firsts class", "[firsts]")
         rs.add_rule("S", {"a"});
 
         ptg::firsts f(rs);
-        f.calculate_all();
 
         REQUIRE_THROWS_MATCHES(
-            f.get_nterm_firsts(2),
+            f.get_nterm_firsts(rs.get_nterm_count()),
             std::out_of_range,
             Message("Nterm index out of range")
         );
-        
+
         REQUIRE_THROWS_MATCHES(
-            f.get_rside_part_firsts(2, 0, 0),
+            f.get_rside_part_firsts(rs.get_nterm_count(), 0, 0),
             std::out_of_range,
             Message("Nterm index out of range")
         );
-        
+
         REQUIRE_THROWS_MATCHES(
-            f.get_rside_part_firsts(0, 1, 0),
+            f.get_rside_part_firsts(0, rs.get_nterm_rside_count(0), 0),
             std::out_of_range,
             Message("Rside index out of range")
         );
 
         REQUIRE_THROWS_MATCHES(
-            f.get_rside_part_firsts(1, 0, 1),
+            f.get_rside_part_firsts(0, 0, rs.get_symbol_count(0, 0)),
             std::out_of_range,
             Message("Symbol index out of range")
         );
     }
 
-    SECTION("cycle detection (left recursion) should leave the set as nullopt")
+    SECTION("individual calculate_nterm - simple")
     {
-        ptg::symbol_collection sc;
+        size_t a_idx = sc.add_term("a");
+
         size_t s_idx = sc.add_nterm("S");
-        sc.add_term("a");
 
         ptg::ruleset rs(sc);
-        size_t r_idx = rs.add_rule("S", {"S", "a"});  // Left recursive
+        rs.add_rule("S", {"a"});
 
         ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(s_idx);
+        REQUIRE(res.has_value());
+        REQUIRE(res.value().get_count() == 1);
+        REQUIRE(res.value().contains(a_idx));
+    }
+
+    SECTION("individual calculate_nterm - epsilon, empty first")
+    {
+        size_t s_idx = sc.add_nterm("S");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {});
+
+        ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(s_idx);
+        REQUIRE_FALSE(res.has_value());
+    }
+
+    SECTION("individual calculate_nterm - through nterm")
+    {
+        size_t a_idx = sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("Expr");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("S", {"Expr"});
+        rs.add_rule("Expr", {"a"});
+        rs.add_rule("Expr", {"b"});
+
+        ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(s_idx);
+        REQUIRE(res.has_value());
+        std::vector<size_t> got = res.value().get_indices();
+        REQUIRE(got == std::vector<size_t>{a_idx, b_idx});
+    }
+
+    SECTION("individual calculate_rside_part - terms")
+    {
+        size_t a_idx = sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+        size_t c_idx = sc.add_term("c");
+
+        size_t s_idx = sc.add_nterm("S");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"a", "b", "c"});
+
+        ptg::firsts f(rs);
+
+        auto& res0 = f.calculate_rside_part(s_idx, s_r0, 0);
+        REQUIRE(res0.has_value());
+        REQUIRE(res0.value().get_count() == 1);
+        REQUIRE(res0.value().contains(a_idx));
+
+        auto& res1 = f.calculate_rside_part(s_idx, s_r0, 1);
+        REQUIRE(res1.has_value());
+        REQUIRE(res1.value().get_count() == 1);
+        REQUIRE(res1.value().contains(b_idx));
+
+        auto& res2 = f.calculate_rside_part(s_idx, s_r0, 2);
+        REQUIRE(res2.has_value());
+        REQUIRE(res2.value().get_count() == 1);
+        REQUIRE(res2.value().contains(c_idx));
+    }
+
+    SECTION("individual calculate_rside_part - with nullable")
+    {
+        size_t a_idx = sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"A", "b"});
+        rs.add_rule("A", {"a"});
+        rs.add_rule("A", {});
+
+        ptg::firsts f(rs);
+
+        auto& res0 = f.calculate_rside_part(s_idx, s_r0, 0);
+        REQUIRE(res0.has_value());
+        std::vector<size_t> got0 = res0.value().get_indices();
+        REQUIRE(got0 == std::vector<size_t>{a_idx, b_idx});
+
+        auto& res1 = f.calculate_rside_part(s_idx, s_r0, 1);
+        REQUIRE(res1.has_value());
+        REQUIRE(res1.value().get_count() == 1);
+        REQUIRE(res1.value().contains(b_idx));
+    }
+
+    SECTION("left recursion")
+    {
+        sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+
+        size_t a_nt_idx = sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"A", "a"});
+        rs.add_rule("A", {"b"});
+
+        ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(a_nt_idx);
+        REQUIRE(res.has_value());
+        REQUIRE(res.value().get_count() == 1);
+        REQUIRE(res.value().contains(b_idx));
+    }
+
+    SECTION("left recursion with epsilon")
+    {
+        size_t a_idx = sc.add_term("a");
+
+        size_t a_nt_idx = sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"A", "a"});
+        rs.add_rule("A", {});
+
+        ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(a_nt_idx);
+        REQUIRE(res.has_value());
+        REQUIRE(res.value().get_count() == 1);
+        REQUIRE(res.value().contains(a_idx));
+    }
+
+    SECTION("unresolved left recursion no terminal")
+    {
+        sc.add_term("a");
+
+        size_t a_nt_idx = sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"A", "a"});
+
+        ptg::firsts f(rs);
+
+        auto& res = f.calculate_nterm(a_nt_idx);
+        REQUIRE_FALSE(res.has_value());
+    }
+
+    SECTION("individual calculate_rside_part - unresolved left recursion")
+    {
+        size_t a_idx = sc.add_term("a");
+
+        size_t a_nt_idx = sc.add_nterm("A");
+
+        ptg::ruleset rs(sc);
+        size_t a_r0 = rs.add_rule("A", {"A", "a"});
+
+        ptg::firsts f(rs);
+
+        auto& res0 = f.calculate_rside_part(a_nt_idx, a_r0, 0);
+        REQUIRE_FALSE(res0.has_value());
+
+        auto& res1 = f.calculate_rside_part(a_nt_idx, a_r0, 1);
+        REQUIRE(res1.has_value());
+        REQUIRE(res1.value().get_count() == 1);
+        REQUIRE(res1.value().contains(a_idx));
+    }
+
+    SECTION("calculate_nterm with unresolved cycle through chain no epsilon")
+    {
+        size_t a_nt_idx = sc.add_nterm("A");
+        size_t b_nt_idx = sc.add_nterm("B");
+        size_t c_nt_idx = sc.add_nterm("C");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"B"});
+        rs.add_rule("B", {"C"});
+        rs.add_rule("C", {"A"});
+
+        ptg::firsts f(rs);
+
+        auto& res_a = f.calculate_nterm(a_nt_idx);
+        REQUIRE_FALSE(res_a.has_value());
+
+        auto& res_b = f.calculate_nterm(b_nt_idx);
+        REQUIRE_FALSE(res_b.has_value());
+
+        auto& res_c = f.calculate_nterm(c_nt_idx);
+        REQUIRE_FALSE(res_c.has_value());
+    }
+
+    SECTION("calculate_nterm with unresolved cycle through chain with epsilon")
+    {
+        size_t a_nt_idx = sc.add_nterm("A");
+        size_t b_nt_idx = sc.add_nterm("B");
+        size_t c_nt_idx = sc.add_nterm("C");
+
+        ptg::ruleset rs(sc);
+        rs.add_rule("A", {"B"});
+        rs.add_rule("B", {"C"});
+        rs.add_rule("C", {"A"});
+        rs.add_rule("C", {});
+
+        ptg::firsts f(rs);
+
+        auto& res_a = f.calculate_nterm(a_nt_idx);
+        REQUIRE_FALSE(res_a.has_value());
+
+        auto& res_b = f.calculate_nterm(b_nt_idx);
+        REQUIRE_FALSE(res_b.has_value());
+
+        auto& res_c = f.calculate_nterm(c_nt_idx);
+        REQUIRE_FALSE(res_c.has_value());
+    }
+
+    SECTION("calculate_rside_part with unresolved cycle in prefix no epsilon")
+    {
+        size_t b_idx = sc.add_term("b");
+
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+        sc.add_nterm("C");
+        sc.add_nterm("D");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"A", "b"});
+        rs.add_rule("A", {"C"});
+        rs.add_rule("C", {"D"});
+        rs.add_rule("D", {"A"});
+
+        ptg::firsts f(rs);
+
+        auto& res0 = f.calculate_rside_part(s_idx, s_r0, 0);
+        REQUIRE_FALSE(res0.has_value());
+
+        auto& res1 = f.calculate_rside_part(s_idx, s_r0, 1);
+        REQUIRE(res1.has_value());
+        REQUIRE(res1.value().get_count() == 1);
+        REQUIRE(res1.value().contains(b_idx));
+    }
+
+    SECTION("calculate_rside_part with unresolved cycle in prefix with epsilon")
+    {
+        size_t b_idx = sc.add_term("b");
+
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("A");
+        sc.add_nterm("C");
+        sc.add_nterm("D");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"A", "b"});
+        rs.add_rule("A", {"C"});
+        rs.add_rule("C", {"D"});
+        rs.add_rule("D", {"A"});
+        rs.add_rule("D", {});
+
+        ptg::firsts f(rs);
+
+        auto& res0 = f.calculate_rside_part(s_idx, s_r0, 0);
+        REQUIRE(res0.has_value());
+        REQUIRE(res0.value().get_count() == 1);
+        REQUIRE(res0.value().contains(b_idx));
+
+        auto& res1 = f.calculate_rside_part(s_idx, s_r0, 1);
+        REQUIRE(res1.has_value());
+        REQUIRE(res1.value().get_count() == 1);
+        REQUIRE(res1.value().contains(b_idx));
+    }
+
+    SECTION("mix individual and all")
+    {
+        size_t a_idx = sc.add_term("a");
+        size_t b_idx = sc.add_term("b");
+        size_t c_idx = sc.add_term("c");
+
+        size_t s_idx = sc.add_nterm("S");
+        sc.add_nterm("X");
+        size_t y_idx = sc.add_nterm("Y");
+
+        ptg::ruleset rs(sc);
+        size_t s_r0 = rs.add_rule("S", {"X", "b"});
+        rs.add_rule("X", {"Y"});
+        rs.add_rule("Y", {"a"});
+        rs.add_rule("Y", {"c"});
+
+        ptg::firsts f(rs);
+
+        auto& res_y = f.calculate_nterm(y_idx);
+        REQUIRE(res_y.has_value());
+        std::vector<size_t> got_y = res_y.value().get_indices();
+        REQUIRE(got_y == std::vector<size_t>{a_idx, c_idx});
+
+        auto& res_part = f.calculate_rside_part(s_idx, s_r0, 1);
+        REQUIRE(res_part.has_value());
+        REQUIRE(res_part.value().get_count() == 1);
+        REQUIRE(res_part.value().contains(b_idx));
+
         f.calculate_all();
-        
-        REQUIRE_FALSE(f.get_nterm_firsts(s_idx).has_value());
-        REQUIRE_FALSE(f.get_rside_part_firsts(s_idx, r_idx, 0).has_value());
+
+        auto& res_s = f.get_nterm_firsts(s_idx);
+        REQUIRE(res_s.has_value());
+        std::vector<size_t> got_s = res_s.value().get_indices();
+        REQUIRE(got_s == std::vector<size_t>{a_idx, c_idx});
     }
 }

@@ -1,4 +1,3 @@
-// include/grammar_error.h
 #pragma once
 
 #include <formatted_error.h>
@@ -8,7 +7,20 @@ namespace ptg
 
 struct grammar_error_templates
 {
-    enum class code { ok, symbol_exists, lside_not_exists, lside_term, rside_not_exist, nterm_no_rules, root_term, root_not_exists, cannot_refer_special, no_nterm };
+    enum class code
+    {
+        ok, 
+        symbol_exists, 
+        lside_not_exists, 
+        lside_term, 
+        rside_not_exist, 
+        nterm_no_rules, 
+        root_term, 
+        root_not_exists, 
+        cannot_refer_special, 
+        no_nterm,
+        nterm_unsolvable_left_recursion
+    };
 
     static constexpr const char* templates_[] =
     {
@@ -21,7 +33,8 @@ struct grammar_error_templates
         "Root symbol '{}' is a terminal.",
         "Root symbol '{}' does not exist.",
         "Cannot refer special '{}' symbol.",
-        "No nonterminals."
+        "No nonterminals.",
+        "Nonterminal {} has unsolvable left recursion."
     };
 };
 

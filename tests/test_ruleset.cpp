@@ -275,6 +275,67 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     }
 }
 
+TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
+{
+    ptg::symbol_collection sc;
+    sc.add_term("a");
+    sc.add_term("b");
+    size_t c_idx = sc.add_term("c");
+    size_t eof_idx = 0;  // $eof
+
+    size_t s_idx = sc.add_nterm("S");
+    size_t expr_idx = sc.add_nterm("Expr");
+
+    ptg::ruleset rs(sc);
+    size_t s_r0 = rs.add_rule("S", {"Expr"});
+    size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
+    size_t expr_r1 = rs.add_rule("Expr", {"b"});
+    size_t expr_r2 = rs.add_rule("Expr", {});
+
+    SECTION("basic item at start")
+    {
+        ptg::lr1_set_item item(s_idx, s_r0, 0, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "S -> . Expr / c");
+    }
+
+    SECTION("item in middle")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r0, 1, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> a . Expr / c");
+    }
+
+    SECTION("item at end")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r1, 1, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> b . / c");
+    }
+
+    SECTION("empty production")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r2, 0, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . / c");
+    }
+
+    SECTION("with eof lookahead")
+    {
+        ptg::lr1_set_item item(s_idx, s_r0, 0, eof_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "S -> . Expr / $eof");
+    }
+
+    SECTION("root item")
+    {
+        size_t root_idx = 0;
+        ptg::lr1_set_item item(root_idx, 0, 0, eof_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "$root -> . S / $eof");
+    }
+
+    SECTION("item after nullable")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . a Expr / c");
+    }
+}
+
 TEST_CASE("ruleset root", "[ruleset]")
 {
     ptg::symbol_collection sc;

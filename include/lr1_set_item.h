@@ -16,6 +16,11 @@ struct lr1_set_item
         : nterm_idx_(nterm_idx), rside_idx_(rside_idx), symbol_idx_(symbol_idx), lookahead_idx_(lookahead_idx)
     {
     }
+    
+    lr1_set_item(const std::array<size_t, 4>& arr)
+        : nterm_idx_(arr[0]), rside_idx_(arr[1]), symbol_idx_(arr[2]), lookahead_idx_(arr[3])
+    {
+    }
 };
 
 } // namespace ptg

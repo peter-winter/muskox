@@ -280,6 +280,54 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(ss.str().empty() == true);
     }
 
+    SECTION("print_symbol_list_from_to")
+    {
+        sc.add_term("a");
+        sc.add_nterm("B");
+        sc.add_term("c");
+        sc.add_term("d");
+        sc.add_nterm("E");
+
+        ptg::symbol_list sl { sc.get_symbol_ref("a"), sc.get_symbol_ref("B"), sc.get_symbol_ref("c"), sc.get_symbol_ref("d"), sc.get_symbol_ref("E") };
+
+        std::stringstream ss;
+        sc.print_symbol_list_from_to(ss, sl, 1, 4);
+        REQUIRE(ss.str() == "B c d");
+
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 0, 5);
+        REQUIRE(ss.str() == "a B c d E");
+
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 2, 3);
+        REQUIRE(ss.str() == "c");
+
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 0, 0);
+        REQUIRE(ss.str().empty() == true);
+
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 4, 5);
+        REQUIRE(ss.str() == "E");
+
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 5, 5);
+        REQUIRE(ss.str().empty() == true);
+
+        // If start > end, expect empty (assuming no throw)
+        ss.str("");
+        sc.print_symbol_list_from_to(ss, sl, 3, 2);
+        REQUIRE(ss.str().empty() == true);
+    }
+
+    SECTION("print_symbol_list_from_to empty list")
+    {
+        ptg::symbol_list sl;
+        std::stringstream ss;
+        sc.print_symbol_list_from_to(ss, sl, 0, 0);
+        REQUIRE(ss.str().empty() == true);
+    }
+
     SECTION("add_term returns index")
     {
         size_t idx1 = sc.add_term("term1");

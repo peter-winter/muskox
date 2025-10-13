@@ -264,12 +264,20 @@ std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
     std::stringstream ss;
     
     std::string_view left = symbols_.get_nterm_name(item.nterm_idx_);
-    ss << left << " : ";
+    ss << left << " -> ";
     const auto& rs = rsides_[item.nterm_idx_][item.rside_idx_];
     symbols_.print_symbol_list_from_to(ss, rs.symbols_, 0, item.symbol_idx_);
-    ss << " . ";
+    if (item.symbol_idx_ != 0)
+    {
+        ss << " ";
+    }
+    ss << ".";
+    if (item.symbol_idx_ != rs.symbols_.size())
+    {
+        ss << " ";
+    }
     symbols_.print_symbol_list_from_to(ss, rs.symbols_, item.symbol_idx_, rs.symbols_.size());
-    ss << " | " << symbols_.get_term_name(item.lookahead_idx_) << "\n";
+    ss << " / " << symbols_.get_term_name(item.lookahead_idx_);
     
     return ss.str();
 }
