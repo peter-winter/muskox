@@ -12,14 +12,14 @@ using Catch::Matchers::Message;
 TEST_CASE("ruleset add_rule", "[ruleset]")
 {
     ptg::symbol_collection sc;
-    size_t s_idx = sc.add_nterm("S");
-    size_t a_idx = sc.add_term("a");
-    size_t b_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     ptg::ruleset rs(sc);
 
     SECTION("basic add")
     {
-        size_t ridx = rs.add_rule("S", {"a", "B"});
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a", "B"});
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
@@ -32,7 +32,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty right side")
     {
-        size_t ridx = rs.add_rule("S", {});
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {});
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 0);
@@ -95,7 +95,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         const char* cc = "a";
         std::string s = "B";
         std::string_view sv = "S";
-        size_t ridx = rs.add_rule(sv, {cc, s});
+        [[maybe_unused]] size_t ridx = rs.add_rule(sv, {cc, s});
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
@@ -103,7 +103,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("add_rule with precedence")
     {
-        size_t ridx = rs.add_rule("S", {"a", "B"}, 5);
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a", "B"}, 5);
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
@@ -116,8 +116,8 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty rside as first prod")
     {
-        size_t ridx0 = rs.add_rule("S", {});
-        size_t ridx1 = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {});
+        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {"a"});
         REQUIRE(ridx0 == 0);
         REQUIRE(ridx1 == 1);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
@@ -129,8 +129,8 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("empty rside as non-first prod")
     {
-        size_t ridx0 = rs.add_rule("S", {"a"});
-        size_t ridx1 = rs.add_rule("S", {});
+        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {});
         REQUIRE(ridx0 == 0);
         REQUIRE(ridx1 == 1);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
@@ -183,13 +183,13 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE(rs.get_max_rside_count() == 1);  // Special rule added
 
-        size_t ridx0 = rs.add_rule("S", {"a"});
-        size_t ridx1 = rs.add_rule("S", {});
+        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {});
         REQUIRE(ridx0 == 0);
         REQUIRE(ridx1 == 1);
         REQUIRE(rs.get_max_rside_count() == 2);
 
-        size_t bridx = rs.add_rule("B", {"a", "B"});
+        [[maybe_unused]] size_t bridx = rs.add_rule("B", {"a", "B"});
         REQUIRE(bridx == 0);
         REQUIRE(rs.get_max_rside_count() == 2);  // Still 2
     }
@@ -198,13 +198,13 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE(rs.get_max_symbol_count() == 1);  // Special rule has 1 symbol
 
-        rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
         REQUIRE(rs.get_max_symbol_count() == 1);
 
-        rs.add_rule("B", {"a", "B"});
+        [[maybe_unused]] size_t ridx1 = rs.add_rule("B", {"a", "B"});
         REQUIRE(rs.get_max_symbol_count() == 2);
 
-        rs.add_rule("S", {});
+        [[maybe_unused]] size_t ridx2 = rs.add_rule("S", {});
         REQUIRE(rs.get_max_symbol_count() == 2);  // Empty doesn't increase
     }
 
@@ -218,19 +218,19 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 TEST_CASE("ruleset to_string", "[ruleset]")
 {
     ptg::symbol_collection sc;
-    sc.add_nterm("S");
-    sc.add_term("a");
-    sc.add_term("b");
-    sc.add_term("c");
-    sc.add_nterm("B");
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");
+    [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
 
     SECTION("basic")
     {
         ptg::ruleset rs(sc);
-        rs.add_rule("S", {"a", "B"});
-        rs.add_rule("S", {"b"});
-        rs.add_rule("S", {});
-        rs.add_rule("B", {"c"}, 3);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
+        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
+        [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {});
+        [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"}, 3);
 
         std::string expected =
             "$root : S\n"
@@ -247,8 +247,8 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     SECTION("empty rside as first")
     {
         ptg::ruleset rs(sc);
-        rs.add_rule("S", {});
-        rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {});
+        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"a"});
 
         std::string expected_empty_first =
             "$root : S\n"
@@ -262,8 +262,8 @@ TEST_CASE("ruleset to_string", "[ruleset]")
     SECTION("empty rside as non-first")
     {
         ptg::ruleset rs(sc);
-        rs.add_rule("S", {"a"});
-        rs.add_rule("S", {});
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {});
 
         std::string expected_empty_non_first =
             "$root : S\n"
@@ -278,19 +278,19 @@ TEST_CASE("ruleset to_string", "[ruleset]")
 TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 {
     ptg::symbol_collection sc;
-    sc.add_term("a");
-    sc.add_term("b");
-    size_t c_idx = sc.add_term("c");
-    size_t eof_idx = 0;  // $eof
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");
+    [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    [[maybe_unused]] size_t eof_idx = 0;  // $eof
 
-    size_t s_idx = sc.add_nterm("S");
-    size_t expr_idx = sc.add_nterm("Expr");
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
 
     ptg::ruleset rs(sc);
-    size_t s_r0 = rs.add_rule("S", {"Expr"});
-    size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
-    size_t expr_r1 = rs.add_rule("Expr", {"b"});
-    size_t expr_r2 = rs.add_rule("Expr", {});
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
+    [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
+    [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
+    [[maybe_unused]] size_t expr_r2 = rs.add_rule("Expr", {});
 
     SECTION("basic item at start")
     {
@@ -324,7 +324,7 @@ TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 
     SECTION("root item")
     {
-        size_t root_idx = 0;
+        [[maybe_unused]] size_t root_idx = 0;
         ptg::lr1_set_item item(root_idx, 0, 0, eof_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "$root -> . S / $eof");
     }
@@ -339,9 +339,9 @@ TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 TEST_CASE("ruleset root", "[ruleset]")
 {
     ptg::symbol_collection sc;
-    sc.add_nterm("S");
-    sc.add_term("a");
-    sc.add_nterm("Other");
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t other_idx = sc.add_nterm("Other");
     
     SECTION("valid root")
     {
