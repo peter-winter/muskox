@@ -67,7 +67,9 @@ public:
     size_t get_term_count() const;
     
     std::string_view get_nterm_name(size_t nterm_idx) const;
+    std::string_view get_term_name(size_t term_idx) const;
     
+    void validate_term_idx(size_t term_idx) const;
     void validate_nterm_idx(size_t nterm_idx) const;
     void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
     void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;

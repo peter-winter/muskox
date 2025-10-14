@@ -177,6 +177,11 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
             std::out_of_range,
             Message("Nterm index out of range")
         );
+        REQUIRE_THROWS_MATCHES(
+            rs.get_term_name(999),
+            std::out_of_range,
+            Message("Term index out of range")
+        );
     }
 
     SECTION("get_max_rside_count")

@@ -42,6 +42,7 @@ public:
     void add(const index_subset<Dim>& other)
     {
         base_.validate_sizes(other.base_);
+        
         for (const auto& arr : other.indices_)
         {
             add(arr);
@@ -52,6 +53,25 @@ public:
     bool contains(Idx... indices) const
     {
         return base_.contains(indices...);
+    }
+    
+    bool contains(const element_type& indices) const
+    {
+        return contains_impl(indices, std::make_index_sequence<Dim>{});
+    }
+    
+    bool contains_all(const index_subset<Dim>& other) const
+    {
+        base_.validate_sizes(other.base_);
+        
+        for (const auto& indices : other.indices_)
+        {
+            if (!contains(indices))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     size_t get_count() const
@@ -69,16 +89,23 @@ public:
         return base_.get_size();
     }
 
-private:
-    void add(const element_type& arr)
+    void add(const element_type& indices)
     {
-        add(arr, std::make_index_sequence<Dim>{});
+        add_impl(indices, std::make_index_sequence<Dim>{});
     }
 
+private:
+
     template <std::size_t... I>
-    void add(const element_type& arr, std::index_sequence<I...>)
+    bool contains_impl(const element_type& indices, std::index_sequence<I...>) const
     {
-        add(arr[I]...);
+        return base_.contains(indices[I]...);
+    }
+    
+    template <std::size_t... I>
+    void add_impl(const element_type& indices, std::index_sequence<I...>)
+    {
+        add(indices[I]...);
     }
 };
 
@@ -127,6 +154,20 @@ public:
         return base_.contains(idx);
     }
 
+    bool contains_all(const index_subset<1>& other) const
+    {
+        base_.validate_sizes(other.base_);
+        
+        for (const auto& arr : other.indices_)
+        {
+            if (!base_.contains(arr))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     size_t get_count() const
     {
         return indices_.size();

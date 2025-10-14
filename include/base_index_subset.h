@@ -67,7 +67,7 @@ public:
         size_t flat = indexer_.to_flat(indices...);
         return bits_[flat];
     }
-
+        
     size_t get_size() const
     {
         return indexer_.get_total_size();

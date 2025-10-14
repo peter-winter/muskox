@@ -19,7 +19,9 @@ struct grammar_error_templates
         root_not_exists, 
         cannot_refer_special, 
         no_nterm,
-        nterm_unsolvable_left_recursion
+        nterm_unsolvable_left_recursion,
+        unused_term,
+        unused_nterm
     };
 
     static constexpr const char* templates_[] =
@@ -34,10 +36,13 @@ struct grammar_error_templates
         "Root symbol '{}' does not exist.",
         "Cannot refer special '{}' symbol.",
         "No nonterminals.",
-        "Nonterminal '{}' has unsolvable left recursion."
+        "Nonterminal '{}' has unsolvable left recursion.",
+        "Terminal '{}' is unused.",
+        "Nonterminal '{}' is unused."
     };
 };
 
 using grammar_error = formatted_error<grammar_error_templates>;
+using grammar_warning = formatted_message<grammar_error_templates>;
 
 } // namespace ptg

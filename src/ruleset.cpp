@@ -8,6 +8,14 @@
 namespace ptg
 {
 
+void ruleset::validate_term_idx(size_t term_idx) const
+{
+    if (term_idx >= get_term_count())
+    {
+        throw std::out_of_range("Term index out of range");
+    }
+}
+
 void ruleset::validate_nterm_idx(size_t nterm_idx) const
 {
     if (nterm_idx >= get_nterm_count())
@@ -206,6 +214,11 @@ size_t ruleset::get_term_count() const
 std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
 {
     return symbols_.get_nterm_name(nterm_idx);
+}
+
+std::string_view ruleset::get_term_name(size_t term_idx) const
+{
+    return symbols_.get_term_name(term_idx);
 }
 
 std::array<size_t, 3> ruleset::get_rside_part_space_dims() const
