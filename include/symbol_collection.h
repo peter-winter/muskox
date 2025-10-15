@@ -67,8 +67,8 @@ public:
     size_t get_term_count() const;
     size_t get_nterm_count() const;
 
-    void print_symbol_list(std::ostream& os, const symbol_list& sl) const;
-    void print_symbol_list_from_to(std::ostream& os, const symbol_list& sl, size_t start, size_t end) const;
+    std::string print_symbol_list(const symbol_list& sl) const;
+    std::string print_symbol_list_from_to(const symbol_list& sl, size_t start, size_t end) const;
 };
 
 } // namespace ptg

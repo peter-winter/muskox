@@ -245,7 +245,7 @@ TEST_CASE("ruleset to_string", "[ruleset]")
             "  | \n"
             "  ;\n\n"
             "B : c [3]\n"
-            "  ;\n\n";
+            "  ;";
         REQUIRE(rs.to_string() == expected);
     }
 
@@ -260,7 +260,22 @@ TEST_CASE("ruleset to_string", "[ruleset]")
             "      ;\n\n"
             "S : \n"
             "  | a\n"
-            "  ;\n\n";
+            "  ;";
+        REQUIRE(rs.to_string() == expected_empty_first);
+    }
+    
+    SECTION("empty rside as first with prec")
+    {
+        ptg::ruleset rs(sc);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {}, 2);
+        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"a"});
+
+        std::string expected_empty_first =
+            "$root : S\n"
+            "      ;\n\n"
+            "S : [2]\n"
+            "  | a\n"
+            "  ;";
         REQUIRE(rs.to_string() == expected_empty_first);
     }
 
@@ -275,7 +290,22 @@ TEST_CASE("ruleset to_string", "[ruleset]")
             "      ;\n\n"
             "S : a\n"
             "  | \n"
-            "  ;\n\n";
+            "  ;";
+        REQUIRE(rs.to_string() == expected_empty_non_first);
+    }
+    
+    SECTION("empty rside as non-first with prec")
+    {
+        ptg::ruleset rs(sc);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {}, 4);
+
+        std::string expected_empty_non_first =
+            "$root : S\n"
+            "      ;\n\n"
+            "S : a\n"
+            "  | [4]\n"
+            "  ;";
         REQUIRE(rs.to_string() == expected_empty_non_first);
     }
 }

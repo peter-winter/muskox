@@ -1,5 +1,5 @@
 #include <ruleset.h>
-
+#include <list_printer.h>
 #include <grammar_error.h>
 
 #include <stdexcept>
@@ -233,66 +233,54 @@ std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
 
 std::string ruleset::to_string() const
 {
-    std::stringstream ss;
-    for (size_t i = 0; i < symbols_.get_nterm_count(); ++i)
+    size_t i = 0;
+    auto print_nterm = [&](const auto& nterm_rsides) -> std::string
     {
-        const auto& rside_group = rsides_[i];
-        if (rside_group.empty())
+        if (nterm_rsides.empty())
         {
-            continue;
+            ++i;
+            return "";
         }
         
-        std::string_view left = symbols_.get_nterm_name(i);
-
-        ss << left << " : ";
-        size_t indent = left.size() + 1;
-        bool first = true;
-        for (const auto& rs : rside_group)
+        std::string left(symbols_.get_nterm_name(i));
+        std::string indent(left.size() + 1, ' ');
+        
+        auto print_rside = [&](const auto& rs)
         {
-            if (!first)
-            {
-                ss << "\n" << std::string(indent, ' ') << "| ";
-            }
-            
-            first = false;
-
-            symbols_.print_symbol_list(ss, rs.symbols_);
-
+            std::string symbols_s = symbols_.print_symbol_list(rs.symbols_);
+                
+            std::string precedence_s;
             if (rs.precedence_ != 0)
             {
-                if (!rs.symbols_.empty())
-                {
-                    ss << " ";
-                }
-                ss << "[" << rs.precedence_ << "]";
+                list_printer precedence_printer("[", "", "]");
+                precedence_s = precedence_printer.print_single(rs.precedence_);
             }
-        }
-        ss << "\n" << std::string(indent, ' ') << ";\n\n";
-    }
-    return ss.str();
+            
+            list_printer rside_printer;
+            return rside_printer.print_list(symbols_s, precedence_s);
+        };
+        
+        list_printer nterm_printer(left + " : ", "\n" + indent + "| ", "\n" + indent + ";", true);
+        ++i;
+        return nterm_printer.print_container(nterm_rsides, print_rside);
+    };
+    
+    list_printer ruleset_printer("", "\n\n", "");
+    return ruleset_printer.print_container(rsides_, print_nterm);
 }
 
 std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
 {
-    std::stringstream ss;
-    
     std::string_view left = symbols_.get_nterm_name(item.nterm_idx_);
-    ss << left << " -> ";
     const auto& rs = rsides_[item.nterm_idx_][item.rside_idx_];
-    symbols_.print_symbol_list_from_to(ss, rs.symbols_, 0, item.symbol_idx_);
-    if (item.symbol_idx_ != 0)
-    {
-        ss << " ";
-    }
-    ss << ".";
-    if (item.symbol_idx_ != rs.symbols_.size())
-    {
-        ss << " ";
-    }
-    symbols_.print_symbol_list_from_to(ss, rs.symbols_, item.symbol_idx_, rs.symbols_.size());
-    ss << " / " << symbols_.get_term_name(item.lookahead_idx_);
     
-    return ss.str();
+    list_printer lp;
+    
+    std::string before_dot = symbols_.print_symbol_list_from_to(rs.symbols_, 0, item.symbol_idx_);
+    
+    std::string after_dot = symbols_.print_symbol_list_from_to(rs.symbols_, item.symbol_idx_, rs.symbols_.size());
+    
+    return lp.print_list(left, "->", before_dot, ".", after_dot, "/", symbols_.get_term_name(item.lookahead_idx_));
 }
         
 } // namespace ptg

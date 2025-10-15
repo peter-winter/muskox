@@ -1,5 +1,5 @@
 #include <symbol_collection.h>
-
+#include <list_printer.h>
 #include <grammar_error.h>
 
 #include <stdexcept>
@@ -103,26 +103,15 @@ size_t symbol_collection::get_nterm_count() const
     return nterms_.size();
 }
 
-void symbol_collection::print_symbol_list(std::ostream& os, const symbol_list& sl) const
+std::string symbol_collection::print_symbol_list(const symbol_list& sl) const
 {
-    print_symbol_list_from_to(os, sl, 0, sl.size());
+    return print_symbol_list_from_to(sl, 0, sl.size());
 }
 
-void symbol_collection::print_symbol_list_from_to(std::ostream& os, const symbol_list& sl, size_t start, size_t end) const
+std::string symbol_collection::print_symbol_list_from_to(const symbol_list& sl, size_t start, size_t end) const
 {
-    if (sl.empty() || start >= end)
-    {
-        return;
-    }
-
-    for (size_t i = start; i < sl.size() && i < end; ++i)
-    {
-        if (i != start)
-        {
-            os << " ";
-        }
-        os << get_symbol_name(sl[i]);
-    }
+    list_printer lp;
+    return lp.print_container_from_to(sl, [&](auto ref){ return get_symbol_name(ref); }, start, end);
 }
 
 
