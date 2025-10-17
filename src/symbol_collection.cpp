@@ -17,7 +17,7 @@ symbol_collection::symbol_collection()
     add_term("$eof", associativity::left(), 0);
 }
 
-size_t symbol_collection::add_term(std::string name, associativity assoc, size_t prec)
+size_t symbol_collection::add_term(std::string name, associativity assoc, std::optional<size_t> prec)
 {
     if (contains(name))
     {
@@ -87,7 +87,7 @@ associativity symbol_collection::get_term_assoc(size_t index) const
     return terms_[index].assoc();
 }
 
-size_t symbol_collection::get_term_prec(size_t index) const
+std::optional<size_t> symbol_collection::get_term_prec(size_t index) const
 {
     validate_term_idx(index);
     return terms_[index].prec();

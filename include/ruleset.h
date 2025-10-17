@@ -18,12 +18,11 @@ public:
     struct rside
     {
         symbol_list symbols_;
-        size_t precedence_;
+        std::optional<size_t> precedence_;
 
-        rside(symbol_list symbols = {}, size_t precedence = 0)
+        rside(symbol_list symbols = {}, std::optional<size_t> precedence = std::nullopt)
             : symbols_(std::move(symbols)), precedence_(precedence)
-        {
-        }
+        {}
     };
 
 private:
@@ -39,7 +38,7 @@ public:
 
     symbol_ref set_root(std::string_view name);
 
-    size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence = 0);
+    size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence = std::nullopt);
 
     size_t get_nterm_rside_count(size_t nterm_idx) const;
 
@@ -52,10 +51,14 @@ public:
 
     symbol_type get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
     
+    std::optional<size_t> get_term_prec(size_t term_idx) const;
+    
     size_t get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 
-    size_t get_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
+    std::optional<size_t> get_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
 
+    size_t calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
+    
     // Returns the maximum number of symbols in any rside across all rsides
     size_t get_max_symbol_count() const;
     
@@ -65,6 +68,8 @@ public:
     size_t get_nterm_count() const;
     
     size_t get_term_count() const;
+    
+    size_t get_symbol_count() const;
     
     std::string_view get_nterm_name(size_t nterm_idx) const;
     std::string_view get_term_name(size_t term_idx) const;

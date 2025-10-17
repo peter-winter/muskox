@@ -49,7 +49,7 @@ public:
     symbol_collection();
     ~symbol_collection() = default;
 
-    size_t add_term(std::string name, associativity assoc = associativity::left(), size_t prec = 0);
+    size_t add_term(std::string name, associativity assoc = associativity::left(), std::optional<size_t> prec = std::nullopt);
     size_t add_nterm(std::string name);
 
     bool contains(std::string_view name) const;
@@ -62,7 +62,7 @@ public:
     std::string_view get_nterm_name(size_t index) const;
 
     associativity get_term_assoc(size_t index) const;
-    size_t get_term_prec(size_t index) const;
+    std::optional<size_t> get_term_prec(size_t index) const;
 
     size_t get_term_count() const;
     size_t get_nterm_count() const;

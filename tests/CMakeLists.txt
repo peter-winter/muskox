@@ -19,7 +19,6 @@ add_executable(unit_tests
   test_symbol_collection.cpp
   test_ruleset.cpp
   test_nullable.cpp
-  test_lr1_state_set.cpp
   test_lr1_state.cpp
   test_firsts.cpp
   test_vector_n.cpp

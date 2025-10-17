@@ -18,7 +18,6 @@ add_library(${PROJECT_NAME}_lib
   src/symbol_collection.cpp
   src/ruleset.cpp
   src/nullable.cpp
-  src/lr1_state_set.cpp
   src/lr1_state.cpp
   src/firsts.cpp
   src/closure.cpp

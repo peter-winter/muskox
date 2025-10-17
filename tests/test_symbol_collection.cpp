@@ -241,7 +241,7 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         ptg::term t1("name1");
         REQUIRE(t1.name() == "name1");
         REQUIRE(t1.assoc().to_string() == "left");
-        REQUIRE(t1.prec() == 0);
+        REQUIRE(!t1.prec().has_value());
 
         ptg::term t2("name2", ptg::associativity::right(), 5);
         REQUIRE(t2.name() == "name2");
@@ -252,12 +252,13 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
     SECTION("add_term defaults") 
     {
         [[maybe_unused]] size_t term_default_idx = sc.add_term("term_default");
-        REQUIRE(sc.get_term_assoc(1).to_string() == "left");
-        REQUIRE(sc.get_term_prec(1) == 0);
+        REQUIRE(sc.get_term_assoc(term_default_idx).to_string() == "left");
+        REQUIRE(!sc.get_term_prec(term_default_idx).has_value());
 
         [[maybe_unused]] size_t term_custom_idx = sc.add_term("term_custom", ptg::associativity::right(), 5);
-        REQUIRE(sc.get_term_assoc(2).to_string() == "right");
-        REQUIRE(sc.get_term_prec(2) == 5);
+        REQUIRE(sc.get_term_assoc(term_custom_idx).to_string() == "right");
+        REQUIRE(sc.get_term_prec(term_custom_idx).has_value());
+        REQUIRE(sc.get_term_prec(term_custom_idx).value() == 5);
     }
 
     SECTION("print_symbol_list") 

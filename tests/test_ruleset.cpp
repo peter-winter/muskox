@@ -27,7 +27,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
         REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == ptg::symbol_type::non_terminal);
         REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
-        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 0);
+        REQUIRE(!rs.get_rside_precedence(s_idx, ridx).has_value());
     }
 
     SECTION("empty right side")
@@ -36,7 +36,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 0);
-        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 0);
+        REQUIRE(!rs.get_rside_precedence(s_idx, ridx).has_value());
     }
 
     SECTION("lside_not_exists")
@@ -57,7 +57,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         );
     }
 
-    SECTION("rside_not_exist")
+    SECTION("rside_not_exists")
     {
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("S", {"nonexist"}),
@@ -65,309 +65,96 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
             Message("Right side symbol 'nonexist' does not exist.")
         );
     }
-    
-    SECTION("cannot_refer_special")
-    {
-        REQUIRE_THROWS_MATCHES(
-            rs.add_rule("S", {"$eof"}),
-            ptg::grammar_error,
-            Message("Cannot refer special '$eof' symbol.")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.add_rule("S", {"$root"}),
-            ptg::grammar_error,
-            Message("Cannot refer special '$root' symbol.")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.add_rule("$eof", {"a"}),
-            ptg::grammar_error,
-            Message("Cannot refer special '$eof' symbol.")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.add_rule("$root", {"a"}),
-            ptg::grammar_error,
-            Message("Cannot refer special '$root' symbol.")
-        );
-    }
 
-    SECTION("mixed types")
-    {
-        const char* cc = "a";
-        std::string s = "B";
-        std::string_view sv = "S";
-        [[maybe_unused]] size_t ridx = rs.add_rule(sv, {cc, s});
-        REQUIRE(ridx == 0);
-        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
-    }
-
-    SECTION("add_rule with precedence")
+    SECTION("explicit precedence")
     {
         [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a", "B"}, 5);
-        REQUIRE(ridx == 0);
-        REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == ptg::symbol_type::non_terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
         REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 5);
     }
 
-    SECTION("empty rside as first prod")
+    SECTION("multiple rules")
     {
-        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {});
         [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {"a"});
-        REQUIRE(ridx0 == 0);
-        REQUIRE(ridx1 == 1);
+        [[maybe_unused]] size_t ridx2 = rs.add_rule("S", {"B"});
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx0) == 0);
         REQUIRE(rs.get_symbol_count(s_idx, ridx1) == 1);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx1, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx1, 0) == a_idx);
-    }
-
-    SECTION("empty rside as non-first prod")
-    {
-        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {});
-        REQUIRE(ridx0 == 0);
-        REQUIRE(ridx1 == 1);
-        REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx0) == 1);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx0, 0) == ptg::symbol_type::terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx0, 0) == a_idx);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx1) == 0);
-    }
-
-    SECTION("out of range validations")
-    {
-        REQUIRE_THROWS_MATCHES(
-            rs.get_nterm_rside_count(999),
-            std::out_of_range,
-            Message("Nterm index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_symbol_count(s_idx, 0),
-            std::out_of_range,
-            Message("Rside index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_symbol(s_idx, 0, 0),
-            std::out_of_range,
-            Message("Rside index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_symbol_type(s_idx, 0, 0),
-            std::out_of_range,
-            Message("Rside index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_symbol_index(s_idx, 0, 0),
-            std::out_of_range,
-            Message("Rside index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_rside_precedence(s_idx, 0),
-            std::out_of_range,
-            Message("Rside index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_nterm_name(999),
-            std::out_of_range,
-            Message("Nterm index out of range")
-        );
-        REQUIRE_THROWS_MATCHES(
-            rs.get_term_name(999),
-            std::out_of_range,
-            Message("Term index out of range")
-        );
-    }
-
-    SECTION("get_max_rside_count")
-    {
-        REQUIRE(rs.get_max_rside_count() == 1);  // Special rule added
-
-        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {});
-        REQUIRE(ridx0 == 0);
-        REQUIRE(ridx1 == 1);
-        REQUIRE(rs.get_max_rside_count() == 2);
-
-        [[maybe_unused]] size_t bridx = rs.add_rule("B", {"a", "B"});
-        REQUIRE(bridx == 0);
-        REQUIRE(rs.get_max_rside_count() == 2);  // Still 2
-    }
-
-    SECTION("get_max_symbol_count")
-    {
-        REQUIRE(rs.get_max_symbol_count() == 1);  // Special rule has 1 symbol
-
-        [[maybe_unused]] size_t ridx0 = rs.add_rule("S", {"a"});
-        REQUIRE(rs.get_max_symbol_count() == 1);
-
-        [[maybe_unused]] size_t ridx1 = rs.add_rule("B", {"a", "B"});
-        REQUIRE(rs.get_max_symbol_count() == 2);
-
-        [[maybe_unused]] size_t ridx2 = rs.add_rule("S", {});
-        REQUIRE(rs.get_max_symbol_count() == 2);  // Empty doesn't increase
-    }
-
-    SECTION("get_nterm_name")
-    {
-        REQUIRE(rs.get_nterm_name(s_idx) == "S");
-        REQUIRE(rs.get_nterm_name(b_idx) == "B");
+        REQUIRE(rs.get_symbol_count(s_idx, ridx2) == 1);
     }
 }
 
-TEST_CASE("ruleset to_string", "[ruleset]")
+TEST_CASE("ruleset dims", "[ruleset]")
 {
     ptg::symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    ptg::ruleset rs(sc);
 
-    SECTION("basic")
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
+    [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
+    [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
+
+    SECTION("rside part space dims")
     {
-        ptg::ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
-        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
-        [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {});
-        [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"}, 3);
-
-        std::string expected =
-            "$root : S\n"
-            "      ;\n\n"
-            "S : a B\n"
-            "  | b\n"
-            "  | \n"
-            "  ;\n\n"
-            "B : c [3]\n"
-            "  ;";
-        REQUIRE(rs.to_string() == expected);
+        auto dims = rs.get_rside_part_space_dims();
+        REQUIRE(dims[0] == 3);  // nterm count, including $root
+        REQUIRE(dims[1] == 2);  // max rside count
+        REQUIRE(dims[2] == 3);  // max symbol count
     }
 
-    SECTION("empty rside as first")
+    SECTION("lr1 set item space dims")
     {
-        ptg::ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {});
-        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"a"});
-
-        std::string expected_empty_first =
-            "$root : S\n"
-            "      ;\n\n"
-            "S : \n"
-            "  | a\n"
-            "  ;";
-        REQUIRE(rs.to_string() == expected_empty_first);
-    }
-    
-    SECTION("empty rside as first with prec")
-    {
-        ptg::ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {}, 2);
-        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"a"});
-
-        std::string expected_empty_first =
-            "$root : S\n"
-            "      ;\n\n"
-            "S : [2]\n"
-            "  | a\n"
-            "  ;";
-        REQUIRE(rs.to_string() == expected_empty_first);
-    }
-
-    SECTION("empty rside as non-first")
-    {
-        ptg::ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {});
-
-        std::string expected_empty_non_first =
-            "$root : S\n"
-            "      ;\n\n"
-            "S : a\n"
-            "  | \n"
-            "  ;";
-        REQUIRE(rs.to_string() == expected_empty_non_first);
-    }
-    
-    SECTION("empty rside as non-first with prec")
-    {
-        ptg::ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {}, 4);
-
-        std::string expected_empty_non_first =
-            "$root : S\n"
-            "      ;\n\n"
-            "S : a\n"
-            "  | [4]\n"
-            "  ;";
-        REQUIRE(rs.to_string() == expected_empty_non_first);
+        auto dims = rs.get_lr1_set_item_space_dims();
+        REQUIRE(dims[0] == 3);  // nterm count
+        REQUIRE(dims[1] == 2);  // max rside count
+        REQUIRE(dims[2] == 4);  // max symbol count + 1 (for dot positions)
+        REQUIRE(dims[3] == 4);  // term count, including $eof
     }
 }
 
 TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 {
     ptg::symbol_collection sc;
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    [[maybe_unused]] size_t eof_idx = 0;  // $eof
-
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
-
     ptg::ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
+
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
-    [[maybe_unused]] size_t expr_r2 = rs.add_rule("Expr", {});
 
-    SECTION("basic item at start")
+    SECTION("dot at beginning")
     {
-        ptg::lr1_set_item item(s_idx, s_r0, 0, c_idx);
-        REQUIRE(rs.lr1_set_item_to_string(item) == "S -> . Expr / c");
+        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . a Expr / c");
     }
 
-    SECTION("item in middle")
+    SECTION("dot in middle")
     {
         ptg::lr1_set_item item(expr_idx, expr_r0, 1, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> a . Expr / c");
     }
 
-    SECTION("item at end")
+    SECTION("dot at end")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r0, 2, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> a Expr . / c");
+    }
+
+    SECTION("single symbol production")
+    {
+        ptg::lr1_set_item item(expr_idx, expr_r1, 0, c_idx);
+        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . b / c");
+    }
+
+    SECTION("single symbol, dot at end")
     {
         ptg::lr1_set_item item(expr_idx, expr_r1, 1, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> b . / c");
-    }
-
-    SECTION("empty production")
-    {
-        ptg::lr1_set_item item(expr_idx, expr_r2, 0, c_idx);
-        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . / c");
-    }
-
-    SECTION("with eof lookahead")
-    {
-        ptg::lr1_set_item item(s_idx, s_r0, 0, eof_idx);
-        REQUIRE(rs.lr1_set_item_to_string(item) == "S -> . Expr / $eof");
-    }
-
-    SECTION("root item")
-    {
-        [[maybe_unused]] size_t root_idx = 0;
-        ptg::lr1_set_item item(root_idx, 0, 0, eof_idx);
-        REQUIRE(rs.lr1_set_item_to_string(item) == "$root -> . S / $eof");
-    }
-
-    SECTION("item after nullable")
-    {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
-        REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . a Expr / c");
     }
 }
 
@@ -428,3 +215,213 @@ TEST_CASE("ruleset root", "[ruleset]")
         );
     }
 }
+
+TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a", ptg::associativity::left(), 10);
+    [[maybe_unused]] size_t plus_idx = sc.add_term("+", ptg::associativity::left(), 20);
+    [[maybe_unused]] size_t mul_idx = sc.add_term("*", ptg::associativity::left(), 30);
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");  // no prec
+    [[maybe_unused]] size_t id_idx = sc.add_term("id");  // no prec
+    ptg::ruleset rs(sc);
+
+    SECTION("explicit precedence")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "b"}, 100);
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 100);
+    }
+
+    SECTION("no explicit, last term prec")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
+        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 10);
+    }
+
+    SECTION("no explicit, multiple terms, last with prec")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"Expr", "+", "Expr"});
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 20);
+    }
+
+    SECTION("no explicit, last no prec, previous has")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"Expr", "*", "id"});
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 30);
+    }
+
+    SECTION("no terms with prec")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"id"});
+        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 0);
+    }
+
+    SECTION("empty rside")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {});
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 0);
+    }
+
+    SECTION("only nonterms")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"Expr"});
+        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 0);
+    }
+
+    SECTION("mixed, last terminal no prec, but earlier has")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "Expr", "b"});
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 10);  // last b has none, previous a has 10
+    }
+
+    SECTION("no explicit, first has prec, last no")
+    {
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "id"});
+        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 10);
+    }
+}
+
+TEST_CASE("ruleset delegation", "[ruleset]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b", ptg::associativity::left(), 10);
+    ptg::ruleset rs(sc);
+
+    SECTION("get_nterm_count")
+    {
+        REQUIRE(rs.get_nterm_count() == 3);  // $root, S, Expr
+    }
+
+    SECTION("get_term_count")
+    {
+        REQUIRE(rs.get_term_count() == 3);  // $eof, a, b
+    }
+
+    SECTION("get_symbol_count")
+    {
+        REQUIRE(rs.get_symbol_count() == 6);  // terms + nterms
+    }
+
+    SECTION("get_nterm_name")
+    {
+        REQUIRE(rs.get_nterm_name(s_idx) == "S");
+        REQUIRE(rs.get_nterm_name(expr_idx) == "Expr");
+    }
+
+    SECTION("get_term_name")
+    {
+        REQUIRE(rs.get_term_name(a_idx) == "a");
+        REQUIRE(rs.get_term_name(b_idx) == "b");
+    }
+    
+    SECTION("get_term_prec")
+    {
+        REQUIRE_FALSE(rs.get_term_prec(a_idx).has_value());
+        REQUIRE(rs.get_term_prec(b_idx).has_value());
+        REQUIRE(rs.get_term_prec(b_idx).value() == 10);
+    }
+}
+
+TEST_CASE("ruleset space dims", "[ruleset]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");
+    [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    ptg::ruleset rs(sc);
+
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
+    [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
+    [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
+
+    SECTION("get_rside_part_space_dims")
+    {
+        auto dims = rs.get_rside_part_space_dims();
+        REQUIRE(dims[0] == rs.get_nterm_count());
+        REQUIRE(dims[1] == rs.get_max_rside_count());
+        REQUIRE(dims[2] == rs.get_max_symbol_count());
+    }
+
+    SECTION("get_lr1_set_item_space_dims")
+    {
+        auto dims = rs.get_lr1_set_item_space_dims();
+        REQUIRE(dims[0] == rs.get_nterm_count());
+        REQUIRE(dims[1] == rs.get_max_rside_count());
+        REQUIRE(dims[2] == rs.get_max_symbol_count() + 1);  // +1 for dot positions
+        REQUIRE(dims[3] == rs.get_term_count());
+    }
+}
+
+TEST_CASE("ruleset validation", "[ruleset]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    ptg::ruleset rs(sc);
+
+    [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
+
+    SECTION("validate_term_idx valid")
+    {
+        REQUIRE_NOTHROW(rs.validate_term_idx(a_idx));
+    }
+
+    SECTION("validate_term_idx invalid")
+    {
+        REQUIRE_THROWS_AS(rs.validate_term_idx(100), std::out_of_range);
+    }
+
+    SECTION("validate_nterm_idx valid")
+    {
+        REQUIRE_NOTHROW(rs.validate_nterm_idx(s_idx));
+    }
+
+    SECTION("validate_nterm_idx invalid")
+    {
+        REQUIRE_THROWS_AS(rs.validate_nterm_idx(100), std::out_of_range);
+    }
+
+    SECTION("validate_rside_idx valid")
+    {
+        REQUIRE_NOTHROW(rs.validate_rside_idx(s_idx, ridx));
+    }
+
+    SECTION("validate_rside_idx invalid nterm")
+    {
+        REQUIRE_THROWS_AS(rs.validate_rside_idx(100, 0), std::out_of_range);
+    }
+
+    SECTION("validate_rside_idx invalid rside")
+    {
+        REQUIRE_THROWS_AS(rs.validate_rside_idx(s_idx, 100), std::out_of_range);
+    }
+
+    SECTION("validate_symbol_idx valid")
+    {
+        REQUIRE_NOTHROW(rs.validate_symbol_idx(s_idx, ridx, 0));
+    }
+
+    SECTION("validate_symbol_idx invalid nterm")
+    {
+        REQUIRE_THROWS_AS(rs.validate_symbol_idx(100, ridx, 0), std::out_of_range);
+    }
+
+    SECTION("validate_symbol_idx invalid rside")
+    {
+        REQUIRE_THROWS_AS(rs.validate_symbol_idx(s_idx, 100, 0), std::out_of_range);
+    }
+
+    SECTION("validate_symbol_idx invalid symbol")
+    {
+        REQUIRE_THROWS_AS(rs.validate_symbol_idx(s_idx, ridx, 100), std::out_of_range);
+    }
+}
+

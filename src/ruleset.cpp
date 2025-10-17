@@ -48,7 +48,7 @@ symbol_ref ruleset::set_root(symbol_ref root)
     if (rsides_[0].empty())
     {
         symbol_list rrefs{root};
-        rsides_[0].emplace_back(std::move(rrefs), 0);
+        rsides_[0].emplace_back(std::move(rrefs));
     }
     else
     {
@@ -95,7 +95,7 @@ symbol_ref ruleset::set_root(std::string_view name)
     return set_root(ref);
 }
 
-size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, size_t precedence)
+size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence)
 {
     if (left[0] == '$')
     {
@@ -172,15 +172,47 @@ symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t 
     return get_symbol(nterm_idx, rside_idx, symbol_idx).type_;
 }
 
+std::optional<size_t> ruleset::get_term_prec(size_t term_idx) const
+{
+    validate_term_idx(term_idx);
+    return symbols_.get_term_prec(term_idx);
+}
+
 size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
     return get_symbol(nterm_idx, rside_idx, symbol_idx).index_;
 }
 
-size_t ruleset::get_rside_precedence(size_t nterm_idx, size_t rside_idx) const
+std::optional<size_t> ruleset::get_rside_precedence(size_t nterm_idx, size_t rside_idx) const
 {
     validate_rside_idx(nterm_idx, rside_idx);
     return rsides_[nterm_idx][rside_idx].precedence_;
+}
+
+size_t ruleset::calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) const
+{
+    validate_rside_idx(nterm_idx, rside_idx);
+    
+    auto r_prec = get_rside_precedence(nterm_idx, rside_idx);
+    if (r_prec.has_value())
+        return r_prec.value();
+    
+    size_t ret = 0;
+    
+    for (size_t i = get_symbol_count(nterm_idx, rside_idx); i-- > 0;)
+    {
+        auto ref = get_symbol(nterm_idx, rside_idx, i);
+        if (ref.type_ == symbol_type::terminal)
+        {
+            auto s_prec = symbols_.get_term_prec(ref.index_);
+            if (s_prec.has_value())
+            {
+                return s_prec.value();
+            }
+        }
+    }
+    
+    return ret;
 }
 
 size_t ruleset::get_max_symbol_count() const
@@ -209,6 +241,11 @@ size_t ruleset::get_nterm_count() const
 size_t ruleset::get_term_count() const
 {
     return symbols_.get_term_count();
+}
+
+size_t ruleset::get_symbol_count() const
+{
+    return get_term_count() + get_nterm_count();
 }
 
 std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
@@ -250,10 +287,10 @@ std::string ruleset::to_string() const
             std::string symbols_s = symbols_.print_symbol_list(rs.symbols_);
                 
             std::string precedence_s;
-            if (rs.precedence_ != 0)
+            if (rs.precedence_.has_value())
             {
                 list_printer precedence_printer("[", "", "]");
-                precedence_s = precedence_printer.print_single(rs.precedence_);
+                precedence_s = precedence_printer.print_single(rs.precedence_.value());
             }
             
             list_printer rside_printer;

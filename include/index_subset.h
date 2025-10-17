@@ -19,7 +19,7 @@ private:
     std::vector<element_type> indices_;
 
 public:
-    index_subset(const std::array<size_t, Dim>& sizes)
+    index_subset(const element_type& sizes)
         : base_(sizes), indices_()
     {}
 
