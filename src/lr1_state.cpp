@@ -121,5 +121,15 @@ std::string lr1_state::to_string() const
     return lp.print_container(items_.get_indices(), to_string_f);
 }
 
+bool lr1_state::kernel_matches(const index_subset<4>& other) const
+{
+    return kernel_.contains_only_items(other);
+}
+
+bool lr1_state::matches(const index_subset<4>& other) const
+{
+    return items_.contains_only_items(other);
+}
+
 } // namespace ptg
 

@@ -74,6 +74,12 @@ public:
         return true;
     }
 
+    bool contains_only_items(const index_subset<Dim>& other) const
+    {
+        base_.validate_sizes(other.base_);
+        return get_count() == other.get_count() && contains_all(other);
+    }
+
     size_t get_count() const
     {
         return indices_.size();
@@ -167,6 +173,12 @@ public:
         }
         return true;
     }
+
+    bool contains_only_items(const index_subset<1>& other) const
+    {
+        base_.validate_sizes(other.base_);
+        return get_count() == other.get_count() && contains_all(other);
+    }
     
     size_t get_count() const
     {
@@ -182,6 +194,42 @@ public:
     {
         return base_.get_size();
     }
+};
+
+template <size_t Dim>
+class index_subset_builder
+{
+public:
+    using subset_type = index_subset<Dim>;
+    using sizes_type = typename subset_type::element_type;
+
+    index_subset_builder(const sizes_type& sizes)
+        : sizes_(sizes), subset_(sizes)
+    {
+        reset();
+    }
+
+    template <typename... Idx>
+    index_subset_builder& operator()(Idx... indices)
+    {
+        subset_.add(indices...);
+        return *this;
+    }
+
+    subset_type build()
+    {
+        return subset_;
+    }
+
+    index_subset_builder& reset()
+    {
+        subset_ = subset_type(sizes_);
+        return *this;
+    }
+
+private:
+    sizes_type sizes_;
+    subset_type subset_;
 };
 
 } // namespace ptg

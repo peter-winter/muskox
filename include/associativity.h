@@ -32,6 +32,8 @@ public:
         return "unknown";
     }
 
+    type get() const { return type_; }
+    
 private:
     type type_;
 };

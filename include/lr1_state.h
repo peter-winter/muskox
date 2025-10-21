@@ -4,7 +4,7 @@
 #include <index_subset.h>
 
 #include <variant>
-#include <unordered_map>
+#include <map>
 
 namespace ptg
 {
@@ -30,7 +30,7 @@ public:
     };
     
     using action = std::variant<shift, reduction, conflict>;
-    using action_map = std::unordered_map<symbol_ref, lr1_state::action, symbol_ref_hash>;
+    using action_map = std::map<symbol_ref, lr1_state::action>;
     
 private:
     const ruleset& rs_;
@@ -50,6 +50,9 @@ public:
     action_map get_actions() const;
     
     std::string to_string() const;
+    
+    bool kernel_matches(const index_subset<4>& other) const;
+    bool matches(const index_subset<4>& other) const;
 };
 
 } // namespace ptg

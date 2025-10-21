@@ -178,6 +178,12 @@ std::optional<size_t> ruleset::get_term_prec(size_t term_idx) const
     return symbols_.get_term_prec(term_idx);
 }
 
+associativity::type ruleset::get_term_assoc(size_t term_idx) const
+{
+    validate_term_idx(term_idx);
+    return symbols_.get_term_assoc(term_idx).get();
+}
+
 size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
     return get_symbol(nterm_idx, rside_idx, symbol_idx).index_;

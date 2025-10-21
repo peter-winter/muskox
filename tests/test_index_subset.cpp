@@ -372,3 +372,193 @@ TEST_CASE("index_subset<3> contains_all", "[index_subset]")
         );
     }
 }
+
+TEST_CASE("index_subset<1> contains_only_items", "[index_subset]")
+{
+    ptg::index_subset<1> is(10);
+    is.add(1);
+    is.add(3);
+    is.add(5);
+
+    SECTION("empty other")
+    {
+        ptg::index_subset<1> other(10);
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("subset")
+    {
+        ptg::index_subset<1> other(10);
+        other.add(1);
+        other.add(3);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("not subset")
+    {
+        ptg::index_subset<1> other(10);
+        other.add(1);
+        other.add(7);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("same")
+    {
+        ptg::index_subset<1> other(10);
+        other.add(1);
+        other.add(3);
+        other.add(5);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("same but different order")
+    {
+        ptg::index_subset<1> other(10);
+        other.add(5);
+        other.add(1);
+        other.add(3);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("size mismatch")
+    {
+        ptg::index_subset<1> other(5);
+        REQUIRE_THROWS_MATCHES(
+            is.contains_only_items(other),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
+    }
+}
+
+TEST_CASE("index_subset<2> contains_only_items", "[index_subset]")
+{
+    std::array<size_t, 2> sizes = {5, 10};
+    ptg::index_subset<2> is(sizes);
+    is.add(0, 1);
+    is.add(2, 3);
+    is.add(4, 5);
+
+    SECTION("empty other")
+    {
+        ptg::index_subset<2> other(sizes);
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("subset")
+    {
+        ptg::index_subset<2> other(sizes);
+        other.add(2, 3);
+        other.add(4, 5);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("not subset")
+    {
+        ptg::index_subset<2> other(sizes);
+        other.add(2, 3);
+        other.add(3, 7);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("same")
+    {
+        ptg::index_subset<2> other(sizes);
+        other.add(0, 1);
+        other.add(2, 3);
+        other.add(4, 5);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("same but different order")
+    {
+        ptg::index_subset<2> other(sizes);
+        other.add(4, 5);
+        other.add(0, 1);
+        other.add(2, 3);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("size mismatch")
+    {
+        std::array<size_t, 2> other_sizes = {3, 10};
+        ptg::index_subset<2> other(other_sizes);
+        REQUIRE_THROWS_MATCHES(
+            is.contains_only_items(other),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
+    }
+}
+
+TEST_CASE("index_subset<3> contains_only_items", "[index_subset]")
+{
+    std::array<size_t, 3> sizes = {4, 5, 6};
+    ptg::index_subset<3> is(sizes);
+    is.add(0, 1, 2);
+    is.add(1, 2, 3);
+    is.add(2, 3, 4);
+
+    SECTION("empty other")
+    {
+        ptg::index_subset<3> other(sizes);
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("subset")
+    {
+        ptg::index_subset<3> other(sizes);
+        other.add(1, 2, 3);
+        other.add(2, 3, 4);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("not subset")
+    {
+        ptg::index_subset<3> other(sizes);
+        other.add(1, 2, 3);
+        other.add(3, 4, 5);
+
+        REQUIRE(is.contains_only_items(other) == false);
+    }
+
+    SECTION("same")
+    {
+        ptg::index_subset<3> other(sizes);
+        other.add(0, 1, 2);
+        other.add(1, 2, 3);
+        other.add(2, 3, 4);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("same but different order")
+    {
+        ptg::index_subset<3> other(sizes);
+        other.add(2, 3, 4);
+        other.add(0, 1, 2);
+        other.add(1, 2, 3);
+
+        REQUIRE(is.contains_only_items(other) == true);
+    }
+
+    SECTION("size mismatch")
+    {
+        std::array<size_t, 3> other_sizes = {4, 5, 7};
+        ptg::index_subset<3> other(other_sizes);
+        REQUIRE_THROWS_MATCHES(
+            is.contains_only_items(other),
+            std::invalid_argument,
+            Message("Sizes don't match")
+        );
+    }
+}

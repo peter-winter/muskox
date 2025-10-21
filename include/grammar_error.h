@@ -1,3 +1,4 @@
+// grammar_error.h
 #pragma once
 
 #include <formatted_error.h>
@@ -21,7 +22,10 @@ struct grammar_error_templates
         no_nterm,
         nterm_unsolvable_left_recursion,
         unused_term,
-        unused_nterm
+        unused_nterm,
+        rr_conflict,
+        sr_conflict_resolved_shift,
+        sr_conflict_resolved_reduce
     };
 
     static constexpr const char* templates_[] =
@@ -38,7 +42,10 @@ struct grammar_error_templates
         "No nonterminals.",
         "Nonterminal '{}' has unsolvable left recursion.",
         "Terminal '{}' is unused.",
-        "Nonterminal '{}' is unused."
+        "Nonterminal '{}' is unused.",
+        "Reduce-reduce conflict in state {} on lookahead '{}' for productions:{}",
+        "Shift-reduce conflict in state {} on symbol '{}' resolved to shift to state {}",
+        "Shift-reduce conflict in state {} on symbol '{}' resolved to reduction using {}"
     };
 };
 
