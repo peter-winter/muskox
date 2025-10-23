@@ -21,6 +21,7 @@ add_library(${PROJECT_NAME}_lib
   src/lr1_state.cpp
   src/firsts.cpp
   src/closure.cpp
+  src/parse_table.cpp
 )
 target_include_directories(${PROJECT_NAME}_lib PUBLIC include)
 target_compile_options(${PROJECT_NAME}_lib PRIVATE ${WARNING_OPTIONS})

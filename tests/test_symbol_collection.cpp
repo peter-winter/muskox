@@ -130,11 +130,11 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
 
     SECTION("get_term_assoc and get_term_prec") 
     {
-        [[maybe_unused]] size_t term1_idx = sc.add_term("term1", ptg::associativity::left(), 10);
+        [[maybe_unused]] size_t term1_idx = sc.add_term("term1", 10);
         REQUIRE(sc.get_term_assoc(1).to_string() == "left");
         REQUIRE(sc.get_term_prec(1) == 10);
 
-        [[maybe_unused]] size_t term2_idx = sc.add_term("term2", ptg::associativity::right(), 20);
+        [[maybe_unused]] size_t term2_idx = sc.add_term("term2", 20, ptg::associativity::right());
         REQUIRE(sc.get_term_assoc(2).to_string() == "right");
         REQUIRE(sc.get_term_prec(2) == 20);
 
@@ -156,7 +156,7 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         for (size_t i = 0; i < 100; ++i)
         {
             std::string tname = "term" + std::to_string(i);
-            [[maybe_unused]] size_t term_idx = sc.add_term(tname, ptg::associativity::left(), i);
+            [[maybe_unused]] size_t term_idx = sc.add_term(tname, i);
             REQUIRE(sc.contains(tname) == true);
             auto ref = sc.get_symbol_ref(tname);
             REQUIRE(ref.type_ == ptg::symbol_type::terminal);
@@ -222,17 +222,17 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(eof_ref.index_ == 0);
         REQUIRE(sc.get_term_name(0) == "$eof");
         REQUIRE(sc.get_term_assoc(0).to_string() == "left");
-        REQUIRE(sc.get_term_prec(0) == 0);
+        REQUIRE(!sc.get_term_prec(0).has_value());
 
         REQUIRE_THROWS_MATCHES(
             sc.add_nterm("$root"),
             ptg::grammar_error,
-            Message("Symbol '$root' already exists.")
+            Message("Cannot refer special '$root' symbol.")
         );
         REQUIRE_THROWS_MATCHES(
-            sc.add_term("$eof", ptg::associativity::left(), 0),
+            sc.add_term("$eof"),
             ptg::grammar_error,
-            Message("Symbol '$eof' already exists.")
+            Message("Cannot refer special '$eof' symbol.")
         );
     }
 
@@ -243,7 +243,7 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(t1.assoc().to_string() == "left");
         REQUIRE(!t1.prec().has_value());
 
-        ptg::term t2("name2", ptg::associativity::right(), 5);
+        ptg::term t2("name2", 5, ptg::associativity::right());
         REQUIRE(t2.name() == "name2");
         REQUIRE(t2.assoc().to_string() == "right");
         REQUIRE(t2.prec() == 5);
@@ -255,7 +255,7 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_term_assoc(term_default_idx).to_string() == "left");
         REQUIRE(!sc.get_term_prec(term_default_idx).has_value());
 
-        [[maybe_unused]] size_t term_custom_idx = sc.add_term("term_custom", ptg::associativity::right(), 5);
+        [[maybe_unused]] size_t term_custom_idx = sc.add_term("term_custom", 5, ptg::associativity::right());
         REQUIRE(sc.get_term_assoc(term_custom_idx).to_string() == "right");
         REQUIRE(sc.get_term_prec(term_custom_idx).has_value());
         REQUIRE(sc.get_term_prec(term_custom_idx).value() == 5);

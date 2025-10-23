@@ -25,6 +25,7 @@ add_executable(unit_tests
   test_flat_indexer.cpp
   test_closure.cpp
   test_list_printer.cpp
+  test_parse_table.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain parse_table_generator_lib)

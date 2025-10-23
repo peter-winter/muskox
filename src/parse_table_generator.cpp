@@ -121,7 +121,7 @@ void parse_table_generator::generate_states()
             if (std::holds_alternative<lr1_state::shift>(act))
             {
                 const auto& s = std::get<lr1_state::shift>(act);
-                process_shift(i, ref.index_, s);                
+                process_shift(i, ref, s);                
             }
             else if (std::holds_alternative<lr1_state::reduction>(act))
             {
@@ -137,7 +137,7 @@ void parse_table_generator::generate_states()
     }
 }
 
-size_t parse_table_generator::process_shift(size_t /*state_idx*/, size_t /*term_idx*/, const lr1_state::shift& s)
+size_t parse_table_generator::process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s)
 {
     index_subset<4> new_kernel(rs_.get_lr1_set_item_space_dims());
     for (const auto& item : s.items_)
@@ -146,20 +146,24 @@ size_t parse_table_generator::process_shift(size_t /*state_idx*/, size_t /*term_
     }
     
     auto found = find_state(new_kernel);
+    size_t new_state_idx;
     if (found.has_value())
     {
-        return found.value();
+        new_state_idx = found.value();
     }
     else
     {
-        auto s = states_.size();
+        new_state_idx = states_.size();
         states_.emplace_back(rs_, std::move(new_kernel));
-        return s;
     }
+    
+    table_entry_hints_.emplace_back(state_idx, ref, parse_table_entry::shift(new_state_idx));
+    return new_state_idx;
 }
 
-void parse_table_generator::process_reduce(size_t /*state_idx*/, size_t /*lookahead_idx*/, const lr1_state::reduction& /*r*/)
+void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_idx, const lr1_state::reduction& r)
 {
+    table_entry_hints_.emplace_back(state_idx, symbol_ref{symbol_type::terminal, lookahead_idx}, parse_table_entry::reduce(r.nterm_idx_, r.rside_idx_));
 }
 
 void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, const lr1_state::conflict& c)
@@ -179,7 +183,7 @@ void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, 
               )
            )
         {
-            size_t shifted_state_idx = process_shift(state_idx, term_idx, c.s_.value());
+            size_t shifted_state_idx = process_shift(state_idx, symbol_ref{symbol_type::terminal, term_idx}, c.s_.value());
             collect_sr_conflict_info_resolution_shift(state_idx, term_idx, shifted_state_idx);
         }
         else
@@ -252,6 +256,24 @@ std::string parse_table_generator::states_to_string() const
 const std::vector<lr1_state>& parse_table_generator::get_states() const
 {
     return states_;
+}
+
+const std::vector<table_entry_hint>& parse_table_generator::get_table_entry_hints() const
+{
+    return table_entry_hints_;
+}
+
+parse_table parse_table_generator::create_parse_table() const
+{
+    size_t state_count = states_.size();
+    parse_table pt(rs_, state_count);
+
+    for (const auto& hint : table_entry_hints_)
+    {
+        pt.get(hint.get_state_idx(), hint.get_ref()) = hint.get_entry();
+    }
+
+    return pt;
 }
 
 } // namespace ptg

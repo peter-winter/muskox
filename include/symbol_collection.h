@@ -45,11 +45,14 @@ private:
     void validate_nterm_idx(size_t index) const;
     void validate_term_idx(size_t index) const;
     
+    size_t add_term_impl(std::string name, std::optional<size_t> prec = std::nullopt, associativity assoc = associativity::left());
+    size_t add_nterm_impl(std::string name);
+    
 public:
     symbol_collection();
     ~symbol_collection() = default;
 
-    size_t add_term(std::string name, associativity assoc = associativity::left(), std::optional<size_t> prec = std::nullopt);
+    size_t add_term(std::string name, std::optional<size_t> prec = std::nullopt, associativity assoc = associativity::left());
     size_t add_nterm(std::string name);
 
     bool contains(std::string_view name) const;

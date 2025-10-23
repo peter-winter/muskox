@@ -13,32 +13,54 @@ symbol_collection::symbol_collection()
     name_to_ref_.reserve(512);
     name_to_ref_.max_load_factor(0.5f);
 
-    add_nterm("$root");
-    add_term("$eof", associativity::left(), 0);
+    add_nterm_impl("$root");
+    add_term_impl("$eof");
 }
 
-size_t symbol_collection::add_term(std::string name, associativity assoc, std::optional<size_t> prec)
+size_t symbol_collection::add_term_impl(std::string name, std::optional<size_t> prec, associativity assoc)
 {
-    if (contains(name))
-    {
-        throw grammar_error(grammar_error::code::symbol_exists, name);
-    }
     size_t index = terms_.size();
     auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::terminal, index});
-    terms_.emplace_back(it->first, assoc, prec);
+    terms_.emplace_back(it->first, prec, assoc);
     return index;
 }
 
-size_t symbol_collection::add_nterm(std::string name)
+size_t symbol_collection::add_nterm_impl(std::string name)
 {
-    if (contains(name))
-    {
-        throw grammar_error(grammar_error::code::symbol_exists, name);
-    }
     size_t index = nterms_.size();
     auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::non_terminal, index});
     nterms_.emplace_back(it->first);
     return index;
+}
+    
+size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec, associativity assoc)
+{
+    if (name[0] == '$')
+    {
+        throw grammar_error(grammar_error::code::cannot_refer_special, name);
+    }
+    
+    if (contains(name))
+    {
+        throw grammar_error(grammar_error::code::symbol_exists, name);
+    }
+    
+    return add_term_impl(name, prec, assoc);
+}
+
+size_t symbol_collection::add_nterm(std::string name)
+{
+    if (name[0] == '$')
+    {
+        throw grammar_error(grammar_error::code::cannot_refer_special, name);
+    }
+    
+    if (contains(name))
+    {
+        throw grammar_error(grammar_error::code::symbol_exists, name);
+    }
+    
+    return add_nterm_impl(name);
 }
 
 bool symbol_collection::contains(std::string_view name) const

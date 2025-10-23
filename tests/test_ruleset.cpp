@@ -221,9 +221,9 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
     ptg::symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a", ptg::associativity::left(), 10);
-    [[maybe_unused]] size_t plus_idx = sc.add_term("+", ptg::associativity::left(), 20);
-    [[maybe_unused]] size_t mul_idx = sc.add_term("*", ptg::associativity::left(), 30);
+    [[maybe_unused]] size_t a_idx = sc.add_term("a", 10);
+    [[maybe_unused]] size_t plus_idx = sc.add_term("+", 20);
+    [[maybe_unused]] size_t mul_idx = sc.add_term("*", 30);
     [[maybe_unused]] size_t b_idx = sc.add_term("b");  // no prec
     [[maybe_unused]] size_t id_idx = sc.add_term("id");  // no prec
     ptg::ruleset rs(sc);
@@ -289,7 +289,7 @@ TEST_CASE("ruleset delegation", "[ruleset]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_idx = sc.add_term("b", ptg::associativity::left(), 10);
+    [[maybe_unused]] size_t b_idx = sc.add_term("b", 10);
     ptg::ruleset rs(sc);
 
     SECTION("get_nterm_count")

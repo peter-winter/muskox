@@ -11,7 +11,7 @@ namespace ptg
 class term
 {
 public:
-    term(std::string_view name, associativity assoc = associativity::left(), std::optional<size_t> prec = std::nullopt)
+    term(std::string_view name, std::optional<size_t> prec = std::nullopt, associativity assoc = associativity::left())
         : name_(name), assoc_(assoc), prec_(prec)
     {
     }
