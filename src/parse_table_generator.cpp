@@ -168,20 +168,29 @@ void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_id
 
 void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, const lr1_state::conflict& c)
 {
-    const lr1_state::reduction& red = c.r_[0]; // ignore more than one reduction for now
+    if (c.r_.size() > 1)
+    {
+        collect_rr_conflict_warning(state_idx, term_idx, c);
+    }
+        
+    size_t r_prec_max = 0;
+    size_t i_max = 0;
+    for (size_t i = 0; i < c.r_.size(); ++i)
+    {
+        const auto& red = c.r_[i];
+        size_t r_prec = rs_.calculate_rside_precedence(red.nterm_idx_, red.rside_idx_);
+        if (r_prec > r_prec_max)
+        {
+            r_prec_max = r_prec;
+            i_max = i;
+        }
+    }
+    
+    const auto& red = c.r_[i_max];
     
     if (c.s_.has_value())
     {
-        std::optional<size_t> s_prec = rs_.get_term_prec(term_idx);
-        auto s_ass = rs_.get_term_assoc(term_idx);
-        size_t r_prec = rs_.calculate_rside_precedence(red.nterm_idx_, red.rside_idx_);
-        if (
-              s_prec.has_value() && 
-              (
-                  (s_prec.value() > r_prec) || 
-                  ((s_prec.value() == r_prec) && s_ass == associativity::type::right)
-              )
-           )
+        if (shift_over_reduce(term_idx, red))
         {
             size_t shifted_state_idx = process_shift(state_idx, symbol_ref{symbol_type::terminal, term_idx}, c.s_.value());
             collect_sr_conflict_info_resolution_shift(state_idx, term_idx, shifted_state_idx);
@@ -191,16 +200,20 @@ void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, 
             process_reduce(state_idx, term_idx, red);
             collect_sr_conflict_info_resolution_reduce(state_idx, term_idx, red.nterm_idx_, red.rside_idx_);
         }
-        
-        return;
     }
-    
-    // rr conflict
-    if (!c.s_.has_value() && c.r_.size() > 1)
+    else
     {
-        collect_rr_conflict_warning(state_idx, term_idx, c);
+        process_reduce(state_idx, term_idx, red);
     }
-    process_reduce(state_idx, term_idx, red);
+}
+
+bool parse_table_generator::shift_over_reduce(size_t term_idx, const lr1_state::reduction& r) const
+{
+    size_t s_prec = rs_.get_term_prec(term_idx);
+    auto s_ass = rs_.get_term_assoc(term_idx);
+    size_t r_prec = rs_.calculate_rside_precedence(r.nterm_idx_, r.rside_idx_);
+    
+    return (s_prec > r_prec) || ((s_prec == r_prec) && s_ass == associativity::type::right);
 }
 
 void parse_table_generator::collect_rr_conflict_warning(size_t state_idx, size_t lookahead_idx, const lr1_state::conflict& c)

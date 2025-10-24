@@ -172,10 +172,10 @@ symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t 
     return get_symbol(nterm_idx, rside_idx, symbol_idx).type_;
 }
 
-std::optional<size_t> ruleset::get_term_prec(size_t term_idx) const
+size_t ruleset::get_term_prec(size_t term_idx) const
 {
     validate_term_idx(term_idx);
-    return symbols_.get_term_prec(term_idx);
+    return symbols_.get_term_prec(term_idx).value_or(0);
 }
 
 associativity::type ruleset::get_term_assoc(size_t term_idx) const

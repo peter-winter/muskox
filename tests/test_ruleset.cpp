@@ -321,9 +321,8 @@ TEST_CASE("ruleset delegation", "[ruleset]")
     
     SECTION("get_term_prec")
     {
-        REQUIRE_FALSE(rs.get_term_prec(a_idx).has_value());
-        REQUIRE(rs.get_term_prec(b_idx).has_value());
-        REQUIRE(rs.get_term_prec(b_idx).value() == 10);
+        REQUIRE(rs.get_term_prec(a_idx) == 0);
+        REQUIRE(rs.get_term_prec(b_idx) == 10);
     }
 }
 

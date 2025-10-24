@@ -67,6 +67,7 @@ private:
     void collect_rr_conflict_warning(size_t state_idx, size_t lookahead_idx, const lr1_state::conflict& c);
     void collect_sr_conflict_info_resolution_reduce(size_t state_idx, size_t lookahead_idx, size_t nterm_idx, size_t rside_idx);
     void collect_sr_conflict_info_resolution_shift(size_t state_idx, size_t term_idx, size_t shifted_state_idx);
+    
     void generate_states();
     
     std::optional<size_t> find_state(const index_subset<4>& kernel) const;
@@ -74,6 +75,7 @@ private:
     size_t process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s);
     void process_reduce(size_t state_idx, size_t lookahead_idx, const lr1_state::reduction& r);
     void process_conflict(size_t state_idx, size_t term_idx, const lr1_state::conflict& c);
+    bool shift_over_reduce(size_t term_idx, const lr1_state::reduction& r) const;
 };
 
 } // namespace ptg

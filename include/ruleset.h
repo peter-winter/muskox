@@ -51,7 +51,7 @@ public:
 
     symbol_type get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
     
-    std::optional<size_t> get_term_prec(size_t term_idx) const;
+    size_t get_term_prec(size_t term_idx) const;
     
     associativity::type get_term_assoc(size_t term_idx) const;
     
