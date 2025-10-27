@@ -22,6 +22,11 @@ add_library(${PROJECT_NAME}_lib
   src/firsts.cpp
   src/closure.cpp
   src/parse_table.cpp
+  src/parser.cpp
+  src/state_stacks.cpp
+  src/symbol_stream.cpp
+  src/parse_result.cpp
+  src/parse_context.cpp
 )
 target_include_directories(${PROJECT_NAME}_lib PUBLIC include)
 target_compile_options(${PROJECT_NAME}_lib PRIVATE ${WARNING_OPTIONS})

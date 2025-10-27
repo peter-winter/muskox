@@ -37,12 +37,12 @@ TEST_CASE("parse_table_generator validate", "[parse_table_generator]")
         REQUIRE_THROWS_MATCHES(
             ptg::parse_table_generator(rs),
             ptg::grammar_error,
-            Message("Nonterminal 'B' has no productions.")
+            Message("Nonterminal 'B' has no productions")
         );
     }
 }
 
-TEST_CASE("parse_table_generator warnings", "[parse_table_generator]")
+TEST_CASE("parse_table_generator unused symbols warnings", "[parse_table_generator]")
 {
     ptg::symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
@@ -61,8 +61,139 @@ TEST_CASE("parse_table_generator warnings", "[parse_table_generator]")
 
     const auto& warnings = lss.get_warnings();
     REQUIRE(warnings.size() == 2);
-    REQUIRE(warnings[0] == "Nonterminal 'U' is unused.");
-    REQUIRE(warnings[1] == "Terminal 'v' is unused.");
+    REQUIRE(warnings[0] == "Nonterminal 'U' is unused");
+    REQUIRE(warnings[1] == "Terminal 'v' is unused");
+}
+
+TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table_generator]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+
+    ptg::ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+
+    ptg::parse_table_generator ptg(rs);
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 4);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / $eof");
+        REQUIRE(warnings[2] == "\n    B -> a . / $eof");
+        REQUIRE(warnings[3] == "Conflict in state 1 on lookahead '$eof' unresolved");
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to shift", "[parse_table_generator]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b", 2);
+
+    ptg::ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    ptg::parse_table_generator ptg(rs);
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b' to state 6 has the highest precedence");
+        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' resolved");
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to one of the reduce", "[parse_table_generator]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+
+    ptg::ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"}, 2);
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    ptg::parse_table_generator ptg(rs);
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b (highest precedence)");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b'");
+        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' resolved");
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", "[parse_table_generator]")
+{
+    ptg::symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+
+    ptg::ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    ptg::parse_table_generator ptg(rs);
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b'");
+        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' unresolved");
+    }
 }
 
 TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
@@ -138,7 +269,7 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
     }
 }
 
-TEST_CASE("parse_table_generator rr conflict", "[parse_table_generator]")
+TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]")
 {
     ptg::symbol_collection sc;
     [[maybe_unused]] size_t root_idx = 0;
@@ -151,7 +282,7 @@ TEST_CASE("parse_table_generator rr conflict", "[parse_table_generator]")
     ptg::ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B"});
-    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"}, 3);
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
 
     ptg::parse_table_generator ptg(rs);
@@ -159,8 +290,11 @@ TEST_CASE("parse_table_generator rr conflict", "[parse_table_generator]")
     SECTION("warnings")
     {
         const auto& warnings = ptg.get_warnings();
-        REQUIRE(warnings.size() == 1);
-        REQUIRE(warnings[0] == "Reduce-reduce conflict in state 1 on lookahead '$eof' for productions:\n    A -> a . / $eof\n    B -> a . / $eof");
+        REQUIRE(warnings.size() == 4);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / $eof (highest precedence)");
+        REQUIRE(warnings[2] == "\n    B -> a . / $eof");
+        REQUIRE(warnings[3] == "Conflict in state 1 on lookahead '$eof' resolved");
     }
 
     SECTION("states")
@@ -538,22 +672,69 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         REQUIRE(states[10].matches(exp_kernel10));
     }
 
-    SECTION("conflict info")
+    SECTION("conflict warnings")
     {
-        const auto& infos = ptg.get_infos();
-        REQUIRE(infos.size() == 12);
-        REQUIRE(infos[0] == "Shift-reduce conflict in state 4 on symbol '+' resolved to reduction using Expr -> - Expr . / +");
-        REQUIRE(infos[1] == "Shift-reduce conflict in state 4 on symbol '-' resolved to reduction using Expr -> - Expr . / -");
-        REQUIRE(infos[2] == "Shift-reduce conflict in state 4 on symbol '*' resolved to reduction using Expr -> - Expr . / *");
-        REQUIRE(infos[3] == "Shift-reduce conflict in state 8 on symbol '+' resolved to reduction using Expr -> Expr + Expr . / +");
-        REQUIRE(infos[4] == "Shift-reduce conflict in state 8 on symbol '-' resolved to reduction using Expr -> Expr + Expr . / -");
-        REQUIRE(infos[5] == "Shift-reduce conflict in state 8 on symbol '*' resolved to shift to state 7");
-        REQUIRE(infos[6] == "Shift-reduce conflict in state 9 on symbol '+' resolved to reduction using Expr -> Expr - Expr . / +");
-        REQUIRE(infos[7] == "Shift-reduce conflict in state 9 on symbol '-' resolved to reduction using Expr -> Expr - Expr . / -");
-        REQUIRE(infos[8] == "Shift-reduce conflict in state 9 on symbol '*' resolved to shift to state 7");
-        REQUIRE(infos[9] == "Shift-reduce conflict in state 10 on symbol '+' resolved to reduction using Expr -> Expr * Expr . / +");
-        REQUIRE(infos[10] == "Shift-reduce conflict in state 10 on symbol '-' resolved to reduction using Expr -> Expr * Expr . / -");
-        REQUIRE(infos[11] == "Shift-reduce conflict in state 10 on symbol '*' resolved to reduction using Expr -> Expr * Expr . / *");
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 48);
+        REQUIRE(warnings[ 0] == "Conflict in state 4 on lookahead '+' :");
+        REQUIRE(warnings[ 1] == "\n    Expr -> - Expr . / + (highest precedence)");
+        REQUIRE(warnings[ 2] == "\n    shift on '+'");
+        REQUIRE(warnings[ 3] == "Conflict in state 4 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[ 4] == "Conflict in state 4 on lookahead '-' :");
+        REQUIRE(warnings[ 5] == "\n    Expr -> - Expr . / - (highest precedence)");
+        REQUIRE(warnings[ 6] == "\n    shift on '-'");
+        REQUIRE(warnings[ 7] == "Conflict in state 4 on lookahead '-' resolved");
+        
+        REQUIRE(warnings[ 8] == "Conflict in state 4 on lookahead '*' :");
+        REQUIRE(warnings[ 9] == "\n    Expr -> - Expr . / * (highest precedence)");
+        REQUIRE(warnings[10] == "\n    shift on '*'");
+        REQUIRE(warnings[11] == "Conflict in state 4 on lookahead '*' resolved");
+        
+        REQUIRE(warnings[12] == "Conflict in state 8 on lookahead '+' :");
+        REQUIRE(warnings[13] == "\n    Expr -> Expr + Expr . / + (highest precedence)");
+        REQUIRE(warnings[14] == "\n    shift on '+'");
+        REQUIRE(warnings[15] == "Conflict in state 8 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[16] == "Conflict in state 8 on lookahead '-' :");
+        REQUIRE(warnings[17] == "\n    Expr -> Expr + Expr . / - (highest precedence)");
+        REQUIRE(warnings[18] == "\n    shift on '-'");
+        REQUIRE(warnings[19] == "Conflict in state 8 on lookahead '-' resolved");
+        
+        REQUIRE(warnings[20] == "Conflict in state 8 on lookahead '*' :");
+        REQUIRE(warnings[21] == "\n    Expr -> Expr + Expr . / *");
+        REQUIRE(warnings[22] == "\n    shift on '*' to state 7 has the highest precedence");
+        REQUIRE(warnings[23] == "Conflict in state 8 on lookahead '*' resolved");
+        
+        REQUIRE(warnings[24] == "Conflict in state 9 on lookahead '+' :");
+        REQUIRE(warnings[25] == "\n    Expr -> Expr - Expr . / + (highest precedence)");
+        REQUIRE(warnings[26] == "\n    shift on '+'");
+        REQUIRE(warnings[27] == "Conflict in state 9 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[28] == "Conflict in state 9 on lookahead '-' :");
+        REQUIRE(warnings[29] == "\n    Expr -> Expr - Expr . / - (highest precedence)");
+        REQUIRE(warnings[30] == "\n    shift on '-'");
+        REQUIRE(warnings[31] == "Conflict in state 9 on lookahead '-' resolved");
+        
+        REQUIRE(warnings[32] == "Conflict in state 9 on lookahead '*' :");
+        REQUIRE(warnings[33] == "\n    Expr -> Expr - Expr . / *");
+        REQUIRE(warnings[34] == "\n    shift on '*' to state 7 has the highest precedence");
+        REQUIRE(warnings[35] == "Conflict in state 9 on lookahead '*' resolved");
+        
+        REQUIRE(warnings[36] == "Conflict in state 10 on lookahead '+' :");
+        REQUIRE(warnings[37] == "\n    Expr -> Expr * Expr . / + (highest precedence)");
+        REQUIRE(warnings[38] == "\n    shift on '+'");
+        REQUIRE(warnings[39] == "Conflict in state 10 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[40] == "Conflict in state 10 on lookahead '-' :");
+        REQUIRE(warnings[41] == "\n    Expr -> Expr * Expr . / - (highest precedence)");
+        REQUIRE(warnings[42] == "\n    shift on '-'");
+        REQUIRE(warnings[43] == "Conflict in state 10 on lookahead '-' resolved");
+        
+        REQUIRE(warnings[44] == "Conflict in state 10 on lookahead '*' :");
+        REQUIRE(warnings[45] == "\n    Expr -> Expr * Expr . / * (highest precedence)");
+        REQUIRE(warnings[46] == "\n    shift on '*'");
+        REQUIRE(warnings[47] == "Conflict in state 10 on lookahead '*' resolved");
     }
 
     SECTION("hints")
@@ -644,9 +825,6 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
     [[maybe_unused]] size_t expr_id = rs.add_rule("Expr", {"id"});
 
     ptg::parse_table_generator ptg(rs);
-
-    const auto& warnings = ptg.get_warnings();
-    REQUIRE(warnings.empty());
 
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 7);
@@ -762,6 +940,32 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
         auto exp_kernel6 = builder.build();
         REQUIRE(states[6].kernel_matches(exp_kernel6));
         REQUIRE(states[6].matches(exp_kernel6));
+    }
+    
+    SECTION("conflict warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 16);
+        
+        REQUIRE(warnings[ 0] == "Conflict in state 5 on lookahead '+' :");
+        REQUIRE(warnings[ 1] == "\n    Expr -> Expr + Expr . / + (highest precedence)");
+        REQUIRE(warnings[ 2] == "\n    shift on '+'");
+        REQUIRE(warnings[ 3] == "Conflict in state 5 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[ 4] == "Conflict in state 5 on lookahead '^' :");
+        REQUIRE(warnings[ 5] == "\n    Expr -> Expr + Expr . / ^");
+        REQUIRE(warnings[ 6] == "\n    shift on '^' to state 4 has the highest precedence");
+        REQUIRE(warnings[ 7] == "Conflict in state 5 on lookahead '^' resolved");
+        
+        REQUIRE(warnings[ 8] == "Conflict in state 6 on lookahead '+' :");
+        REQUIRE(warnings[ 9] == "\n    Expr -> Expr ^ Expr . / + (highest precedence)");
+        REQUIRE(warnings[10] == "\n    shift on '+'");
+        REQUIRE(warnings[11] == "Conflict in state 6 on lookahead '+' resolved");
+        
+        REQUIRE(warnings[12] == "Conflict in state 6 on lookahead '^' :");
+        REQUIRE(warnings[13] == "\n    Expr -> Expr ^ Expr . / ^");
+        REQUIRE(warnings[14] == "\n    shift on '^' to state 4 has the highest precedence");
+        REQUIRE(warnings[15] == "Conflict in state 6 on lookahead '^' resolved");
     }
 
     SECTION("table")

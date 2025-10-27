@@ -23,29 +23,37 @@ struct grammar_error_templates
         nterm_unsolvable_left_recursion,
         unused_term,
         unused_nterm,
-        rr_conflict,
-        sr_conflict_resolved_shift,
-        sr_conflict_resolved_reduce
+        conflict_intro,
+        conflict_detail,
+        conflict_detail_highest_prec,
+        conflict_detail_shift,
+        conflict_detail_shift_highest_prec,
+        conflict_resolved,
+        conflict_unresolved
     };
 
     static constexpr const char* templates_[] =
     {
-        "Ok.",
-        "Symbol '{}' already exists.",
-        "Left side '{}' does not exist.",
-        "Left side '{}' is a terminal.",
-        "Right side symbol '{}' does not exist.",
-        "Nonterminal '{}' has no productions.",
-        "Root symbol '{}' is a terminal.",
-        "Root symbol '{}' does not exist.",
-        "Cannot refer special '{}' symbol.",
-        "No nonterminals.",
-        "Nonterminal '{}' has unsolvable left recursion.",
-        "Terminal '{}' is unused.",
-        "Nonterminal '{}' is unused.",
-        "Reduce-reduce conflict in state {} on lookahead '{}' for productions:{}",
-        "Shift-reduce conflict in state {} on symbol '{}' resolved to shift to state {}",
-        "Shift-reduce conflict in state {} on symbol '{}' resolved to reduction using {}"
+        "Ok",
+        "Symbol '{}' already exists",
+        "Left side '{}' does not exist",
+        "Left side '{}' is a terminal",
+        "Right side symbol '{}' does not exist",
+        "Nonterminal '{}' has no productions",
+        "Root symbol '{}' is a terminal",
+        "Root symbol '{}' does not exist",
+        "Cannot refer special '{}' symbol",
+        "No nonterminals",
+        "Nonterminal '{}' has unsolvable left recursion",
+        "Terminal '{}' is unused",
+        "Nonterminal '{}' is unused",
+        "Conflict in state {} on lookahead '{}' :",
+        "\n    {}",
+        "\n    {} (highest precedence)",
+        "\n    shift on '{}'",
+        "\n    shift on '{}' to state {} has the highest precedence",
+        "Conflict in state {} on lookahead '{}' resolved",
+        "Conflict in state {} on lookahead '{}' unresolved",
     };
 };
 

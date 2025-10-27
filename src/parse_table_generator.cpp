@@ -91,11 +91,6 @@ const std::vector<std::string>& parse_table_generator::get_warnings() const
     return warnings_;
 }
 
-const std::vector<std::string>& parse_table_generator::get_infos() const
-{
-    return infos_;
-}
-
 void parse_table_generator::generate_states()
 {
     index_subset<4> root_kernel(rs_.get_lr1_set_item_space_dims());
@@ -168,13 +163,9 @@ void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_id
 
 void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, const lr1_state::conflict& c)
 {
-    if (c.r_.size() > 1)
-    {
-        collect_rr_conflict_warning(state_idx, term_idx, c);
-    }
-        
     size_t r_prec_max = 0;
     size_t i_max = 0;
+    std::optional<size_t> single_max_prec_reduction_idx;
     for (size_t i = 0; i < c.r_.size(); ++i)
     {
         const auto& red = c.r_[i];
@@ -183,28 +174,34 @@ void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, 
         {
             r_prec_max = r_prec;
             i_max = i;
+            single_max_prec_reduction_idx = i_max;
+        }
+        else if (r_prec == r_prec_max)
+        {
+            single_max_prec_reduction_idx = std::nullopt;
         }
     }
     
     const auto& red = c.r_[i_max];
     
+    std::optional<size_t> shift_over_reduce_state_idx;
     if (c.s_.has_value())
     {
         if (shift_over_reduce(term_idx, red))
         {
-            size_t shifted_state_idx = process_shift(state_idx, symbol_ref{symbol_type::terminal, term_idx}, c.s_.value());
-            collect_sr_conflict_info_resolution_shift(state_idx, term_idx, shifted_state_idx);
+            shift_over_reduce_state_idx = process_shift(state_idx, symbol_ref{symbol_type::terminal, term_idx}, c.s_.value());
         }
         else
         {
             process_reduce(state_idx, term_idx, red);
-            collect_sr_conflict_info_resolution_reduce(state_idx, term_idx, red.nterm_idx_, red.rside_idx_);
         }
     }
     else
     {
         process_reduce(state_idx, term_idx, red);
     }
+    
+    collect_conflict_warnings(state_idx, term_idx, c, single_max_prec_reduction_idx, shift_over_reduce_state_idx);
 }
 
 bool parse_table_generator::shift_over_reduce(size_t term_idx, const lr1_state::reduction& r) const
@@ -216,31 +213,53 @@ bool parse_table_generator::shift_over_reduce(size_t term_idx, const lr1_state::
     return (s_prec > r_prec) || ((s_prec == r_prec) && s_ass == associativity::type::right);
 }
 
-void parse_table_generator::collect_rr_conflict_warning(size_t state_idx, size_t lookahead_idx, const lr1_state::conflict& c)
+void parse_table_generator::collect_conflict_warnings(
+    size_t state_idx, 
+    size_t lookahead_idx, 
+    const lr1_state::conflict& c, 
+    std::optional<size_t> prefered_idx_reduce, 
+    std::optional<size_t> shift_over_reduce_state_idx)
 {
+    bool resolved = false;
+    auto name = rs_.get_term_name(lookahead_idx);
+    warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_intro, state_idx, name));
     std::string prods;
-    for (const auto& r : c.r_)
+    for (size_t i = 0; i < c.r_.size(); ++i)
     {
+        const auto& r = c.r_[i];
         lr1_set_item item{r.nterm_idx_, r.rside_idx_, rs_.get_symbol_count(r.nterm_idx_, r.rside_idx_), lookahead_idx};
-        prods += "\n    " + rs_.lr1_set_item_to_string(item);
+        std::string prod = rs_.lr1_set_item_to_string(item);
+        if (!shift_over_reduce_state_idx.has_value() && prefered_idx_reduce.has_value() && prefered_idx_reduce.value() == i)
+        {
+            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_highest_prec, prod));
+            resolved = true;
+        }
+        else
+        {
+            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail, prod));
+        }
+    }
+    if (c.s_.has_value())
+    {
+        if (shift_over_reduce_state_idx.has_value())
+        {
+            resolved = true;
+            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_shift_highest_prec, name, shift_over_reduce_state_idx.value()));
+        }
+        else
+        {
+            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_shift, name));
+        }
     }
     
-    auto name = rs_.get_term_name(lookahead_idx);
-    warnings_.push_back(grammar_warning(grammar_error_templates::code::rr_conflict, state_idx, name, prods));
-}
-
-void parse_table_generator::collect_sr_conflict_info_resolution_reduce(size_t state_idx, size_t lookahead_idx, size_t nterm_idx, size_t rside_idx)
-{
-    auto name = rs_.get_term_name(lookahead_idx);
-    lr1_set_item item{nterm_idx, rside_idx, rs_.get_symbol_count(nterm_idx, rside_idx), lookahead_idx};
-    auto prod = rs_.lr1_set_item_to_string(item);
-    infos_.push_back(grammar_warning(grammar_error_templates::code::sr_conflict_resolved_reduce, state_idx, name, prod));
-}
-
-void parse_table_generator::collect_sr_conflict_info_resolution_shift(size_t state_idx, size_t term_idx, size_t shifted_state_idx)
-{
-    auto name = rs_.get_term_name(term_idx);
-    infos_.push_back(grammar_warning(grammar_error_templates::code::sr_conflict_resolved_shift, state_idx, name, shifted_state_idx));
+    if (resolved)
+    {
+        warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_resolved, state_idx, name));
+    }
+    else
+    {
+        warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_unresolved, state_idx, name));
+    }
 }
 
 std::optional<size_t> parse_table_generator::find_state(const index_subset<4>& kernel) const

@@ -43,7 +43,6 @@ public:
     ~parse_table_generator() = default;
 
     const std::vector<std::string>& get_warnings() const;
-    const std::vector<std::string>& get_infos() const;
     
     std::string states_to_string() const;
     
@@ -57,16 +56,19 @@ private:
     const ruleset& rs_;
     closure cl_;
     std::vector<std::string> warnings_;
-    std::vector<std::string> infos_;
     std::vector<lr1_state> states_;
     
     std::vector<table_entry_hint> table_entry_hints_;
+    std::vector<parse_table_entry> glr_splits_;
     
     const ruleset& validate(const ruleset& rs) const;
     void collect_unused_warnings();
-    void collect_rr_conflict_warning(size_t state_idx, size_t lookahead_idx, const lr1_state::conflict& c);
-    void collect_sr_conflict_info_resolution_reduce(size_t state_idx, size_t lookahead_idx, size_t nterm_idx, size_t rside_idx);
-    void collect_sr_conflict_info_resolution_shift(size_t state_idx, size_t term_idx, size_t shifted_state_idx);
+    void collect_conflict_warnings(
+        size_t state_idx, 
+        size_t lookahead_idx, 
+        const lr1_state::conflict& c, 
+        std::optional<size_t> prefered_idx_reduce, 
+        std::optional<size_t> shift_over_reduce_state_idx);
     
     void generate_states();
     

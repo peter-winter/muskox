@@ -33,24 +33,24 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE_THROWS_MATCHES(
             sc.add_term("dup"),
             ptg::grammar_error,
-            Message("Symbol 'dup' already exists.")
+            Message("Symbol 'dup' already exists")
         );
         REQUIRE_THROWS_MATCHES(
             sc.add_nterm("dup"),
             ptg::grammar_error,
-            Message("Symbol 'dup' already exists.")
+            Message("Symbol 'dup' already exists")
         );
 
         [[maybe_unused]] size_t dup2_idx = sc.add_nterm("dup2");
         REQUIRE_THROWS_MATCHES(
             sc.add_nterm("dup2"),
             ptg::grammar_error,
-            Message("Symbol 'dup2' already exists.")
+            Message("Symbol 'dup2' already exists")
         );
         REQUIRE_THROWS_MATCHES(
             sc.add_term("dup2"),
             ptg::grammar_error,
-            Message("Symbol 'dup2' already exists.")
+            Message("Symbol 'dup2' already exists")
         );
     }
 
@@ -227,12 +227,12 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE_THROWS_MATCHES(
             sc.add_nterm("$root"),
             ptg::grammar_error,
-            Message("Cannot refer special '$root' symbol.")
+            Message("Cannot refer special '$root' symbol")
         );
         REQUIRE_THROWS_MATCHES(
             sc.add_term("$eof"),
             ptg::grammar_error,
-            Message("Cannot refer special '$eof' symbol.")
+            Message("Cannot refer special '$eof' symbol")
         );
     }
 

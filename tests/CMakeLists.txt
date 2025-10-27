@@ -26,6 +26,11 @@ add_executable(unit_tests
   test_closure.cpp
   test_list_printer.cpp
   test_parse_table.cpp
+  test_parser.cpp
+  test_parse_context.cpp
+  test_parse_result.cpp
+  test_state_stacks.cpp
+  test_history.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain parse_table_generator_lib)

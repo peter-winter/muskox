@@ -44,7 +44,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("nonexist", {}),
             ptg::grammar_error,
-            Message("Left side 'nonexist' does not exist.")
+            Message("Left side 'nonexist' does not exist")
         );
     }
 
@@ -53,7 +53,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("a", {"S"}),
             ptg::grammar_error,
-            Message("Left side 'a' is a terminal.")
+            Message("Left side 'a' is a terminal")
         );
     }
 
@@ -62,7 +62,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("S", {"nonexist"}),
             ptg::grammar_error,
-            Message("Right side symbol 'nonexist' does not exist.")
+            Message("Right side symbol 'nonexist' does not exist")
         );
     }
 
@@ -181,7 +181,7 @@ TEST_CASE("ruleset root", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.set_root("nonexist"),
             ptg::grammar_error,
-            Message("Root symbol 'nonexist' does not exist.")
+            Message("Root symbol 'nonexist' does not exist")
         );
     }
 
@@ -191,7 +191,7 @@ TEST_CASE("ruleset root", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.set_root("a"),
             ptg::grammar_error,
-            Message("Root symbol 'a' is a terminal.")
+            Message("Root symbol 'a' is a terminal")
         );
     }
     
@@ -201,7 +201,7 @@ TEST_CASE("ruleset root", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.set_root("$root"),
             ptg::grammar_error,
-            Message("Cannot refer special '$root' symbol.")
+            Message("Cannot refer special '$root' symbol")
         );
     }
 
@@ -211,7 +211,7 @@ TEST_CASE("ruleset root", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             [&]{ ptg::ruleset rs(empty_sc); }(),
             ptg::grammar_error,
-            Message("No nonterminals.")
+            Message("No nonterminals")
         );
     }
 }

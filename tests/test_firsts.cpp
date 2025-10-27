@@ -16,7 +16,7 @@ TEST_CASE("firsts construction and basic validation", "[firsts]")
         REQUIRE_THROWS_MATCHES(
             ptg::ruleset(sc),
             ptg::grammar_error,
-            Message("No nonterminals.")
+            Message("No nonterminals")
         );
     }
 
@@ -297,7 +297,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(a_idx),
             ptg::grammar_error,
-            Message("Nonterminal 'A' has unsolvable left recursion.")
+            Message("Nonterminal 'A' has unsolvable left recursion")
         );
     }
 
@@ -317,13 +317,13 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(a_idx),
             ptg::grammar_error,
-            Message("Nonterminal 'A' has unsolvable left recursion.")
+            Message("Nonterminal 'A' has unsolvable left recursion")
         );
 
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(b_idx),
             ptg::grammar_error,
-            Message("Nonterminal 'B' has unsolvable left recursion.")
+            Message("Nonterminal 'B' has unsolvable left recursion")
         );
     }
 
