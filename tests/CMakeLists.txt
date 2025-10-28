@@ -30,7 +30,7 @@ add_executable(unit_tests
   test_parse_context.cpp
   test_parse_result.cpp
   test_state_stacks.cpp
-  test_history.cpp
+  test_stack_tree.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain parse_table_generator_lib)
