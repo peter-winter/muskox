@@ -32,8 +32,8 @@ private:
         base_index_subset<3>& calculating_rside_parts);
         
 public:
-    const opt_subset& calculate_nterm(size_t nterm_idx);
-    const opt_subset& calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx);
+    const index_subset<1>& calculate_nterm(size_t nterm_idx);
+    const index_subset<1>& calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx);
  
     const opt_subset& get_nterm_firsts(size_t nterm_idx) const;
     const opt_subset& get_rside_part_firsts(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;

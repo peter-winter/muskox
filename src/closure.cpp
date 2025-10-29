@@ -41,7 +41,7 @@ const closure::opt_subset& closure::calculate(const lr1_set_item& item)
     if (item.symbol_idx_ + 1 < rside_symbol_count)
     {
         const auto& rside_part_first = firsts_.calculate_rside_part(item.nterm_idx_, item.rside_idx_, item.symbol_idx_ + 1);
-        terms.add(rside_part_first.value());
+        terms.add(rside_part_first);
         
         bool rside_part_nullable = firsts_.calculate_nullable_rside_part(item.nterm_idx_, item.rside_idx_, item.symbol_idx_ + 1);
         if (rside_part_nullable)

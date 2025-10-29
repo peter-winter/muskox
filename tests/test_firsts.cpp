@@ -97,23 +97,20 @@ TEST_CASE("firsts basic calculations", "[firsts]")
     SECTION("calculate_nterm")
     {
         const auto& s_first = f.calculate_nterm(s_idx);
-        REQUIRE(s_first.has_value());
-        REQUIRE(s_first.value().get_count() == 2);
-        REQUIRE(s_first.value().contains(a_term_idx));
-        REQUIRE(s_first.value().contains(b_term_idx));
+        REQUIRE(s_first.get_count() == 2);
+        REQUIRE(s_first.contains(a_term_idx));
+        REQUIRE(s_first.contains(b_term_idx));
     }
 
     SECTION("calculate_rside_part terminal")
     {
         const auto& part0 = f.calculate_rside_part(s_idx, s_r0, 0);
-        REQUIRE(part0.has_value());
-        REQUIRE(part0.value().get_count() == 1);
-        REQUIRE(part0.value().contains(a_term_idx));
+        REQUIRE(part0.get_count() == 1);
+        REQUIRE(part0.contains(a_term_idx));
 
         const auto& part1 = f.calculate_rside_part(s_idx, s_r1, 0);
-        REQUIRE(part1.has_value());
-        REQUIRE(part1.value().get_count() == 1);
-        REQUIRE(part1.value().contains(b_term_idx));
+        REQUIRE(part1.get_count() == 1);
+        REQUIRE(part1.contains(b_term_idx));
     }
 }
 
@@ -135,39 +132,34 @@ TEST_CASE("firsts with epsilon productions", "[firsts]")
     SECTION("calculate_nterm for nullable A")
     {
         const auto& a_first = f.calculate_nterm(a_idx);
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 1);
-        REQUIRE(a_first.value().contains(b_term_idx));
+        REQUIRE(a_first.get_count() == 1);
+        REQUIRE(a_first.contains(b_term_idx));
     }
 
     SECTION("calculate_nterm for S propagating nullable")
     {
         const auto& s_first = f.calculate_nterm(s_idx);
-        REQUIRE(s_first.has_value());
-        REQUIRE(s_first.value().get_count() == 2);
-        REQUIRE(s_first.value().contains(b_term_idx));
-        REQUIRE(s_first.value().contains(c_term_idx));
+        REQUIRE(s_first.get_count() == 2);
+        REQUIRE(s_first.contains(b_term_idx));
+        REQUIRE(s_first.contains(c_term_idx));
     }
 
     SECTION("calculate_rside_part for S")
     {
         const auto& part0 = f.calculate_rside_part(s_idx, s_r0, 0);
-        REQUIRE(part0.has_value());
-        REQUIRE(part0.value().get_count() == 2);
-        REQUIRE(part0.value().contains(b_term_idx));
-        REQUIRE(part0.value().contains(c_term_idx));  // Because A nullable
+        REQUIRE(part0.get_count() == 2);
+        REQUIRE(part0.contains(b_term_idx));
+        REQUIRE(part0.contains(c_term_idx));  // Because A nullable
 
         const auto& part1 = f.calculate_rside_part(s_idx, s_r0, 1);
-        REQUIRE(part1.has_value());
-        REQUIRE(part1.value().get_count() == 1);
-        REQUIRE(part1.value().contains(c_term_idx));
+        REQUIRE(part1.get_count() == 1);
+        REQUIRE(part1.contains(c_term_idx));
     }
 
     SECTION("calculate_rside_part for epsilon")
     {
         const auto& epsilon_part = f.calculate_rside_part(a_idx, a_r1, 0);
-        REQUIRE(epsilon_part.has_value());
-        REQUIRE(epsilon_part.value().get_count() == 0);
+        REQUIRE(epsilon_part.get_count() == 0);
     }
 }
 
@@ -191,24 +183,20 @@ TEST_CASE("firsts nterm chain", "[firsts]")
     SECTION("chain propagation")
     {
         const auto& s_first = f.calculate_nterm(s_idx);
-        REQUIRE(s_first.has_value());
-        REQUIRE(s_first.value().get_count() == 1);
-        REQUIRE(s_first.value().contains(d_term_idx));
+        REQUIRE(s_first.get_count() == 1);
+        REQUIRE(s_first.contains(d_term_idx));
 
         const auto& a_first = f.calculate_nterm(a_idx);
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 1);
-        REQUIRE(a_first.value().contains(d_term_idx));
+        REQUIRE(a_first.get_count() == 1);
+        REQUIRE(a_first.contains(d_term_idx));
 
         const auto& b_first = f.calculate_nterm(b_idx);
-        REQUIRE(b_first.has_value());
-        REQUIRE(b_first.value().get_count() == 1);
-        REQUIRE(b_first.value().contains(d_term_idx));
+        REQUIRE(b_first.get_count() == 1);
+        REQUIRE(b_first.contains(d_term_idx));
 
         const auto& c_first = f.calculate_nterm(c_idx);
-        REQUIRE(c_first.has_value());
-        REQUIRE(c_first.value().get_count() == 1);
-        REQUIRE(c_first.value().contains(d_term_idx));
+        REQUIRE(c_first.get_count() == 1);
+        REQUIRE(c_first.contains(d_term_idx));
     }
 }
 
@@ -280,9 +268,8 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
 
         const auto& a_first = f.calculate_nterm(a_idx);
         
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 1);
-        REQUIRE(a_first.value().contains(b_term_idx));
+        REQUIRE(a_first.get_count() == 1);
+        REQUIRE(a_first.contains(b_term_idx));
     }
     
     SECTION("direct left recursion no base throws")
@@ -344,14 +331,12 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         firsts f(rs);
 
         const auto& a_first = f.calculate_nterm(a_idx);
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 1);
-        REQUIRE(a_first.value().contains(c_term_idx));
+        REQUIRE(a_first.get_count() == 1);
+        REQUIRE(a_first.contains(c_term_idx));
 
         const auto& b_first = f.calculate_nterm(b_idx);
-        REQUIRE(b_first.has_value());
-        REQUIRE(b_first.value().get_count() == 1);
-        REQUIRE(b_first.value().contains(c_term_idx));
+        REQUIRE(b_first.get_count() == 1);
+        REQUIRE(b_first.contains(c_term_idx));
     }
 
     SECTION("mutual recursion not left-recursive")
@@ -369,14 +354,12 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         firsts f(rs);
 
         const auto& a_first = f.calculate_nterm(a_idx);
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 1);
-        REQUIRE(a_first.value().contains(c_term_idx));
+        REQUIRE(a_first.get_count() == 1);
+        REQUIRE(a_first.contains(c_term_idx));
 
         const auto& b_first = f.calculate_nterm(b_idx);
-        REQUIRE(b_first.has_value());
-        REQUIRE(b_first.value().get_count() == 1);
-        REQUIRE(b_first.value().contains(d_term_idx));
+        REQUIRE(b_first.get_count() == 1);
+        REQUIRE(b_first.contains(d_term_idx));
     }
 }
 
@@ -428,15 +411,13 @@ TEST_CASE("firsts complex grammar", "[firsts]")
     SECTION("rside_part in complex")
     {
         const auto& expr_part1 = f.calculate_rside_part(expr_idx, expr_r1, 1);  // Expr -> Expr + . Term
-        REQUIRE(expr_part1.has_value());
-        REQUIRE(expr_part1.value().get_count() == 1);
-        REQUIRE(expr_part1.value().contains(plus_idx));
+        REQUIRE(expr_part1.get_count() == 1);
+        REQUIRE(expr_part1.contains(plus_idx));
 
         const auto& factor_part1 = f.calculate_rside_part(factor_idx, factor_r1, 1);  // Factor -> ( . Expr )
-        REQUIRE(factor_part1.has_value());
-        REQUIRE(factor_part1.value().get_count() == 2);
-        REQUIRE(factor_part1.value().contains(num_idx));
-        REQUIRE(factor_part1.value().contains(lpar_idx));
+        REQUIRE(factor_part1.get_count() == 2);
+        REQUIRE(factor_part1.contains(num_idx));
+        REQUIRE(factor_part1.contains(lpar_idx));
     }
 }
 
@@ -479,13 +460,11 @@ TEST_CASE("firsts mix individual and calculate_all", "[firsts]")
     SECTION("mix")
     {
         const auto& a_first = f.calculate_nterm(a_idx);
-        REQUIRE(a_first.has_value());
-        REQUIRE(a_first.value().get_count() == 0);
+        REQUIRE(a_first.get_count() == 0);
 
         const auto& s_part0 = f.calculate_rside_part(s_idx, s_r0, 0);
-        REQUIRE(s_part0.has_value());
-        REQUIRE(s_part0.value().get_count() == 1);
-        REQUIRE(s_part0.value().contains(c_term_idx));  // B nullable
+        REQUIRE(s_part0.get_count() == 1);
+        REQUIRE(s_part0.contains(c_term_idx));  // B nullable
 
         f.calculate_all();
 
@@ -496,6 +475,7 @@ TEST_CASE("firsts mix individual and calculate_all", "[firsts]")
 
         const auto& b_first = f.get_nterm_firsts(b_idx);
         REQUIRE(b_first.has_value());
+        REQUIRE(b_first.value().get_count() == 0);
         REQUIRE(b_first.value().get_count() == 0);
     }
 }

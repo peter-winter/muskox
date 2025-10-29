@@ -1,12 +1,32 @@
+/**
+ * @file grammar_error.h
+ * @brief Defines error templates and types specific to grammar validation and parsing.
+ *
+ * This header provides an enumeration of grammar-related error codes and corresponding
+ * message templates. It uses the formatted_error system to create typed errors and
+ * warnings for issues like symbol conflicts, recursion, or invalid roots in grammars.
+ *
+ * These are used during grammar construction and validation in the MuskOx parser generator.
+ *
+ * Part of the larger MuskOx project.
+ */
+
 #pragma once
 
-#include <formatted_error.h>
+#include "formatted_error.h"
 
 namespace muskox
 {
 
+/**
+ * @struct grammar_error_templates
+ * @brief Templates for grammar errors.
+ */
 struct grammar_error_templates
 {
+    /**
+     * @brief Enumeration of error codes.
+     */
     enum class code
     {
         ok, 
@@ -31,7 +51,7 @@ struct grammar_error_templates
         conflict_unresolved
     };
 
-    static constexpr const char* templates_[] =
+    static constexpr const char* templates_[] = //!< Array of template strings.
     {
         "Ok",
         "Symbol '{}' already exists",
@@ -56,7 +76,8 @@ struct grammar_error_templates
     };
 };
 
-using grammar_error = formatted_error<grammar_error_templates>;
-using grammar_warning = formatted_message<grammar_error_templates>;
+using grammar_error = formatted_error<grammar_error_templates>; //!< Type alias for grammar error.
+
+using grammar_warning = formatted_message<grammar_error_templates>; //!< Type alias for grammar warning.
 
 } // namespace muskox

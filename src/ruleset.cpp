@@ -1,12 +1,38 @@
-#include <ruleset.h>
-#include <list_printer.h>
-#include <grammar_error.h>
+/**
+ * @file ruleset.cpp
+ * @brief Implementation of the ruleset class.
+ *
+ * This file contains the implementation of methods for managing grammar rules,
+ * including addition, validation, querying, and string conversion.
+ *
+ * Part of the larger MuskOx project.
+ */
+
+#include "ruleset.h"
+#include "list_printer.h"
+#include "grammar_error.h"
 
 #include <stdexcept>
 #include <sstream>
 
 namespace muskox
 {
+
+symbol_ref ruleset::set_root(symbol_ref root)
+{
+    if (rsides_[0].empty())
+    {
+        symbol_list rrefs{root};
+        rsides_[0].emplace_back(std::move(rrefs));
+    }
+    else
+    {
+        rsides_[0][0].symbols_[0] = root;
+    }
+    root_ = root;
+    
+    return root_;
+}
 
 void ruleset::validate_term_idx(size_t term_idx) const
 {
@@ -41,22 +67,6 @@ void ruleset::validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t sym
     {
         throw std::out_of_range("Symbol index out of range");
     }
-}
-
-symbol_ref ruleset::set_root(symbol_ref root)
-{
-    if (rsides_[0].empty())
-    {
-        symbol_list rrefs{root};
-        rsides_[0].emplace_back(std::move(rrefs));
-    }
-    else
-    {
-        rsides_[0][0].symbols_[0] = root;
-    }
-    root_ = root;
-    
-    return root_;
 }
 
 ruleset::ruleset(const symbol_collection& symbols)
@@ -139,6 +149,26 @@ size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_vi
     return rsides_[lref.index_].size() - 1;
 }
 
+symbol_ref ruleset::get_root() const
+{
+    return root_;
+}
+
+size_t ruleset::get_nterm_count() const
+{
+    return symbols_.get_nterm_count();
+}
+
+size_t ruleset::get_term_count() const
+{
+    return symbols_.get_term_count();
+}
+
+size_t ruleset::get_symbol_count() const
+{
+    return get_term_count() + get_nterm_count();
+}
+
 size_t ruleset::get_nterm_rside_count(size_t nterm_idx) const
 {
     validate_nterm_idx(nterm_idx);
@@ -161,6 +191,19 @@ size_t ruleset::get_symbol_count(size_t nterm_idx, size_t rside_idx) const
     return rsides_[nterm_idx][rside_idx].symbols_.size();
 }
 
+size_t ruleset::get_max_symbol_count() const
+{
+    size_t max = 0;
+    for (const auto& nterm_rsides : rsides_)
+    {
+        for (const auto& rs : nterm_rsides)
+        {
+            max = std::max(max, rs.symbols_.size());
+        }
+    }
+    return max;
+}
+
 symbol_ref ruleset::get_symbol(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
     validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
@@ -170,6 +213,21 @@ symbol_ref ruleset::get_symbol(size_t nterm_idx, size_t rside_idx, size_t symbol
 symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
     return get_symbol(nterm_idx, rside_idx, symbol_idx).type_;
+}
+
+size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+{
+    return get_symbol(nterm_idx, rside_idx, symbol_idx).index_;
+}
+
+std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
+{
+    return symbols_.get_nterm_name(nterm_idx);
+}
+
+std::string_view ruleset::get_term_name(size_t term_idx) const
+{
+    return symbols_.get_term_name(term_idx);
 }
 
 size_t ruleset::get_term_prec(size_t term_idx) const
@@ -182,11 +240,6 @@ associativity::type ruleset::get_term_assoc(size_t term_idx) const
 {
     validate_term_idx(term_idx);
     return symbols_.get_term_assoc(term_idx).get();
-}
-
-size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
-{
-    return get_symbol(nterm_idx, rside_idx, symbol_idx).index_;
 }
 
 std::optional<size_t> ruleset::get_rside_precedence(size_t nterm_idx, size_t rside_idx) const
@@ -219,49 +272,6 @@ size_t ruleset::calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) c
     }
     
     return ret;
-}
-
-size_t ruleset::get_max_symbol_count() const
-{
-    size_t max = 0;
-    for (const auto& nterm_rsides : rsides_)
-    {
-        for (const auto& rs : nterm_rsides)
-        {
-            max = std::max(max, rs.symbols_.size());
-        }
-    }
-    return max;
-}
-
-symbol_ref ruleset::get_root() const
-{
-    return root_;
-}
-
-size_t ruleset::get_nterm_count() const
-{
-    return symbols_.get_nterm_count();
-}
-
-size_t ruleset::get_term_count() const
-{
-    return symbols_.get_term_count();
-}
-
-size_t ruleset::get_symbol_count() const
-{
-    return get_term_count() + get_nterm_count();
-}
-
-std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
-{
-    return symbols_.get_nterm_name(nterm_idx);
-}
-
-std::string_view ruleset::get_term_name(size_t term_idx) const
-{
-    return symbols_.get_term_name(term_idx);
 }
 
 std::array<size_t, 3> ruleset::get_rside_part_space_dims() const

@@ -1,3 +1,13 @@
+/**
+ * @file symbol_collection.cpp
+ * @brief Implementation of the symbol_collection class.
+ *
+ * This file provides the implementation details for managing terminals and non-terminals
+ * in the MuskOx grammar system, including addition, querying, and validation methods.
+ *
+ * Part of the larger MuskOx project.
+ */
+
 #include <symbol_collection.h>
 #include <list_printer.h>
 #include <grammar_error.h>

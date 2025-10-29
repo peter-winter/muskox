@@ -1,4 +1,14 @@
-#include <nullable.h>
+/**
+ * @file nullable.cpp
+ * @brief Implementation of the nullable class.
+ *
+ * This file provides the implementation for computing nullability in grammars,
+ * including recursive checks for non-terminals and rule segments with cycle detection.
+ *
+ * Part of the larger MuskOx project.
+ */
+
+#include "nullable.h"
 
 namespace muskox
 {

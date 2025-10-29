@@ -34,28 +34,36 @@ void firsts::calculate_all()
     }
 }
 
-const firsts::opt_subset& firsts::calculate_nterm(size_t nterm_idx)
+const index_subset<1>& firsts::calculate_nterm(size_t nterm_idx)
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
     base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
     
     const auto& result = calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
     
-    if (!result.has_value()/* && left_recursion_nterms_.contains(nterm_idx)*/)
+    if (!result.has_value())
     {
         std::string_view name = rs_.get_nterm_name(nterm_idx);
         throw grammar_error(grammar_error::code::nterm_unsolvable_left_recursion, name);
     }
     
-    return result;
+    return result.value();
 }
 
-const firsts::opt_subset& firsts::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
+const index_subset<1>& firsts::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
     base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
     
-    return calculate_rside_part_impl(nterm_idx, rside_idx, symbol_start_idx, calculating_nterms, calculating_rside_parts);
+    const auto& result = calculate_rside_part_impl(nterm_idx, rside_idx, symbol_start_idx, calculating_nterms, calculating_rside_parts);
+    
+    if (!result.has_value())
+    {
+        // should not reach here
+        throw std::runtime_error("Unexpected error, firsts::calculate_rside_part should have thrown grammar error with unsolvable nterm left recursion earlier");
+    }
+    
+    return result.value();
 }
 
 bool firsts::calculate_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
