@@ -4,9 +4,9 @@
 
 #include "symbol_ref.h"
 
-namespace ptg
+namespace muskox
 {
 
 using symbol_list = std::vector<symbol_ref>;
 
-} // namespace ptg
+} // namespace muskox

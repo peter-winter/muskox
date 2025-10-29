@@ -1,9 +1,8 @@
-// grammar_error.h
 #pragma once
 
 #include <formatted_error.h>
 
-namespace ptg
+namespace muskox
 {
 
 struct grammar_error_templates
@@ -60,4 +59,4 @@ struct grammar_error_templates
 using grammar_error = formatted_error<grammar_error_templates>;
 using grammar_warning = formatted_message<grammar_error_templates>;
 
-} // namespace ptg
+} // namespace muskox

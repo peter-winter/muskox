@@ -1,7 +1,7 @@
 #include <lr1_state.h>
 #include <list_printer.h>
 
-namespace ptg
+namespace muskox
 {
     
 void lr1_state::add_items(const index_subset<4>& c)
@@ -131,5 +131,5 @@ bool lr1_state::matches(const index_subset<4>& other) const
     return items_.contains_only_items(other);
 }
 
-} // namespace ptg
+} // namespace muskox
 

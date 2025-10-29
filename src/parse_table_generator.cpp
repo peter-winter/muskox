@@ -4,7 +4,7 @@
 
 #include <queue>
 
-namespace ptg
+namespace muskox
 {
 
 parse_table_generator::parse_table_generator(const ruleset& rs)
@@ -308,4 +308,4 @@ parse_table parse_table_generator::create_parse_table() const
     return pt;
 }
 
-} // namespace ptg
+} // namespace muskox

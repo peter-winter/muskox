@@ -1,6 +1,6 @@
 #include "symbol_stream.h"
 
-namespace ptg
+namespace muskox
 {
 
 symbol_stream::symbol_stream(const std::vector<size_t>& terminals)
@@ -17,4 +17,4 @@ std::optional<size_t> symbol_stream::next()
     return terminals_[pos_++];
 }
 
-} // namespace ptg
+} // namespace muskox

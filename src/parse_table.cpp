@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace ptg
+namespace muskox
 {
     
 parse_table_entry parse_table_entry::shift(size_t state_idx)
@@ -171,4 +171,4 @@ void parse_table::validate() const
     }
 }
 
-} // namespace ptg
+} // namespace muskox

@@ -8,18 +8,20 @@
 #include <string>
 #include <vector>
 
+using namespace muskox;
+
 TEST_CASE("parse_context basics", "[parse_context]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t e_idx = sc.add_nterm("E");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     rs.add_rule("S", {"a", "E"});
     rs.add_rule("E", {});
 
-    ptg::parse_context ctx(rs);
+    parse_context ctx(rs);
 
     SECTION("initial state")
     {

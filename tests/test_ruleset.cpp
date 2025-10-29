@@ -9,13 +9,15 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("ruleset add_rule", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     SECTION("basic add")
     {
@@ -23,9 +25,9 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
         REQUIRE(ridx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
         REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == ptg::symbol_type::terminal);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == symbol_type::terminal);
         REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == ptg::symbol_type::non_terminal);
+        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == symbol_type::non_terminal);
         REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
         REQUIRE(!rs.get_rside_precedence(s_idx, ridx).has_value());
     }
@@ -43,7 +45,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("nonexist", {}),
-            ptg::grammar_error,
+            grammar_error,
             Message("Left side 'nonexist' does not exist")
         );
     }
@@ -52,7 +54,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("a", {"S"}),
-            ptg::grammar_error,
+            grammar_error,
             Message("Left side 'a' is a terminal")
         );
     }
@@ -61,7 +63,7 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     {
         REQUIRE_THROWS_MATCHES(
             rs.add_rule("S", {"nonexist"}),
-            ptg::grammar_error,
+            grammar_error,
             Message("Right side symbol 'nonexist' does not exist")
         );
     }
@@ -84,13 +86,13 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
 TEST_CASE("ruleset dims", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
@@ -117,59 +119,59 @@ TEST_CASE("ruleset dims", "[ruleset]")
 
 TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
 
     SECTION("dot at beginning")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
+        lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . a Expr / c");
     }
 
     SECTION("dot in middle")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 1, c_idx);
+        lr1_set_item item(expr_idx, expr_r0, 1, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> a . Expr / c");
     }
 
     SECTION("dot at end")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 2, c_idx);
+        lr1_set_item item(expr_idx, expr_r0, 2, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> a Expr . / c");
     }
 
     SECTION("single symbol production")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r1, 0, c_idx);
+        lr1_set_item item(expr_idx, expr_r1, 0, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> . b / c");
     }
 
     SECTION("single symbol, dot at end")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r1, 1, c_idx);
+        lr1_set_item item(expr_idx, expr_r1, 1, c_idx);
         REQUIRE(rs.lr1_set_item_to_string(item) == "Expr -> b . / c");
     }
 }
 
 TEST_CASE("ruleset root", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t other_idx = sc.add_nterm("Other");
     
     SECTION("valid root")
     {
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         REQUIRE(sc.get_symbol_name(rs.get_root()) == "S");
-        REQUIRE(rs.set_root("Other") == ptg::symbol_ref{ptg::symbol_type::non_terminal, 2});
+        REQUIRE(rs.set_root("Other") == symbol_ref{symbol_type::non_terminal, 2});
         REQUIRE(rs.get_root().index_ == 2);
         REQUIRE(sc.get_symbol_name(rs.get_root()) == "Other");
         REQUIRE(rs.get_symbol(0, 0, 0) == sc.get_symbol_ref("Other"));
@@ -177,40 +179,40 @@ TEST_CASE("ruleset root", "[ruleset]")
 
     SECTION("set invalid name")
     {
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
             rs.set_root("nonexist"),
-            ptg::grammar_error,
+            grammar_error,
             Message("Root symbol 'nonexist' does not exist")
         );
     }
 
     SECTION("set term")
     {
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
             rs.set_root("a"),
-            ptg::grammar_error,
+            grammar_error,
             Message("Root symbol 'a' is a terminal")
         );
     }
     
     SECTION("set $root")
     {
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         REQUIRE_THROWS_MATCHES(
             rs.set_root("$root"),
-            ptg::grammar_error,
+            grammar_error,
             Message("Cannot refer special '$root' symbol")
         );
     }
 
     SECTION("no nterms")
     {
-        ptg::symbol_collection empty_sc;
+        symbol_collection empty_sc;
         REQUIRE_THROWS_MATCHES(
-            [&]{ ptg::ruleset rs(empty_sc); }(),
-            ptg::grammar_error,
+            [&]{ ruleset rs(empty_sc); }(),
+            grammar_error,
             Message("No nonterminals")
         );
     }
@@ -218,7 +220,7 @@ TEST_CASE("ruleset root", "[ruleset]")
 
 TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a", 10);
@@ -226,7 +228,7 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
     [[maybe_unused]] size_t mul_idx = sc.add_term("*", 30);
     [[maybe_unused]] size_t b_idx = sc.add_term("b");  // no prec
     [[maybe_unused]] size_t id_idx = sc.add_term("id");  // no prec
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     SECTION("explicit precedence")
     {
@@ -285,12 +287,12 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
 
 TEST_CASE("ruleset delegation", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b", 10);
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     SECTION("get_nterm_count")
     {
@@ -328,13 +330,13 @@ TEST_CASE("ruleset delegation", "[ruleset]")
 
 TEST_CASE("ruleset space dims", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
@@ -361,10 +363,10 @@ TEST_CASE("ruleset space dims", "[ruleset]")
 
 TEST_CASE("ruleset validation", "[ruleset]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
 

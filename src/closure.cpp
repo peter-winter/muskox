@@ -1,7 +1,7 @@
 #include <closure.h>
 #include <grammar_error.h>
 
-namespace ptg
+namespace muskox
 {
 
 closure::closure(const ruleset& rs)
@@ -86,4 +86,4 @@ const closure::opt_subset& closure::calculate_full(const lr1_set_item& item)
     return result;
 }
 
-} // namespace ptg
+} // namespace muskox

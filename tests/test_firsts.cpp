@@ -8,39 +8,41 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("firsts construction and basic validation", "[firsts]")
 {
     SECTION("empty grammar throws")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         REQUIRE_THROWS_MATCHES(
-            ptg::ruleset(sc),
-            ptg::grammar_error,
+            ruleset(sc),
+            grammar_error,
             Message("No nonterminals")
         );
     }
 
     SECTION("grammar with no rules for nterm throws in lr1_state_set but not in firsts")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
 
-        REQUIRE_NOTHROW(ptg::firsts(rs));  // firsts doesn't validate rules presence
+        REQUIRE_NOTHROW(firsts(rs));  // firsts doesn't validate rules presence
     }
 }
 
 TEST_CASE("firsts invalid index handling", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("get_nterm_firsts invalid")
     {
@@ -81,16 +83,16 @@ TEST_CASE("firsts invalid index handling", "[firsts]")
 
 TEST_CASE("firsts basic calculations", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("calculate_nterm")
     {
@@ -117,18 +119,18 @@ TEST_CASE("firsts basic calculations", "[firsts]")
 
 TEST_CASE("firsts with epsilon productions", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "c"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"b"});
     [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("calculate_nterm for nullable A")
     {
@@ -171,20 +173,20 @@ TEST_CASE("firsts with epsilon productions", "[firsts]")
 
 TEST_CASE("firsts nterm chain", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t c_idx = sc.add_nterm("C");
     [[maybe_unused]] size_t d_term_idx = sc.add_term("d");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"C"});
     [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"d"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("chain propagation")
     {
@@ -212,18 +214,18 @@ TEST_CASE("firsts nterm chain", "[firsts]")
 
 TEST_CASE("firsts calculate_all and getters", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     f.calculate_all();
 
@@ -266,15 +268,15 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
 {
     SECTION("direct left recursion with epsilon")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {});
 
-        ptg::firsts f(rs);
+        firsts f(rs);
 
         const auto& a_first = f.calculate_nterm(a_idx);
         
@@ -285,61 +287,61 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
     
     SECTION("direct left recursion no base throws")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
 
-        ptg::firsts f(rs);
+        firsts f(rs);
 
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(a_idx),
-            ptg::grammar_error,
+            grammar_error,
             Message("Nonterminal 'A' has unsolvable left recursion")
         );
     }
 
     SECTION("indirect left recursion unsolved")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"A", "c"});
 
-        ptg::firsts f(rs);
+        firsts f(rs);
 
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(a_idx),
-            ptg::grammar_error,
+            grammar_error,
             Message("Nonterminal 'A' has unsolvable left recursion")
         );
 
         REQUIRE_THROWS_MATCHES(
             f.calculate_nterm(b_idx),
-            ptg::grammar_error,
+            grammar_error,
             Message("Nonterminal 'B' has unsolvable left recursion")
         );
     }
 
     SECTION("indirect left recursion solved")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {"c"});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"A", "c"});
 
-        ptg::firsts f(rs);
+        firsts f(rs);
 
         const auto& a_first = f.calculate_nterm(a_idx);
         REQUIRE(a_first.has_value());
@@ -354,17 +356,17 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
 
     SECTION("mutual recursion not left-recursive")
     {
-        ptg::symbol_collection sc;
+        symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
         [[maybe_unused]] size_t d_term_idx = sc.add_term("d");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"c", "B"});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"d", "A"});
 
-        ptg::firsts f(rs);
+        firsts f(rs);
 
         const auto& a_first = f.calculate_nterm(a_idx);
         REQUIRE(a_first.has_value());
@@ -380,7 +382,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
 
 TEST_CASE("firsts complex grammar", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t term_idx = sc.add_nterm("Term");
     [[maybe_unused]] size_t factor_idx = sc.add_nterm("Factor");
@@ -390,7 +392,7 @@ TEST_CASE("firsts complex grammar", "[firsts]")
     [[maybe_unused]] size_t lpar_idx = sc.add_term("(");
     [[maybe_unused]] size_t rpar_idx = sc.add_term(")");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"Term"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"Expr", "+", "Term"});
     [[maybe_unused]] size_t term_r0 = rs.add_rule("Term", {"Factor"});
@@ -398,7 +400,7 @@ TEST_CASE("firsts complex grammar", "[firsts]")
     [[maybe_unused]] size_t factor_r0 = rs.add_rule("Factor", {"num"});
     [[maybe_unused]] size_t factor_r1 = rs.add_rule("Factor", {"(", "Expr", ")"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("calculate_all in complex")
     {
@@ -440,17 +442,17 @@ TEST_CASE("firsts complex grammar", "[firsts]")
 
 TEST_CASE("firsts calculate_nullable_rside_part", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "B"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("nullable rside part")
     {
@@ -461,18 +463,18 @@ TEST_CASE("firsts calculate_nullable_rside_part", "[firsts]")
 
 TEST_CASE("firsts mix individual and calculate_all", "[firsts]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"A"});
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"B", "c"});
 
-    ptg::firsts f(rs);
+    firsts f(rs);
 
     SECTION("mix")
     {

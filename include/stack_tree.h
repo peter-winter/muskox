@@ -24,43 +24,160 @@
  * branchable sequences with shared prefixes. Operations are restricted to leaves for safety, and empty
  * nodes are automatically pruned.
  *
- * Part of the larger PTG project.
+ * The stack_tree class serves as a wrapper managing the root node and providing public methods for operations.
+ *
+ * Part of the larger MuskOx project.
  */
 
-namespace ptg {
+namespace muskox
+{
 
 template <typename T> class tree_node;
 template <typename T> class iterator;
+template <typename T> class const_iterator;
 
 /**
- * @brief Creates a new branch from the given iterator with an initial value.
- * @param it The iterator to branch from (must be valid and at a leaf node).
- * @param first_value The initial value for the new child node's data.
- * @return Iterator to the new child's initial element.
- * @throw std::runtime_error If the iterator is invalid or not at a leaf node.
+ * @brief Default no-op callable for reduce.
  */
-template <typename T>
-iterator<T> branch(const iterator<T>& it, T&& first_value);
+struct noop_reduce
+{
+    template <typename U>
+    void operator()(U&&) const noexcept {}
+};
 
 /**
- * @brief Reduces the sequence by n steps, popping from leaves or decrementing otherwise.
- * @param it The starting iterator (must be valid if n > 0).
- * @param n The number of steps to reduce.
- * @return The resulting iterator after reduction (may be invalid if reduced beyond root).
- * @throw std::runtime_error If n > 0 and the starting iterator is invalid.
+ * @class stack_tree
+ * @brief Wrapper class managing the root of the stack tree and providing operation methods.
+ *
+ * This class encapsulates the root node and exposes methods for branching, reducing, and traversing the tree.
  */
 template <typename T>
-iterator<T> reduce(const iterator<T>& it, size_t n);
+class stack_tree
+{
+public:
+    using node_ptr = std::shared_ptr<tree_node<T>>;
+    using iter = iterator<T>;
+    using const_iter = const_iterator<T>;
 
-/**
- * @brief Traverses backward n steps without modifying the structure.
- * @param it The starting iterator (must be valid if n > 0).
- * @param n The number of steps to traverse back.
- * @return The resulting iterator after traversal (may be invalid if traversed beyond root).
- * @throw std::runtime_error If n > 0 and the starting iterator is invalid.
- */
-template <typename T>
-iterator<T> traverse_back(const iterator<T>& it, size_t n);
+private:
+    node_ptr root_;
+
+public:
+    /**
+     * @brief Constructs a new stack_tree with an empty root node.
+     */
+    stack_tree() : root_(tree_node<T>::create_root()) {}
+
+    /**
+     * @brief Gets the root node of the tree.
+     * @return Shared pointer to the root node.
+     */
+    node_ptr get_root() const
+    {
+        return root_;
+    }
+
+    /**
+     * @brief Creates a new branch from the given iterator with an initial value.
+     * @param it The iterator to branch from (must be valid and at a leaf node).
+     * @param first_value The initial value for the new child node's data.
+     * @return Iterator to the new child's initial element.
+     * @throw std::runtime_error If the iterator is invalid or not at a leaf node.
+     */
+    iter branch(const iter& it, T&& first_value)
+    {
+        if (!it.is_valid())
+        {
+            throw std::runtime_error("invalid iterator for branching");
+        }
+        if (!it.is_leaf_node())
+        {
+            throw std::runtime_error("can only branch from leaf nodes");
+        }
+        auto child = tree_node<T>::create_branch(it.get_current(), it.get_offset(), std::forward<T>(first_value));
+        return iter(child, 0);
+    }
+
+    /**
+     * @brief Reduces the sequence by n steps, popping from leaves or decrementing otherwise, and applies a callable to each reduced element.
+     * @tparam F The type of the callable (defaults to noop_reduce).
+     * @param it The starting iterator (must be valid if n > 0).
+     * @param n The number of steps to reduce.
+     * @param f The callable to apply to each reduced element (non-const ref when popping, const ref when traversing).
+     * @return The resulting iterator after reduction (may be invalid if reduced beyond root).
+     * @throw std::runtime_error If n > 0 and the starting iterator is invalid.
+     */
+    template <typename F = noop_reduce>
+    iter reduce(const iter& it, size_t n, F f = {})
+    {
+        if (n == 0)
+        {
+            return it;
+        }
+        if (!it.is_valid())
+        {
+            throw std::runtime_error("invalid iterator for reduce");
+        }
+        iter result = it;
+        for (size_t i = 0; i < n; ++i)
+        {
+            if (result.is_leaf_element())
+            {
+                // Popping: apply f to non-const ref
+                f(*result);
+                // At leaf end: pop and get new position.
+                result = result.get_current()->pop();
+                if (!result.is_valid())
+                {
+                    break;
+                }
+            }
+            else
+            {
+                // Traversing: apply f to const ref
+                f(*const_iterator<T>(result));
+                // Not at leaf end: just move back without pop.
+                --result;
+                if (!result.is_valid())
+                {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @brief Traverses backward n steps without modifying the structure.
+     * @tparam It The iterator type (iter or const_iter).
+     * @param it The starting iterator (must be valid if n > 0).
+     * @param n The number of steps to traverse back.
+     * @return The resulting iterator after traversal (may be invalid if traversed beyond root).
+     * @throw std::runtime_error If n > 0 and the starting iterator is invalid.
+     */
+    template <typename It>
+    It traverse_back(const It& it, size_t n) const
+    {
+        if (n == 0)
+        {
+            return it;
+        }
+        if (!it.is_valid())
+        {
+            throw std::runtime_error("invalid iterator for traverse_back");
+        }
+        It result = it;
+        for (size_t i = 0; i < n; ++i)
+        {
+            --result;
+            if (!result.is_valid())
+            {
+                break;
+            }
+        }
+        return result;
+    }
+};
 
 /**
  * @class tree_node
@@ -72,11 +189,16 @@ iterator<T> traverse_back(const iterator<T>& it, size_t n);
 template <typename T>
 class tree_node : public std::enable_shared_from_this<tree_node<T>>
 {
+public:
+    using node_ptr = std::shared_ptr<tree_node>;
+    using node_const_ptr = std::shared_ptr<const tree_node>;
+    using node_weak_ptr = std::weak_ptr<tree_node>;
+
 private:
     std::vector<T> data_; ///< Local data elements in this node.
-    std::weak_ptr<tree_node> parent_weak_; ///< Weak pointer to parent to avoid cycles.
+    node_weak_ptr parent_weak_; ///< Weak pointer to parent to avoid cycles.
     size_t prefix_length_ = 0; ///< Length of parent's data prefix visible to this node.
-    std::vector<std::shared_ptr<tree_node>> children_; ///< List of child nodes.
+    std::vector<node_ptr> children_; ///< List of child nodes.
 
     /**
      * @brief Attempts to prune this node if empty and removes it from parent.
@@ -108,6 +230,22 @@ private:
         }
     }
 
+    /**
+     * @brief Validates conditions for getting leaf element.
+     * @throw std::runtime_error If not a leaf or empty.
+     */
+    void validate_get_leaf_element() const
+    {
+        if (!is_leaf())
+        {
+            throw std::runtime_error("can only get leaf element from leaf nodes");
+        }
+        if (empty())
+        {
+            throw std::runtime_error("cannot get leaf element from empty node");
+        }
+    }
+
 public:    
     /**
      * @brief Default constructor for internal use (e.g., by make_shared).
@@ -118,9 +256,9 @@ public:
      * @brief Creates a new root node.
      * @return Shared pointer to the new root node.
      */
-    static std::shared_ptr<tree_node<T>> create_root()
+    static node_ptr create_root()
     {
-        return std::make_shared<tree_node<T>>();
+        return std::make_shared<tree_node>();
     }
 
     /**
@@ -132,9 +270,9 @@ public:
      *
      * Sets prefix_length_ to offset + 1 to include the element at the branch point.
      */
-    static std::shared_ptr<tree_node<T>> create_branch(std::shared_ptr<tree_node<T>> parent, size_t offset, T&& first_value)
+    static node_ptr create_branch(node_ptr parent, size_t offset, T&& first_value)
     {
-        auto ptr = std::make_shared<tree_node<T>>();
+        auto ptr = std::make_shared<tree_node>();
         ptr->parent_weak_ = parent;
         ptr->prefix_length_ = offset + 1;
         ptr->data_.push_back(std::forward<T>(first_value));
@@ -194,10 +332,19 @@ public:
     }
 
     /**
-     * @brief Gets the parent node.
+     * @brief Gets the parent node (non-const).
      * @return Shared pointer to parent, or nullptr if expired or root.
      */
-    std::shared_ptr<tree_node<T>> get_parent() const
+    node_ptr get_parent()
+    {
+        return parent_weak_.lock();
+    }
+
+    /**
+     * @brief Gets the parent node (const).
+     * @return Shared pointer to const parent, or nullptr if expired or root.
+     */
+    node_const_ptr get_parent() const
     {
         return parent_weak_.lock();
     }
@@ -218,15 +365,20 @@ public:
      */
     iterator<T> get_leaf_element()
     {
-        if (!is_leaf())
-        {
-            throw std::runtime_error("can only get leaf element from leaf nodes");
-        }
-        if (empty())
-        {
-            throw std::runtime_error("cannot get leaf element from empty node");
-        }
+        validate_get_leaf_element();
         return iterator<T>(this->shared_from_this(), data_.size() - 1);
+    }
+
+    /**
+     * @brief Gets a const_iterator to the last element in a leaf node's data.
+     * @return Const iterator to the leaf element.
+     * @throw std::runtime_error If not a leaf or empty.
+     */
+    const_iterator<T> get_leaf_element() const
+    {
+        validate_get_leaf_element();
+        auto const_this = std::const_pointer_cast<const tree_node>(this->shared_from_this());
+        return const_iterator<T>(const_this, data_.size() - 1);
     }
 
     /**
@@ -264,7 +416,7 @@ public:
      * @brief Removes a specific child from this node's children list.
      * @param child The child to remove.
      */
-    void remove_child(const std::shared_ptr<tree_node<T>>& child)
+    void remove_child(const node_ptr& child)
     {
         std::erase(children_, child);
     }
@@ -288,59 +440,124 @@ public:
     }
 };
 
+namespace detail
+{
+
+/**
+ * @brief Implementation of is_valid logic shared between iterator and const_iterator.
+ * @tparam NodePtr The type of node pointer.
+ * @param current The current node pointer.
+ * @param offset The current offset.
+ * @return True if valid, false otherwise.
+ */
+template <typename NodePtr>
+bool is_valid_impl(const NodePtr& current, size_t offset)
+{
+    if (!current)
+    {
+        return false;
+    }
+    if (offset >= current->data_size())
+    {
+        return false;
+    }
+    if (current->empty() && offset == 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Implementation of decrement logic shared between iterator and const_iterator.
+ * @tparam NodePtr The type of node pointer (shared_ptr<tree_node<T>> or shared_ptr<const tree_node<T>>).
+ * @param current The current node pointer (modified on decrement).
+ * @param offset The current offset (modified on decrement).
+ * @throw std::runtime_error If already invalid.
+ */
+template <typename NodePtr>
+void decrement_impl(NodePtr& current, size_t& offset)
+{
+    if (!is_valid_impl(current, offset))
+    {
+        throw std::runtime_error("cannot decrement invalid iterator");
+    }
+    while (true)
+    {
+        if (offset > 0)
+        {
+            --offset;
+            return;
+        }
+        auto parent = current->get_parent();
+        if (!parent)
+        {
+            // Reached root with offset 0: invalidate.
+            current = nullptr;
+            offset = 0;
+            return;
+        }
+        size_t pl = current->get_prefix_length();
+        current = parent;
+        if (pl > 0)
+        {
+            // Jump to end of parent's prefix.
+            offset = pl - 1;
+            return;
+        }
+        // Prefix length 0: skip this parent, continue up.
+    }
+}
+
+/**
+ * @brief Implementation of is_leaf_node logic shared between iterator and const_iterator.
+ * @tparam NodePtr The type of node pointer.
+ * @param current The current node pointer.
+ * @param offset The current offset (unused but included for consistency).
+ * @return True if valid and leaf node, false otherwise.
+ */
+template <typename NodePtr>
+bool is_leaf_node_impl(const NodePtr& current, size_t offset)
+{
+    if (!is_valid_impl(current, offset))
+    {
+        return false;
+    }
+    return current->is_leaf();
+}
+
+/**
+ * @brief Implementation of is_leaf_element logic shared between iterator and const_iterator.
+ * @tparam NodePtr The type of node pointer.
+ * @param current The current node pointer.
+ * @param offset The current offset.
+ * @return True if valid, leaf, non-empty, and at end, false otherwise.
+ */
+template <typename NodePtr>
+bool is_leaf_element_impl(const NodePtr& current, size_t offset)
+{
+    if (!is_valid_impl(current, offset))
+    {
+        return false;
+    }
+    return current->is_leaf() && !current->empty() && offset == current->data_size() - 1;
+}
+
+} // namespace detail
+
 /**
  * @class iterator
- * @brief Backward-traversing iterator for stack tree paths.
+ * @brief Backward-traversing iterator for stack tree paths (mutable version).
  *
  * Allows decrementing along the logical sequence: current node's data backward,
- * then parent's prefix backward, etc.
+ * then parent's prefix backward, etc. Dereferences to mutable T&.
  */
 template <typename T>
 class iterator
 {
 private:
-    std::shared_ptr<tree_node<T>> current_; ///< Current node.
+    tree_node<T>::node_ptr current_; ///< Current node.
     size_t offset_; ///< Offset within current node's data.
-
-    /**
-     * @brief Decrements the iterator position.
-     * @throw std::runtime_error If already invalid.
-     *
-     * Traverses backward within the node, then to parent's prefix if needed,
-     * continuing upward if prefix_length_ is 0.
-     */
-    void decrement()
-    {
-        if (!is_valid())
-        {
-            throw std::runtime_error("cannot decrement invalid iterator");
-        }
-        while (true)
-        {
-            if (offset_ > 0)
-            {
-                --offset_;
-                return;
-            }
-            auto parent = current_->get_parent();
-            if (!parent)
-            {
-                // Reached root with offset 0: invalidate.
-                current_ = nullptr;
-                offset_ = 0;
-                return;
-            }
-            size_t pl = current_->get_prefix_length();
-            current_ = parent;
-            if (pl > 0)
-            {
-                // Jump to end of parent's prefix.
-                offset_ = pl - 1;
-                return;
-            }
-            // Prefix length 0: skip this parent, continue up.
-        }
-    }
 
 public:
     /**
@@ -350,14 +567,14 @@ public:
      *
      * Validity is checked separately via is_valid().
      */
-    iterator(std::shared_ptr<tree_node<T>> node = nullptr, size_t off = 0)
+    iterator(tree_node<T>::node_ptr node = nullptr, size_t off = 0)
     : current_(node), offset_(off)
     {
         // No check in constructor for flexibility, validity checked separately
     }
 
     /**
-     * @brief Dereferences the iterator to access the element.
+     * @brief Dereferences the iterator to access the element (mutable).
      * @return Reference to the element at current position.
      * @throw std::runtime_error If invalid.
      */
@@ -373,24 +590,10 @@ public:
     /**
      * @brief Checks if the iterator is valid.
      * @return True if valid (points to a real element), false otherwise.
-     *
-     * Ensures current_ exists, offset_ < data_size(), and handles empty nodes.
      */
     bool is_valid() const
     {
-        if (!current_)
-        {
-            return false;
-        }
-        if (offset_ >= current_->data_size())
-        {
-            return false;
-        }
-        if (current_->empty() && offset_ == 0)
-        {
-            return false;
-        }
-        return true;
+        return detail::is_valid_impl(current_, offset_);
     }
 
     /**
@@ -399,11 +602,7 @@ public:
      */
     bool is_leaf_node() const
     {
-        if (!is_valid())
-        {
-            return false;
-        }
-        return current_->is_leaf();
+        return detail::is_leaf_node_impl(current_, offset_);
     }
 
     /**
@@ -412,18 +611,14 @@ public:
      */
     bool is_leaf_element() const
     {
-        if (!is_valid())
-        {
-            return false;
-        }
-        return current_->is_leaf() && !current_->empty() && offset_ == current_->data_size() - 1;
+        return detail::is_leaf_element_impl(current_, offset_);
     }
 
     /**
      * @brief Gets the current node.
      * @return Shared pointer to current node.
      */
-    std::shared_ptr<tree_node<T>> get_current() const
+    tree_node<T>::node_ptr get_current() const
     {
         return current_;
     }
@@ -443,7 +638,7 @@ public:
      */
     iterator& operator--()
     {
-        decrement();
+        detail::decrement_impl(current_, offset_);
         return *this;
     }
 
@@ -454,7 +649,7 @@ public:
     iterator operator--(int)
     {
         iterator temp = *this;
-        decrement();
+        detail::decrement_impl(current_, offset_);
         return temp;
     }
     
@@ -469,76 +664,130 @@ public:
     }
 };
 
+/**
+ * @class const_iterator
+ * @brief Backward-traversing iterator for stack tree paths (const version).
+ *
+ * Allows decrementing along the logical sequence: current node's data backward,
+ * then parent's prefix backward, etc. Dereferences to const T&.
+ */
 template <typename T>
-iterator<T> branch(const iterator<T>& it, T&& first_value)
+class const_iterator
 {
-    if (!it.is_valid())
-    {
-        throw std::runtime_error("invalid iterator for branching");
-    }
-    if (!it.is_leaf_node())
-    {
-        throw std::runtime_error("can only branch from leaf nodes");
-    }
-    auto child = tree_node<T>::create_branch(it.get_current(), it.get_offset(), std::forward<T>(first_value));
-    return iterator<T>(child, 0);
-}
+private:
+    tree_node<T>::node_const_ptr current_; ///< Current node (const).
+    size_t offset_; ///< Offset within current node's data.
 
-template <typename T>
-iterator<T> reduce(const iterator<T>& it, size_t n)
-{
-    if (n == 0)
+public:
+    /**
+     * @brief Constructs a const_iterator (possibly invalid).
+     * @param node The node to point to (const).
+     * @param off The offset in the node's data.
+     *
+     * Validity is checked separately via is_valid().
+     */
+    const_iterator(tree_node<T>::node_const_ptr node = nullptr, size_t off = 0)
+    : current_(node), offset_(off)
     {
-        return it;
+        // No check in constructor for flexibility, validity checked separately
     }
-    if (!it.is_valid())
-    {
-        throw std::runtime_error("invalid iterator for reduce");
-    }
-    iterator<T> result = it;
-    for (size_t i = 0; i < n; ++i)
-    {
-        if (!result.is_leaf_element())
-        {
-            // Not at leaf end: just move back without pop.
-            --result;
-            if (!result.is_valid())
-            {
-                break;
-            }
-            continue;
-        }
-        // At leaf end: pop and get new position.
-        result = result.get_current()->pop();
-        if (!result.is_valid())
-        {
-            break;
-        }
-    }
-    return result;
-}
 
-template <typename T>
-iterator<T> traverse_back(const iterator<T>& it, size_t n)
-{
-    if (n == 0)
-    {
-        return it;
-    }
-    if (!it.is_valid())
-    {
-        throw std::runtime_error("invalid iterator for traverse_back");
-    }
-    iterator<T> result = it;
-    for (size_t i = 0; i < n; ++i)
-    {
-        --result;
-        if (!result.is_valid())
-        {
-            break;
-        }
-    }
-    return result;
-}
+    /**
+     * @brief Converting constructor from mutable iterator.
+     */
+    const_iterator(const iterator<T>& other)
+    : current_(other.get_current()), offset_(other.get_offset())
+    {}
 
-} // namespace ptg
+    /**
+     * @brief Dereferences the iterator to access the element (const).
+     * @return Const reference to the element at current position.
+     * @throw std::runtime_error If invalid.
+     */
+    const T& operator*() const
+    {
+        if (!is_valid())
+        {
+            throw std::runtime_error("invalid iterator");
+        }
+        return current_->at(offset_);
+    }
+
+    /**
+     * @brief Checks if the iterator is valid.
+     * @return True if valid (points to a real element), false otherwise.
+     */
+    bool is_valid() const
+    {
+        return detail::is_valid_impl(current_, offset_);
+    }
+
+    /**
+     * @brief Checks if the current node is a leaf.
+     * @return True if valid and current node is leaf, false otherwise.
+     */
+    bool is_leaf_node() const
+    {
+        return detail::is_leaf_node_impl(current_, offset_);
+    }
+
+    /**
+     * @brief Checks if at the last element of a leaf node.
+     * @return True if valid, leaf, non-empty, and at end, false otherwise.
+     */
+    bool is_leaf_element() const
+    {
+        return detail::is_leaf_element_impl(current_, offset_);
+    }
+
+    /**
+     * @brief Gets the current node (const).
+     * @return Shared pointer to const current node.
+     */
+    tree_node<T>::node_const_ptr get_current() const
+    {
+        return current_;
+    }
+
+    /**
+     * @brief Gets the current offset.
+     * @return The offset_ value.
+     */
+    size_t get_offset() const
+    {
+        return offset_;
+    }
+
+    /**
+     * @brief Pre-decrement operator.
+     * @return Reference to this const_iterator after decrement.
+     */
+    const_iterator& operator--()
+    {
+        detail::decrement_impl(current_, offset_);
+        return *this;
+    }
+
+    /**
+     * @brief Post-decrement operator.
+     * @return Copy of const_iterator before decrement.
+     */
+    const_iterator operator--(int)
+    {
+        const_iterator temp = *this;
+        detail::decrement_impl(current_, offset_);
+        return temp;
+    }
+    
+    /**
+     * @brief Equality operator for const_iterators.
+     * @param other The other const_iterator to compare with.
+     * @return True if both point to the same node and offset, false otherwise.
+     */
+    bool operator==(const const_iterator& other) const
+    {
+        return current_ == other.current_ && offset_ == other.offset_;
+    }
+};
+
+} // namespace muskox

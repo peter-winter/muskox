@@ -12,7 +12,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace ptg
+namespace muskox
 {
 
 struct string_hash
@@ -74,4 +74,4 @@ public:
     std::string print_symbol_list_from_to(const symbol_list& sl, size_t start, size_t end) const;
 };
 
-} // namespace ptg
+} // namespace muskox

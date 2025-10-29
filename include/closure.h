@@ -6,7 +6,7 @@
 #include <lr1_set_item.h>
 #include <vector_n.h>
 
-namespace ptg
+namespace muskox
 {
 
 class closure
@@ -26,4 +26,4 @@ public:
     const opt_subset& calculate_full(const lr1_set_item& item);
 };
 
-} // namespace ptg
+} // namespace muskox

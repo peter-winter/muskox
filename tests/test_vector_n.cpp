@@ -5,11 +5,13 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("vector_n basic operations", "[vector_n]")
 {
-    using VN1 = ptg::vector_n<int, 1>;
-    using VN2 = ptg::vector_n<int, 2>;
-    using VN3 = ptg::vector_n<int, 3>;
+    using VN1 = vector_n<int, 1>;
+    using VN2 = vector_n<int, 2>;
+    using VN3 = vector_n<int, 3>;
 
     SECTION("constructor 1D")
     {

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <sstream>
 
-namespace ptg
+namespace muskox
 {
 
 void ruleset::validate_term_idx(size_t term_idx) const
@@ -326,4 +326,4 @@ std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
     return lp.print_list(left, "->", before_dot, ".", after_dot, "/", symbols_.get_term_name(item.lookahead_idx_));
 }
         
-} // namespace ptg
+} // namespace muskox

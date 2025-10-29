@@ -3,7 +3,7 @@
 #include <flat_indexer.h>
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 template <typename T, size_t Dim>
@@ -42,4 +42,4 @@ public:
     }
 };
 
-} // namespace ptg
+} // namespace muskox

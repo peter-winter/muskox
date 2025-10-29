@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace ptg
+namespace muskox
 {
 
 class associativity
@@ -38,4 +38,4 @@ private:
     type type_;
 };
 
-} // namespace ptg
+} // namespace muskox

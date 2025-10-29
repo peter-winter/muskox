@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace ptg
+namespace muskox
 {
 
 parse_context::parse_context(const ruleset& rs)
@@ -40,4 +40,4 @@ std::vector<std::string> parse_context::take_errors()
     return std::exchange(errors_, {});
 }
 
-} // namespace ptg
+} // namespace muskox

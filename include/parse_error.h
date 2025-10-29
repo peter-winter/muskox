@@ -2,7 +2,7 @@
 
 #include <formatted_error.h>
 
-namespace ptg
+namespace muskox
 {
 
 struct parse_error_templates
@@ -22,4 +22,4 @@ struct parse_error_templates
 
 using parse_error = formatted_message<parse_error_templates>;
 
-} // namespace ptg
+} // namespace muskox

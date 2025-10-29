@@ -1,6 +1,6 @@
 #include <nullable.h>
 
-namespace ptg
+namespace muskox
 {
 
 bool nullable::calculate_nterm_impl(
@@ -128,4 +128,4 @@ bool nullable::is_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t
     return rside_parts_.contains(nterm_idx, rside_idx, symbol_idx);
 }
 
-} // namespace ptg
+} // namespace muskox

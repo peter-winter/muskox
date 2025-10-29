@@ -33,7 +33,7 @@ add_executable(unit_tests
   test_stack_tree.cpp
 )
 
-target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain parse_table_generator_lib)
+target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain muskox_lib)
 target_include_directories(unit_tests PRIVATE ../include)
 
 if(MSVC)

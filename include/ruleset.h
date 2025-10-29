@@ -1,4 +1,3 @@
-// include/ruleset.h
 #pragma once
 
 #include <symbol_collection.h>
@@ -9,7 +8,7 @@
 #include <vector>
 #include <array>
 
-namespace ptg
+namespace muskox
 {
 
 class ruleset
@@ -88,4 +87,4 @@ public:
     std::string lr1_set_item_to_string(const lr1_set_item& item) const;
 };
 
-} // namespace ptg
+} // namespace muskox

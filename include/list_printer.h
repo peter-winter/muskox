@@ -5,7 +5,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace ptg
+namespace muskox
 {
 
 class list_printer
@@ -110,4 +110,4 @@ public:
     }
 };
 
-} // namespace ptg
+} // namespace muskox

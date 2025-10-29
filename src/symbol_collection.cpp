@@ -4,7 +4,7 @@
 
 #include <stdexcept>
 
-namespace ptg
+namespace muskox
 {
 
 symbol_collection::symbol_collection()
@@ -153,4 +153,4 @@ void symbol_collection::validate_term_idx(size_t index) const
     }
 }
     
-} // namespace ptg
+} // namespace muskox

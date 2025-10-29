@@ -5,11 +5,13 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
 {
-    using BIS1 = ptg::base_index_subset<1>;
-    using BIS2 = ptg::base_index_subset<2>;
-    using BIS3 = ptg::base_index_subset<3>;
+    using BIS1 = base_index_subset<1>;
+    using BIS2 = base_index_subset<2>;
+    using BIS3 = base_index_subset<3>;
 
     SECTION("constructor 1D")
     {

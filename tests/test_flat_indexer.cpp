@@ -5,11 +5,13 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("flat_indexer basic operations", "[flat_indexer]")
 {
-    using FI1 = ptg::flat_indexer<1>;
-    using FI2 = ptg::flat_indexer<2>;
-    using FI3 = ptg::flat_indexer<3>;
+    using FI1 = flat_indexer<1>;
+    using FI2 = flat_indexer<2>;
+    using FI3 = flat_indexer<3>;
 
     SECTION("constructor 1D")
     {
@@ -109,7 +111,7 @@ TEST_CASE("flat_indexer basic operations", "[flat_indexer]")
     SECTION("zero dim throws")
     {
         REQUIRE_THROWS_MATCHES(
-            []{ ptg::flat_indexer<0>({}); }(),
+            []{ flat_indexer<0>({}); }(),
             std::invalid_argument,
             Message("At least one dimension required")
         );

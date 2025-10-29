@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 class parse_context
@@ -35,4 +35,4 @@ private:
     std::vector<std::string> errors_;
 };
 
-} // namespace ptg
+} // namespace muskox

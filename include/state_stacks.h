@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 class state_stacks
@@ -21,4 +21,4 @@ private:
     std::vector<stack_type> stacks_;
 };
 
-} // namespace ptg
+} // namespace muskox

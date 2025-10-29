@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-namespace ptg
+namespace muskox
 {
 
 enum class symbol_type { terminal, non_terminal };
@@ -23,4 +23,4 @@ inline bool operator<(const symbol_ref& lhs, const symbol_ref& rhs)
     return std::tie(lhs.type_, lhs.index_) < std::tie(rhs.type_, rhs.index_);
 }
 
-} // namespace ptg
+} // namespace muskox

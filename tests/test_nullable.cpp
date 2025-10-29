@@ -8,19 +8,21 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("nullable computation", "[nullable]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     
     SECTION("no nullables")
     {
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -39,10 +41,10 @@ TEST_CASE("nullable computation", "[nullable]")
     {
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -61,13 +63,13 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_idx = sc.add_nterm("C");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"A"});
         [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"B", "A"});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"C"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -99,12 +101,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_idx = sc.add_term("c");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "c", "B"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -129,13 +131,13 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {"b"});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
         [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -165,12 +167,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t x_idx = sc.add_term("x");
         [[maybe_unused]] size_t y_idx = sc.add_term("y");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "x", "B", "y"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -197,12 +199,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t x_idx = sc.add_term("x");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"x", "A", "B"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -229,14 +231,14 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t plus_idx = sc.add_term("+");
         [[maybe_unused]] size_t id_idx = sc.add_term("id");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
         [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"Expr", "+", "Term"});
         [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"Term"});
         [[maybe_unused]] size_t term_r0 = rs.add_rule("Term", {"id"});
         [[maybe_unused]] size_t term_r1 = rs.add_rule("Term", {});  // Make Term nullable for test
 
-        ptg::nullable n(rs);
+        nullable n(rs);
         n.calculate_all();
 
         [[maybe_unused]] size_t root_idx = 0;
@@ -269,10 +271,10 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
-        ptg::nullable null(rs);
+        nullable null(rs);
 
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_nterm(rs.get_nterm_count()),  // Invalid nterm_idx
@@ -286,10 +288,10 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
-        ptg::nullable null(rs);
+        nullable null(rs);
 
         REQUIRE_THROWS_MATCHES(
             null.is_nullable_rside_part(rs.get_nterm_count(), 0, 0),
@@ -314,10 +316,10 @@ TEST_CASE("nullable computation", "[nullable]")
     {
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         [[maybe_unused]] size_t root_idx = 0;
 
@@ -333,10 +335,10 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         [[maybe_unused]] size_t root_idx = 0;
 
@@ -353,12 +355,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "B"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == true);
         REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == true);
@@ -373,11 +375,11 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == false);
         REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == false);
@@ -391,11 +393,11 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_nterm(a_idx) == true);  // Because of epsilon rule
         REQUIRE(n.is_nullable_nterm(a_idx) == true);
@@ -406,11 +408,11 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_term("b");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {"b"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_nterm(a_idx) == false);
         REQUIRE(n.is_nullable_nterm(a_idx) == false);
@@ -421,12 +423,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"S"});
         [[maybe_unused]] size_t a_r1 = rs.add_rule("A", {});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == true);
         REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == true);
@@ -440,11 +442,11 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"S"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_rside_part(s_idx, s_r0, 0) == false);
         REQUIRE(n.is_nullable_rside_part(s_idx, s_r0, 0) == false);
@@ -459,12 +461,12 @@ TEST_CASE("nullable computation", "[nullable]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
 
-        ptg::ruleset rs(sc);
+        ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"A"});
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"B"});
 
-        ptg::nullable n(rs);
+        nullable n(rs);
 
         REQUIRE(n.calculate_nterm(a_idx) == true);
         REQUIRE(n.is_nullable_nterm(a_idx) == true);

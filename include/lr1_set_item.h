@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-namespace ptg
+namespace muskox
 {
 
 struct lr1_set_item
@@ -23,4 +23,4 @@ struct lr1_set_item
     }
 };
 
-} // namespace ptg
+} // namespace muskox

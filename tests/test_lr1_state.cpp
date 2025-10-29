@@ -12,9 +12,11 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("lr1_state", "[lr1_state]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
@@ -22,7 +24,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
     [[maybe_unused]] size_t root_idx = 0;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
@@ -33,10 +35,10 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("basic construction")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         const auto& all_items = state.get_all_items();
         REQUIRE(all_items.get_count() == 1);
@@ -45,11 +47,11 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("construction with multiple kernel items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         const auto& all_items = state.get_all_items();
         REQUIRE(all_items.get_count() == 2);
@@ -59,12 +61,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("add items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
-        ptg::index_subset<4> additional(dims);
+        index_subset<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
         additional.add(expr_idx, expr_r0, 0, a_idx);
 
@@ -79,12 +81,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("add duplicate items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
-        ptg::index_subset<4> additional(dims);
+        index_subset<4> additional(dims);
         additional.add(root_idx, 0, 0, eof_idx);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
@@ -98,22 +100,22 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("contains all items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
-        ptg::index_subset<4> subset(dims);
+        index_subset<4> subset(dims);
         subset.add(root_idx, 0, 0, eof_idx);
         REQUIRE(state.contains_all_items(subset));
 
-        ptg::index_subset<4> full(dims);
+        index_subset<4> full(dims);
         full.add(root_idx, 0, 0, eof_idx);
         full.add(s_idx, s_r0, 0, eof_idx);
         REQUIRE(state.contains_all_items(full));
 
-        ptg::index_subset<4> extra(dims);
+        index_subset<4> extra(dims);
         extra.add(root_idx, 0, 0, eof_idx);
         extra.add(s_idx, s_r0, 0, eof_idx);
         extra.add(expr_idx, expr_r0, 0, a_idx);
@@ -122,12 +124,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get all items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
-        ptg::index_subset<4> additional(dims);
+        index_subset<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
         state.add_items(additional);
@@ -143,47 +145,47 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift on terminal")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, a_idx};
+        symbol_ref key{symbol_type::terminal, a_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::shift>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::shift>(it->second));
 
-        auto& s = std::get<ptg::lr1_state::shift>(it->second);
+        auto& s = std::get<lr1_state::shift>(it->second);
         REQUIRE(s.items_.size() == 1);
         REQUIRE(s.items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
     }
 
     SECTION("get actions - multiple shifts on same symbol")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r0, 0, c_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, a_idx};
+        symbol_ref key{symbol_type::terminal, a_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::shift>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::shift>(it->second));
 
-        auto& s = std::get<ptg::lr1_state::shift>(it->second);
+        auto& s = std::get<lr1_state::shift>(it->second);
         REQUIRE(s.items_.size() == 2);
         REQUIRE(s.items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
         REQUIRE(s.items_[1] == std::array<size_t, 4>{expr_idx, expr_r0, 1, c_idx});
@@ -191,70 +193,70 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift on non_terminal")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(s_idx, s_r0, 0, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::non_terminal, expr_idx};
+        symbol_ref key{symbol_type::non_terminal, expr_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::shift>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::shift>(it->second));
 
-        auto& s = std::get<ptg::lr1_state::shift>(it->second);
+        auto& s = std::get<lr1_state::shift>(it->second);
         REQUIRE(s.items_.size() == 1);
         REQUIRE(s.items_[0] == std::array<size_t, 4>{s_idx, s_r0, 1, b_idx});
     }
 
     SECTION("get actions - reduction")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, b_idx};
+        symbol_ref key{symbol_type::terminal, b_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::reduction>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::reduction>(it->second));
 
-        auto& r = std::get<ptg::lr1_state::reduction>(it->second);
+        auto& r = std::get<lr1_state::reduction>(it->second);
         REQUIRE(r.nterm_idx_ == expr_idx);
         REQUIRE(r.rside_idx_ == expr_r1);
     }
 
     SECTION("get actions - reduce reduce conflict")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, a_idx};
+        symbol_ref key{symbol_type::terminal, a_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::conflict>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::conflict>(it->second));
 
-        auto& c = std::get<ptg::lr1_state::conflict>(it->second);
+        auto& c = std::get<lr1_state::conflict>(it->second);
         REQUIRE(!c.s_.has_value());
         REQUIRE(c.r_.size() == 2);
         REQUIRE(c.r_[0].nterm_idx_ == expr_idx);
@@ -265,24 +267,24 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift reduce conflict")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, a_idx};
+        symbol_ref key{symbol_type::terminal, a_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::conflict>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::conflict>(it->second));
 
-        auto& c = std::get<ptg::lr1_state::conflict>(it->second);
+        auto& c = std::get<lr1_state::conflict>(it->second);
         REQUIRE(c.s_.has_value());
         REQUIRE(c.s_->items_.size() == 1);
         REQUIRE(c.s_->items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
@@ -293,26 +295,26 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - add to existing conflict")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
         kernel.add(expr_idx, expr_r0, 0, c_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         auto actions = state.get_actions();
 
         REQUIRE(actions.size() == 1);
 
-        ptg::symbol_ref key{ptg::symbol_type::terminal, a_idx};
+        symbol_ref key{symbol_type::terminal, a_idx};
 
         auto it = actions.find(key);
         REQUIRE(it != actions.end());
 
-        REQUIRE(std::holds_alternative<ptg::lr1_state::conflict>(it->second));
+        REQUIRE(std::holds_alternative<lr1_state::conflict>(it->second));
 
-        auto& c = std::get<ptg::lr1_state::conflict>(it->second);
+        auto& c = std::get<lr1_state::conflict>(it->second);
         REQUIRE(c.s_.has_value());
         REQUIRE(c.s_->items_.size() == 2);
         REQUIRE(c.s_->items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
@@ -326,22 +328,22 @@ TEST_CASE("lr1_state", "[lr1_state]")
     
     SECTION("to string - single item")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() == "$root -> . S / $eof");
     }
 
     SECTION("to string - multiple items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
-        ptg::index_subset<4> additional(dims);
+        index_subset<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
         state.add_items(additional);
@@ -354,41 +356,41 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift item")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() == "Expr -> . a Expr / b");
     }
 
     SECTION("to string - reduction item")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() == "Expr -> b . / b");
     }
 
     SECTION("to string - empty production item")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() == "Expr -> . / a");
     }
 
     SECTION("to string - mixed shift and reduce")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
             "Expr -> . a Expr / $eof\n"
@@ -398,11 +400,11 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - mixed with empty production")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r2, 0, b_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
             "Expr -> . a Expr / $eof\n"
@@ -412,12 +414,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift on nonterm, reduce, and empty")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(s_idx, s_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r2, 0, c_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
             "S -> . Expr / $eof\n"
@@ -428,13 +430,13 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - four mixed items")
     {
-        ptg::index_subset<4> kernel(dims);
+        index_subset<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r0, 1, b_idx);
         kernel.add(expr_idx, expr_r2, 0, c_idx);
 
-        ptg::lr1_state state(rs, std::move(kernel));
+        lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
             "$root -> . S / $eof\n"

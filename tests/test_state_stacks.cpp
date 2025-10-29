@@ -4,8 +4,7 @@
 
 #include <stdexcept>
 
-namespace ptg
-{
+using namespace muskox;
 
 TEST_CASE("state_stacks basics", "[state_stacks]")
 {
@@ -64,4 +63,3 @@ TEST_CASE("state_stacks basics", "[state_stacks]")
     }
 }
 
-} // namespace ptg

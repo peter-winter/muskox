@@ -9,7 +9,7 @@
 
 #include <parse_table.h>
 
-namespace ptg
+namespace muskox
 {
 
 class table_entry_hint
@@ -80,4 +80,4 @@ private:
     bool shift_over_reduce(size_t term_idx, const lr1_state::reduction& r) const;
 };
 
-} // namespace ptg
+} // namespace muskox

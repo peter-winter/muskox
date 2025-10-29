@@ -3,7 +3,7 @@
 #include <base_index_subset.h>
 #include <ruleset.h>
 
-namespace ptg
+namespace muskox
 {
 
 class nullable
@@ -37,4 +37,4 @@ public:
     bool is_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
 };
 
-} // namespace ptg
+} // namespace muskox

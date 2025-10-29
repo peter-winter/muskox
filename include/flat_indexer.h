@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <numeric>
 
-namespace ptg
+namespace muskox
 {
 
 template <size_t Dim>
@@ -129,4 +129,4 @@ private:
 };
 
 
-} // namespace ptg
+} // namespace muskox

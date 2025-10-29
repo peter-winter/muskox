@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace ptg
+namespace muskox
 {
 
 parse_result::parse_result(bool success, std::vector<std::string> errors)
@@ -38,4 +38,4 @@ std::string parse_result::errors_to_string() const
     return lp.print_container(errors_, [](const std::string& s){ return s; });
 }
 
-} // namespace ptg
+} // namespace muskox

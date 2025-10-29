@@ -5,7 +5,7 @@
 #include <string_view>
 #include <optional>
 
-namespace ptg
+namespace muskox
 {
 
 class term
@@ -27,4 +27,4 @@ private:
     std::optional<size_t> prec_;
 };
 
-} // namespace ptg
+} // namespace muskox

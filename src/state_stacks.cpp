@@ -1,9 +1,8 @@
-// state_stacks.cpp
 #include "state_stacks.h"
 
 #include <stdexcept>
 
-namespace ptg
+namespace muskox
 {
 
 state_stacks::state_stacks()
@@ -56,4 +55,4 @@ bool state_stacks::pop_n_from_stack(size_t idx, size_t n)
     return true;
 }
 
-} // namespace ptg
+} // namespace muskox

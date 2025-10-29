@@ -7,7 +7,7 @@
 #include <utility>
 #include <stdexcept>
 
-namespace ptg
+namespace muskox
 {
 
 template <typename ErrorTemplates>
@@ -49,4 +49,4 @@ public:
     }
 };
 
-} // namespace ptg
+} // namespace muskox

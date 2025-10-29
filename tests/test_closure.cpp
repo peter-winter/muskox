@@ -10,9 +10,11 @@
 
 using Catch::Matchers::Message;
 
+using namespace muskox;
+
 TEST_CASE("closure calculate", "[closure]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
@@ -22,17 +24,17 @@ TEST_CASE("closure calculate", "[closure]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
     [[maybe_unused]] size_t expr_r2 = rs.add_rule("Expr", {});
 
-    ptg::closure cl(rs);
+    closure cl(rs);
 
     SECTION("root item")
     {
-        ptg::lr1_set_item item(root_idx, 0, 0, eof_idx);  // $root -> . S / $eof
+        lr1_set_item item(root_idx, 0, 0, eof_idx);  // $root -> . S / $eof
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 2);
@@ -42,7 +44,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("item with term after dot")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);  // Expr -> . a Expr / c
+        lr1_set_item item(expr_idx, expr_r0, 0, c_idx);  // Expr -> . a Expr / c
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -51,7 +53,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("item with nterm after dot")
     {
-        ptg::lr1_set_item item(s_idx, s_r0, 0, eof_idx);  // S -> . Expr / $eof
+        lr1_set_item item(s_idx, s_r0, 0, eof_idx);  // S -> . Expr / $eof
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 4);
@@ -63,7 +65,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("item in middle")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 1, c_idx);  // Expr -> a . Expr / c
+        lr1_set_item item(expr_idx, expr_r0, 1, c_idx);  // Expr -> a . Expr / c
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 4);
@@ -75,7 +77,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("item at end")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r1, 1, c_idx);  // Expr -> b . / c
+        lr1_set_item item(expr_idx, expr_r1, 1, c_idx);  // Expr -> b . / c
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -84,7 +86,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("empty production at start")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r2, 0, c_idx);  // Expr -> . / c
+        lr1_set_item item(expr_idx, expr_r2, 0, c_idx);  // Expr -> . / c
         const auto& res = cl.calculate(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -93,7 +95,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("non-empty beta with multiple firsts")
     {
-        ptg::symbol_collection multi_sc;
+        symbol_collection multi_sc;
         [[maybe_unused]] size_t multi_a_idx = multi_sc.add_term("a");
         [[maybe_unused]] size_t multi_d_idx = multi_sc.add_term("d");
         [[maybe_unused]] size_t multi_e_idx = multi_sc.add_term("e");
@@ -105,16 +107,16 @@ TEST_CASE("closure calculate", "[closure]")
         [[maybe_unused]] size_t multi_b_idx = multi_sc.add_nterm("B");
         [[maybe_unused]] size_t multi_c_idx = multi_sc.add_nterm("C");
 
-        ptg::ruleset multi_rs(multi_sc);
+        ruleset multi_rs(multi_sc);
         [[maybe_unused]] size_t multi_s_r0 = multi_rs.add_rule("S", {"A", "C"});
         [[maybe_unused]] size_t multi_a_r0 = multi_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t multi_b_r0 = multi_rs.add_rule("B", {"a"});
         [[maybe_unused]] size_t multi_c_r0 = multi_rs.add_rule("C", {"d"});
         [[maybe_unused]] size_t multi_c_r1 = multi_rs.add_rule("C", {"e"});
 
-        ptg::closure multi_cl(multi_rs);
+        closure multi_cl(multi_rs);
 
-        ptg::lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
+        lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
         const auto& multi_res = multi_cl.calculate(multi_item);
         REQUIRE(multi_res.has_value());
         REQUIRE(multi_res.value().get_count() == 3);
@@ -125,7 +127,7 @@ TEST_CASE("closure calculate", "[closure]")
 
     SECTION("non-empty beta with multiple firsts and nullable")
     {
-        ptg::symbol_collection multi_sc;
+        symbol_collection multi_sc;
         [[maybe_unused]] size_t multi_a_idx = multi_sc.add_term("a");
         [[maybe_unused]] size_t multi_d_idx = multi_sc.add_term("d");
         [[maybe_unused]] size_t multi_e_idx = multi_sc.add_term("e");
@@ -137,7 +139,7 @@ TEST_CASE("closure calculate", "[closure]")
         [[maybe_unused]] size_t multi_b_idx = multi_sc.add_nterm("B");
         [[maybe_unused]] size_t multi_c_idx = multi_sc.add_nterm("C");
 
-        ptg::ruleset multi_rs(multi_sc);
+        ruleset multi_rs(multi_sc);
         [[maybe_unused]] size_t multi_s_r0 = multi_rs.add_rule("S", {"A", "C"});
         [[maybe_unused]] size_t multi_a_r0 = multi_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t multi_b_r0 = multi_rs.add_rule("B", {"a"});
@@ -145,9 +147,9 @@ TEST_CASE("closure calculate", "[closure]")
         [[maybe_unused]] size_t multi_c_r1 = multi_rs.add_rule("C", {"e"});
         [[maybe_unused]] size_t multi_c_r2 = multi_rs.add_rule("C", {});
 
-        ptg::closure multi_cl(multi_rs);
+        closure multi_cl(multi_rs);
 
-        ptg::lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
+        lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
         const auto& multi_res = multi_cl.calculate(multi_item);
         REQUIRE(multi_res.has_value());
         REQUIRE(multi_res.value().get_count() == 4);
@@ -160,7 +162,7 @@ TEST_CASE("closure calculate", "[closure]")
 
 TEST_CASE("closure calculate_full", "[closure]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
@@ -170,17 +172,17 @@ TEST_CASE("closure calculate_full", "[closure]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
     [[maybe_unused]] size_t expr_r2 = rs.add_rule("Expr", {});
 
-    ptg::closure cl(rs);
+    closure cl(rs);
 
     SECTION("root item")
     {
-        ptg::lr1_set_item item(root_idx, 0, 0, eof_idx);  // $root -> . S / $eof
+        lr1_set_item item(root_idx, 0, 0, eof_idx);  // $root -> . S / $eof
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 5);
@@ -193,7 +195,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("item with term after dot")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 0, c_idx);  // Expr -> . a Expr / c
+        lr1_set_item item(expr_idx, expr_r0, 0, c_idx);  // Expr -> . a Expr / c
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -202,7 +204,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("item with nterm after dot")
     {
-        ptg::lr1_set_item item(s_idx, s_r0, 0, eof_idx);  // S -> . Expr / $eof
+        lr1_set_item item(s_idx, s_r0, 0, eof_idx);  // S -> . Expr / $eof
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 4);
@@ -214,7 +216,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("item in middle")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r0, 1, c_idx);  // Expr -> a . Expr / c
+        lr1_set_item item(expr_idx, expr_r0, 1, c_idx);  // Expr -> a . Expr / c
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 4);
@@ -226,7 +228,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("item at end")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r1, 1, c_idx);  // Expr -> b . / c
+        lr1_set_item item(expr_idx, expr_r1, 1, c_idx);  // Expr -> b . / c
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -235,7 +237,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("empty production at start")
     {
-        ptg::lr1_set_item item(expr_idx, expr_r2, 0, c_idx);  // Expr -> . / c
+        lr1_set_item item(expr_idx, expr_r2, 0, c_idx);  // Expr -> . / c
         const auto& res = cl.calculate_full(item);
         REQUIRE(res.has_value());
         REQUIRE(res.value().get_count() == 1);
@@ -244,7 +246,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("chained nonterminals")
     {
-        ptg::symbol_collection chain_sc;
+        symbol_collection chain_sc;
         [[maybe_unused]] size_t chain_c_idx = chain_sc.add_term("c");
         [[maybe_unused]] size_t chain_eof_idx = 0;
         [[maybe_unused]] size_t chain_root_idx = 0;
@@ -252,14 +254,14 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t chain_a_idx = chain_sc.add_nterm("A");
         [[maybe_unused]] size_t chain_b_idx = chain_sc.add_nterm("B");
 
-        ptg::ruleset chain_rs(chain_sc);
+        ruleset chain_rs(chain_sc);
         [[maybe_unused]] size_t chain_s_r0 = chain_rs.add_rule("S", {"A"});
         [[maybe_unused]] size_t chain_a_r0 = chain_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t chain_b_r0 = chain_rs.add_rule("B", {"c"});
 
-        ptg::closure chain_cl(chain_rs);
+        closure chain_cl(chain_rs);
 
-        ptg::lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
+        lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
         const auto& chain_res = chain_cl.calculate_full(chain_item);
         REQUIRE(chain_res.has_value());
         REQUIRE(chain_res.value().get_count() == 4);
@@ -271,7 +273,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("chained nonterminals with nullable")
     {
-        ptg::symbol_collection chain_sc;
+        symbol_collection chain_sc;
         [[maybe_unused]] size_t chain_c_idx = chain_sc.add_term("c");
         [[maybe_unused]] size_t chain_eof_idx = 0;
         [[maybe_unused]] size_t chain_root_idx = 0;
@@ -279,15 +281,15 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t chain_a_idx = chain_sc.add_nterm("A");
         [[maybe_unused]] size_t chain_b_idx = chain_sc.add_nterm("B");
 
-        ptg::ruleset chain_rs(chain_sc);
+        ruleset chain_rs(chain_sc);
         [[maybe_unused]] size_t chain_s_r0 = chain_rs.add_rule("S", {"A"});
         [[maybe_unused]] size_t chain_a_r0 = chain_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t chain_b_r0 = chain_rs.add_rule("B", {"c"});
         [[maybe_unused]] size_t chain_b_r1 = chain_rs.add_rule("B", {});
 
-        ptg::closure chain_cl(chain_rs);
+        closure chain_cl(chain_rs);
 
-        ptg::lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
+        lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
         const auto& chain_res = chain_cl.calculate_full(chain_item);
         REQUIRE(chain_res.has_value());
         REQUIRE(chain_res.value().get_count() == 5);
@@ -300,7 +302,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("chained nonterminals with nullable suffix")
     {
-        ptg::symbol_collection chain_sc;
+        symbol_collection chain_sc;
         [[maybe_unused]] size_t chain_d_idx = chain_sc.add_term("d");
         [[maybe_unused]] size_t chain_eof_idx = 0;
         [[maybe_unused]] size_t chain_root_idx = 0;
@@ -309,15 +311,15 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t chain_b_idx = chain_sc.add_nterm("B");
         [[maybe_unused]] size_t chain_e_idx = chain_sc.add_nterm("E");
 
-        ptg::ruleset chain_rs(chain_sc);
+        ruleset chain_rs(chain_sc);
         [[maybe_unused]] size_t chain_s_r0 = chain_rs.add_rule("S", {"A", "E"});
         [[maybe_unused]] size_t chain_a_r0 = chain_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t chain_b_r0 = chain_rs.add_rule("B", {"d"});
         [[maybe_unused]] size_t chain_e_r0 = chain_rs.add_rule("E", {});
 
-        ptg::closure chain_cl(chain_rs);
+        closure chain_cl(chain_rs);
 
-        ptg::lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
+        lr1_set_item chain_item(chain_root_idx, 0, 0, chain_eof_idx);  // $root -> . S / $eof
         const auto& chain_res = chain_cl.calculate_full(chain_item);
         REQUIRE(chain_res.has_value());
         REQUIRE(chain_res.value().get_count() == 4);
@@ -329,7 +331,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("non-empty beta with multiple firsts")
     {
-        ptg::symbol_collection multi_sc;
+        symbol_collection multi_sc;
         [[maybe_unused]] size_t multi_a_idx = multi_sc.add_term("a");
         [[maybe_unused]] size_t multi_d_idx = multi_sc.add_term("d");
         [[maybe_unused]] size_t multi_e_idx = multi_sc.add_term("e");
@@ -341,16 +343,16 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t multi_b_idx = multi_sc.add_nterm("B");
         [[maybe_unused]] size_t multi_c_idx = multi_sc.add_nterm("C");
 
-        ptg::ruleset multi_rs(multi_sc);
+        ruleset multi_rs(multi_sc);
         [[maybe_unused]] size_t multi_s_r0 = multi_rs.add_rule("S", {"A", "C"});
         [[maybe_unused]] size_t multi_a_r0 = multi_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t multi_b_r0 = multi_rs.add_rule("B", {"a"});
         [[maybe_unused]] size_t multi_c_r0 = multi_rs.add_rule("C", {"d"});
         [[maybe_unused]] size_t multi_c_r1 = multi_rs.add_rule("C", {"e"});
 
-        ptg::closure multi_cl(multi_rs);
+        closure multi_cl(multi_rs);
 
-        ptg::lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
+        lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
         const auto& multi_res = multi_cl.calculate_full(multi_item);
         REQUIRE(multi_res.has_value());
         REQUIRE(multi_res.value().get_count() == 5);
@@ -363,7 +365,7 @@ TEST_CASE("closure calculate_full", "[closure]")
 
     SECTION("non-empty beta with multiple firsts and nullable")
     {
-        ptg::symbol_collection multi_sc;
+        symbol_collection multi_sc;
         [[maybe_unused]] size_t multi_a_idx = multi_sc.add_term("a");
         [[maybe_unused]] size_t multi_d_idx = multi_sc.add_term("d");
         [[maybe_unused]] size_t multi_e_idx = multi_sc.add_term("e");
@@ -375,7 +377,7 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t multi_b_idx = multi_sc.add_nterm("B");
         [[maybe_unused]] size_t multi_c_idx = multi_sc.add_nterm("C");
 
-        ptg::ruleset multi_rs(multi_sc);
+        ruleset multi_rs(multi_sc);
         [[maybe_unused]] size_t multi_s_r0 = multi_rs.add_rule("S", {"A", "C"});
         [[maybe_unused]] size_t multi_a_r0 = multi_rs.add_rule("A", {"B"});
         [[maybe_unused]] size_t multi_b_r0 = multi_rs.add_rule("B", {"a"});
@@ -383,9 +385,9 @@ TEST_CASE("closure calculate_full", "[closure]")
         [[maybe_unused]] size_t multi_c_r1 = multi_rs.add_rule("C", {"e"});
         [[maybe_unused]] size_t multi_c_r2 = multi_rs.add_rule("C", {});
 
-        ptg::closure multi_cl(multi_rs);
+        closure multi_cl(multi_rs);
 
-        ptg::lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
+        lr1_set_item multi_item(multi_s_idx, multi_s_r0, 0, multi_eof_idx);  // S -> . A C / $eof
         const auto& multi_res = multi_cl.calculate_full(multi_item);
         REQUIRE(multi_res.has_value());
         REQUIRE(multi_res.value().get_count() == 7);

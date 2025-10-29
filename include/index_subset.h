@@ -5,7 +5,7 @@
 #include <array>
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 template <size_t Dim>
@@ -232,4 +232,4 @@ private:
     subset_type subset_;
 };
 
-} // namespace ptg
+} // namespace muskox

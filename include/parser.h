@@ -7,7 +7,7 @@
 #include "symbol_ref.h"
 #include "symbol_stream.h"
 
-namespace ptg
+namespace muskox
 {
 
 class parser
@@ -34,4 +34,4 @@ private:
     const ruleset& rs_;
 };
 
-} // namespace ptg
+} // namespace muskox

@@ -8,23 +8,24 @@
 
 using Catch::Matchers::Message;
 
-using ptg::symbol_ref;
-using pte = ptg::parse_table_entry;
-using st = ptg::symbol_type;
+using namespace muskox;
+
+using pte = parse_table_entry;
+using st = symbol_type;
 
 TEST_CASE("parse_table basics", "[parse_table]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
 
     size_t state_count = 5;
-    ptg::parse_table pt(rs, state_count);
+    parse_table pt(rs, state_count);
 
     REQUIRE(pt.get_state_count() == state_count);
     REQUIRE(pt.get_symbol_count() == rs.get_symbol_count());
@@ -89,17 +90,17 @@ TEST_CASE("parse_table basics", "[parse_table]")
 
 TEST_CASE("parse_table validate", "[parse_table]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
 
     size_t state_count = 3;
-    ptg::parse_table pt(rs, state_count);
+    parse_table pt(rs, state_count);
 
     SECTION("valid empty")
     {
@@ -167,7 +168,7 @@ TEST_CASE("parse_table_entry limits", "[parse_table]")
 
 TEST_CASE("parse_table_generator create_parse_table simple", "[parse_table_generator]")
 {
-    ptg::symbol_collection sc;
+    symbol_collection sc;
     [[maybe_unused]] size_t root_idx = 0;
     [[maybe_unused]] size_t eof_idx = 0;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
@@ -175,13 +176,13 @@ TEST_CASE("parse_table_generator create_parse_table simple", "[parse_table_gener
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
 
-    ptg::ruleset rs(sc);
+    ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
 
-    ptg::parse_table_generator ptg(rs);
+    parse_table_generator ptg(rs);
 
-    ptg::parse_table pt = ptg.create_parse_table();
+    parse_table pt = ptg.create_parse_table();
 
     REQUIRE(pt.get_state_count() == 5);
     REQUIRE(pt.get_symbol_count() == rs.get_symbol_count());

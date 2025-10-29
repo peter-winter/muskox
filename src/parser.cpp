@@ -5,7 +5,7 @@
 
 #include <optional>
 
-namespace ptg
+namespace muskox
 {
 
 parser::parser(const parse_table& pt, const ruleset& rs)
@@ -128,4 +128,4 @@ void parser::syntax_error(parse_context& ctx, size_t term_idx) const
     ctx.add_error(err.str());
 }
 
-} // namespace ptg
+} // namespace muskox

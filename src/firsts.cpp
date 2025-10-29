@@ -1,7 +1,7 @@
 #include <firsts.h>
 #include <grammar_error.h>
 
-namespace ptg
+namespace muskox
 {
 
 firsts::firsts(const ruleset& rs)
@@ -178,4 +178,4 @@ const firsts::opt_subset& firsts::get_rside_part_firsts(size_t nterm_idx, size_t
 }
 
 
-} // namespace ptg
+} // namespace muskox

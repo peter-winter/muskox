@@ -1,10 +1,9 @@
-// include/base_index_subset.h
 #pragma once
 
 #include <flat_indexer.h>
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 template <size_t Dim>
@@ -79,4 +78,4 @@ public:
     }
 };
 
-} // namespace ptg
+} // namespace muskox

@@ -6,7 +6,7 @@
 #include <variant>
 #include <map>
 
-namespace ptg
+namespace muskox
 {
 
 class lr1_state
@@ -55,4 +55,4 @@ public:
     bool matches(const index_subset<4>& other) const;
 };
 
-} // namespace ptg
+} // namespace muskox

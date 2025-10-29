@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace ptg
+namespace muskox
 {
 
 class nterm
@@ -17,4 +17,4 @@ private:
     std::string_view name_;
 };
 
-} // namespace ptg
+} // namespace muskox

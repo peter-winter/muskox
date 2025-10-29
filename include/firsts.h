@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace ptg
+namespace muskox
 {
 
 class firsts
@@ -46,4 +46,4 @@ public:
     ~firsts() = default;
 };
 
-} // namespace ptg
+} // namespace muskox

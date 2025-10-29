@@ -8,7 +8,7 @@
 #include <limits>
 #include <stdexcept>
 
-namespace ptg
+namespace muskox
 {
 
 enum class entry_type : uint8_t { error, shift, reduce };
@@ -72,4 +72,4 @@ public:
     void validate() const;
 };
 
-} // namespace ptg
+} // namespace muskox

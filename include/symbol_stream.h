@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-namespace ptg
+namespace muskox
 {
 
 class symbol_stream
@@ -18,4 +18,4 @@ private:
     size_t pos_ = 0;
 };
 
-} // namespace ptg
+} // namespace muskox
