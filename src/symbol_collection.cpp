@@ -36,22 +36,6 @@ void symbol_collection::validate()
     validated_ = true;
 }
 
-size_t symbol_collection::add_term_impl(std::string name, std::optional<size_t> prec, associativity assoc)
-{
-    size_t index = terms_.size();
-    auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::terminal, index});
-    terms_.emplace_back(it->first, prec, assoc);
-    return index;
-}
-
-size_t symbol_collection::add_nterm_impl(std::string name)
-{
-    size_t index = nterms_.size();
-    auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::non_terminal, index});
-    nterms_.emplace_back(it->first);
-    return index;
-}
-    
 size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec, associativity assoc)
 {
     if (name[0] == '$')
@@ -155,7 +139,6 @@ std::string symbol_collection::print_symbol_list_from_to(const symbol_list& sl, 
     return lp.print_container_from_to(sl, [&](auto ref){ return get_symbol_name(ref); }, start, end);
 }
 
-
 void symbol_collection::validate_nterm_idx(size_t index) const
 {
     if (index >= nterms_.size())
@@ -170,6 +153,22 @@ void symbol_collection::validate_term_idx(size_t index) const
     {
         throw std::out_of_range("Term index out of range");
     }
+}
+
+size_t symbol_collection::add_term_impl(std::string name, std::optional<size_t> prec, associativity assoc)
+{
+    size_t index = terms_.size();
+    auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::terminal, index});
+    terms_.emplace_back(it->first, prec, assoc);
+    return index;
+}
+
+size_t symbol_collection::add_nterm_impl(std::string name)
+{
+    size_t index = nterms_.size();
+    auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::non_terminal, index});
+    nterms_.emplace_back(it->first);
+    return index;
 }
     
 } // namespace muskox

@@ -28,7 +28,7 @@ TEST_CASE("parse_table basics", "[parse_table]")
     parse_table pt(rs, state_count);
 
     REQUIRE(pt.get_state_count() == state_count);
-    REQUIRE(pt.get_symbol_count() == rs.get_symbol_count());
+    REQUIRE(pt.get_symbol_count() == rs.get_term_plus_nterm_count());
 
     SECTION("default error")
     {
@@ -185,7 +185,7 @@ TEST_CASE("parse_table_generator create_parse_table simple", "[parse_table_gener
     parse_table pt = ptg.create_parse_table();
 
     REQUIRE(pt.get_state_count() == 5);
-    REQUIRE(pt.get_symbol_count() == rs.get_symbol_count());
+    REQUIRE(pt.get_symbol_count() == rs.get_term_plus_nterm_count());
 
     // State 0: kernel {$root -> . S / $eof}, items: that + {S -> . a B / $eof}
     REQUIRE(pt.get(0, {st::terminal, a_idx}) == pte::shift(1));

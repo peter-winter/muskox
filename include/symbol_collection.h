@@ -85,46 +85,6 @@ struct string_hash
  */
 class symbol_collection
 {
-private:
-    std::vector<term> terms_; /// Vector of terminal symbols.
-    std::vector<nterm> nterms_; /// Vector of non-terminal symbols.
-    std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_; /// Map from name to symbol reference.
-    bool validated_ = false; /// Flag indicating if the collection has been validated.
-
-    /**
-     * @brief Validates a non-terminal index.
-     *
-     * @param index The index to check.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_nterm_idx(size_t index) const;
-
-    /**
-     * @brief Validates a terminal index.
-     *
-     * @param index The index to check.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_term_idx(size_t index) const;
-    
-    /**
-     * @brief Internal method to add a terminal without checks.
-     *
-     * @param name The name.
-     * @param prec Optional precedence.
-     * @param assoc Associativity.
-     * @return The index.
-     */
-    size_t add_term_impl(std::string name, std::optional<size_t> prec = std::nullopt, associativity assoc = associativity::left());
-
-    /**
-     * @brief Internal method to add a non-terminal without checks.
-     *
-     * @param name The name.
-     * @return The index.
-     */
-    size_t add_nterm_impl(std::string name);
-    
 public:
     /**
      * @brief Constructor that initializes the collection with special symbols.
@@ -269,6 +229,46 @@ public:
      * @return The string representation.
      */
     std::string print_symbol_list_from_to(const symbol_list& sl, size_t start, size_t end) const;
+
+private:
+    std::vector<term> terms_; /// Vector of terminal symbols.
+    std::vector<nterm> nterms_; /// Vector of non-terminal symbols.
+    std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_; /// Map from name to symbol reference.
+    bool validated_ = false; /// Flag indicating if the collection has been validated.
+
+    /**
+     * @brief Validates a non-terminal index.
+     *
+     * @param index The index to check.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_nterm_idx(size_t index) const;
+
+    /**
+     * @brief Validates a terminal index.
+     *
+     * @param index The index to check.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_term_idx(size_t index) const;
+    
+    /**
+     * @brief Internal method to add a terminal without checks.
+     *
+     * @param name The name.
+     * @param prec Optional precedence.
+     * @param assoc Associativity.
+     * @return The index.
+     */
+    size_t add_term_impl(std::string name, std::optional<size_t> prec = std::nullopt, associativity assoc = associativity::left());
+
+    /**
+     * @brief Internal method to add a non-terminal without checks.
+     *
+     * @param name The name.
+     * @return The index.
+     */
+    size_t add_nterm_impl(std::string name);
 };
 
 } // namespace muskox

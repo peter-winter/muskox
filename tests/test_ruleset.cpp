@@ -316,9 +316,9 @@ TEST_CASE("ruleset delegation", "[ruleset]")
         REQUIRE(rs.get_term_count() == 3);  // $eof, a, b
     }
 
-    SECTION("get_symbol_count")
+    SECTION("get_term_plus_nterm_count")
     {
-        REQUIRE(rs.get_symbol_count() == 6);  // terms + nterms
+        REQUIRE(rs.get_term_plus_nterm_count() == 6);  // terms + nterms
     }
 
     SECTION("get_nterm_name")

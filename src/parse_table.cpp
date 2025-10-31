@@ -91,7 +91,7 @@ bool parse_table_entry::operator==(const parse_table_entry& other) const
 }
 
 parse_table::parse_table(const ruleset& rs, size_t state_count)
-    : rs_(rs), state_count_(state_count), table_({state_count, rs.get_symbol_count()}, parse_table_entry{})
+    : rs_(rs), state_count_(state_count), table_({state_count, rs.get_term_plus_nterm_count()}, parse_table_entry{})
 {
 }
 
@@ -134,7 +134,7 @@ size_t parse_table::get_state_count() const
 
 size_t parse_table::get_symbol_count() const
 {
-    return rs_.get_symbol_count();
+    return rs_.get_term_plus_nterm_count();
 }
 
 void parse_table::validate() const

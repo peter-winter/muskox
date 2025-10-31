@@ -20,6 +20,7 @@
 #include "symbol_list.h"
 #include "lr1_set_item.h"
 #include "base_index_subset.h"
+#include "rside.h"
 
 #include <string_view>
 #include <vector>
@@ -44,151 +45,12 @@ class ruleset
 {
 public:
     /**
-     * @struct rside
-     * @brief Represents a right-hand side of a production rule.
-     */
-    struct rside
-    {
-        symbol_list symbols_; /// List of symbols in the right-hand side.
-        std::optional<size_t> precedence_; /// Optional precedence for the rule.
-
-        /**
-         * @brief Constructs a right-hand side.
-         *
-         * @param symbols List of symbols (default empty).
-         * @param precedence Optional precedence (default nullopt).
-         */
-        rside(symbol_list symbols = {}, std::optional<size_t> precedence = std::nullopt)
-            : symbols_(std::move(symbols)), precedence_(precedence)
-        {}
-    };
-
-private:
-    const symbol_collection& symbols_; /// Reference to the symbol collection.
-    std::vector<std::vector<rside>> rsides_; /// Rules indexed by non-terminal.
-    symbol_ref root_ = {}; /// The root non-terminal reference.
-    bool validated_ = false; /// Flag indicating if validated.
-
-    // Incremental nullable non-terminals
-    struct potentially_empty_rside
-    {
-        size_t nterm_idx_;  /// left side nonterminal
-        size_t rside_idx_;  /// rside index (all symbols are nonterminals in this rside)
-        size_t remaining_;  /// number of nonterminals in rside still not determined
-    };
-
-    std::vector<potentially_empty_rside> potentially_empty_rsides_; /// Potentially empty productions.
-    std::vector<std::vector<size_t>> appearances_in_pot_rsides_; /// Reverse index: nterm to potential rside indices.
-    base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
-
-    std::optional<base_index_subset<3>> nullable_rside_parts_; /// Nullable rule suffixes, precalculated during validation, optional for lazy init.
-
-    /**
-     * @brief Propagates nullability when a non-terminal becomes nullable.
+     * @brief Constructs a ruleset with a symbol collection.
      *
-     * @param nt_idx The newly nullable non-terminal index.
-     */
-    void propagate_nullable(size_t nt_idx);
-
-    /**
-     * @brief Internal computation for rule part nullability.
+     * Initializes with the given symbols, sets root to first user non-terminal.
      *
-     * @param nterm_idx Non-terminal index.
-     * @param rside_idx Right-hand side index.
-     * @param symbol_start_idx Starting symbol index.
-     * @return True if nullable.
-     */
-    bool compute_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx);
-    
-    /**
-     * @brief Validates inputs for adding a rule.
-     *
-     * @param left The left-hand name.
-     * @param rights The right-hand names.
-     * @return Pair of lref and rrefs.
-     * @throw grammar_error On invalid inputs.
-     */
-    std::pair<symbol_ref, symbol_list> validate_add_rule_inputs(std::string_view left, const std::vector<std::string_view>& rights) const;
-
-    /**
-     * @brief Internal addition of rside and nullable update.
-     *
-     * @param lhs_idx LHS non-terminal index.
-     * @param symbols RHS symbols.
-     * @param precedence Optional precedence.
-     * @return New rside index.
-     */
-    size_t add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence = std::nullopt);
-
-    /**
-     * @brief Computes all rule part nullabilities.
-     */
-    void compute_all_rside_parts_nullable();
-    
-    /**
-     * @brief Computes and gets if rule suffix is nullable (on demand).
-     *
-     * @param nterm_idx Non-terminal index.
-     * @param rside_idx Right-hand side index.
-     * @param symbol_idx Start index.
-     * @return True if nullable.
-     * @throw std::out_of_range If invalid indices.
-     */
-    bool calculate_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx);
-    
-    /**
-     * @brief Internal method to set the root by reference.
-     *
-     * Just sets root_, no rule addition.
-     *
-     * @param root The root symbol reference.
-     * @return The set root reference.
-     */
-    symbol_ref set_root_impl(symbol_ref root);
-
-public:
-    /**
-     * @brief Validates a terminal index.
-     *
-     * @param term_idx The index to validate.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_term_idx(size_t term_idx) const;
-
-    /**
-     * @brief Validates a non-terminal index.
-     *
-     * @param nterm_idx The index to validate.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_nterm_idx(size_t nterm_idx) const;
-
-    /**
-     * @brief Validates a right-hand side index for a non-terminal.
-     *
-     * @param nterm_idx The non-terminal index.
-     * @param rside_idx The right-hand side index.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
-
-    /**
-     * @brief Validates a symbol index in a right-hand side.
-     *
-     * @param nterm_idx The non-terminal index.
-     * @param rside_idx The right-hand side index.
-     * @param symbol_idx The symbol index.
-     * @throw std::out_of_range If invalid.
-     */
-    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
-
-    /**
-     * @brief Constructs the ruleset with a symbol collection.
-     *
-     * Initializes with the given symbols and sets up the root rule.
-     *
-     * @param symbols The symbol collection.
-     * @throw grammar_error If no non-terminals exist (besides $root).
+     * @param symbols The symbol collection (must be validated).
+     * @throw std::runtime_error If symbols not validated.
      */
     ruleset(const symbol_collection& symbols);
 
@@ -200,46 +62,45 @@ public:
     /**
      * @brief Validates the ruleset.
      *
-     * Sets root if not set (to first non-$root nterm), adds implicit $root rule.
-     * Calculates nullability for all production suffixes.
+     * Adds implicit $root rule, checks for non-terminals without rules.
+     * Computes all nullable rule parts.
      *
-     * @throw grammar_error If issues.
+     * @throw grammar_error On validation errors.
+     * @throw std::runtime_error If unexpected $root rules.
      */
     void validate();
 
     /**
-     * @brief Checks if validated.
+     * @brief Checks if the ruleset has been validated.
      *
      * @return True if validated.
      */
-    bool is_validated() const { return validated_; }
+    bool is_validated() const;
 
     /**
      * @brief Sets the root non-terminal by name.
      *
-     * Can be called multiple times; actual rule added on validate().
-     *
-     * @param name The name.
+     * @param name The name of the root non-terminal.
      * @return The root reference.
-     * @throw grammar_error If invalid.
+     * @throw grammar_error If invalid name or not a non-terminal.
      */
     symbol_ref set_root(std::string_view name);
 
     /**
-     * @brief Adds a production rule.
+     * @brief Adds a production rule by names.
      *
-     * Updates nullable incrementally.
+     * Validates inputs, adds to rules, updates nullables incrementally.
      *
-     * @param left Left-hand name.
-     * @param rights Right-hand names.
-     * @param precedence Optional.
-     * @return New rside index.
-     * @throw grammar_error If invalid.
+     * @param left Left-hand non-terminal name.
+     * @param rights Right-hand symbol names.
+     * @param precedence Optional precedence.
+     * @return New right-hand side index for the non-terminal.
+     * @throw grammar_error On invalid inputs or duplicates.
      */
     size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence = std::nullopt);
 
     /**
-     * @brief Gets the root symbol reference.
+     * @brief Gets the root non-terminal reference.
      *
      * @return The root reference.
      */
@@ -260,11 +121,11 @@ public:
     size_t get_term_count() const;
 
     /**
-     * @brief Gets the total number of symbols.
+     * @brief Gets the sum of the number of terminals and non-terminals.
      *
-     * @return The count.
+     * @return The sum of terminal and non-terminal counts.
      */
-    size_t get_symbol_count() const;
+    size_t get_term_plus_nterm_count() const;
 
     /**
      * @brief Gets the number of right-hand sides for a non-terminal.
@@ -442,6 +303,124 @@ public:
      * @return The string representation.
      */
     std::string lr1_set_item_to_string(const lr1_set_item& item) const;
+
+    /**
+     * @brief Validates a terminal index.
+     *
+     * @param term_idx The index to validate.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_term_idx(size_t term_idx) const;
+
+    /**
+     * @brief Validates a non-terminal index.
+     *
+     * @param nterm_idx The index to validate.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_nterm_idx(size_t nterm_idx) const;
+
+    /**
+     * @brief Validates a right-hand side index for a non-terminal.
+     *
+     * @param nterm_idx The non-terminal index.
+     * @param rside_idx The right-hand side index.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
+
+    /**
+     * @brief Validates a symbol index in a right-hand side.
+     *
+     * @param nterm_idx The non-terminal index.
+     * @param rside_idx The right-hand side index.
+     * @param symbol_idx The symbol index.
+     * @throw std::out_of_range If invalid.
+     */
+    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+
+private:
+    const symbol_collection& symbols_; /// Reference to the symbol collection.
+    std::vector<std::vector<rside>> rsides_; /// Rules indexed by non-terminal.
+    symbol_ref root_ = {}; /// The root non-terminal reference.
+    bool validated_ = false; /// Flag indicating if validated.
+
+    // Incremental nullable non-terminals
+    struct potentially_empty_rside
+    {
+        size_t nterm_idx_;  /// left side nonterminal
+        size_t rside_idx_;  /// rside index (all symbols are nonterminals in this rside)
+        size_t remaining_;  /// number of nonterminals in rside still not determined
+    };
+
+    std::vector<potentially_empty_rside> potentially_empty_rsides_; /// Potentially empty productions.
+    std::vector<std::vector<size_t>> appearances_in_pot_rsides_; /// Reverse index: nterm to potential rside indices.
+    base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
+
+    std::optional<base_index_subset<3>> nullable_rside_parts_; /// Nullable rule suffixes, precalculated during validation, optional for lazy init.
+
+    /**
+     * @brief Propagates nullability when a non-terminal becomes nullable.
+     *
+     * @param nt_idx The newly nullable non-terminal index.
+     */
+    void propagate_nullable(size_t nt_idx);
+
+    /**
+     * @brief Internal computation for rule part nullability.
+     *
+     * @param nterm_idx Non-terminal index.
+     * @param rside_idx Right-hand side index.
+     * @param symbol_start_idx Starting symbol index.
+     * @return True if nullable.
+     */
+    bool compute_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx);
+
+    /**
+     * @brief Validates inputs for adding a rule.
+     *
+     * @param left The left-hand name.
+     * @param rights The right-hand names.
+     * @return Pair of lref and rrefs.
+     * @throw grammar_error On invalid inputs.
+     */
+    std::pair<symbol_ref, symbol_list> validate_add_rule_inputs(std::string_view left, const std::vector<std::string_view>& rights) const;
+
+    /**
+     * @brief Internal addition of rside and nullable update.
+     *
+     * @param lhs_idx LHS non-terminal index.
+     * @param symbols RHS symbols.
+     * @param precedence Optional precedence.
+     * @return New rside index.
+     */
+    size_t add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence = std::nullopt);
+
+    /**
+     * @brief Computes all rule part nullabilities.
+     */
+    void compute_all_rside_parts_nullable();
+    
+    /**
+     * @brief Computes and gets if rule suffix is nullable (on demand).
+     *
+     * @param nterm_idx Non-terminal index.
+     * @param rside_idx Right-hand side index.
+     * @param symbol_idx Start index.
+     * @return True if nullable.
+     * @throw std::out_of_range If invalid indices.
+     */
+    bool calculate_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx);
+    
+    /**
+     * @brief Internal method to set the root by reference.
+     *
+     * Just sets root_, no rule addition.
+     *
+     * @param root The root symbol reference.
+     * @return The set root reference.
+     */
+    symbol_ref set_root_impl(symbol_ref root);
 };
 
 } // namespace muskox
