@@ -153,7 +153,7 @@ void parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, 
     for (size_t i = 0; i < c.r_.size(); ++i)
     {
         const auto& red = c.r_[i];
-        size_t r_prec = rs_.calculate_rside_precedence(red.nterm_idx_, red.rside_idx_);
+        size_t r_prec = rs_.get_effective_rside_precedence(red.nterm_idx_, red.rside_idx_);
         if (r_prec > r_prec_max)
         {
             r_prec_max = r_prec;
@@ -192,7 +192,7 @@ bool parse_table_generator::shift_over_reduce(size_t term_idx, const lr1_state::
 {
     size_t s_prec = rs_.get_term_prec(term_idx);
     auto s_ass = rs_.get_term_assoc(term_idx);
-    size_t r_prec = rs_.calculate_rside_precedence(r.nterm_idx_, r.rside_idx_);
+    size_t r_prec = rs_.get_effective_rside_precedence(r.nterm_idx_, r.rside_idx_);
     
     return (s_prec > r_prec) || ((s_prec == r_prec) && s_ass == associativity::type::right);
 }

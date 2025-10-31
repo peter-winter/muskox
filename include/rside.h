@@ -13,6 +13,7 @@
 #include "symbol_list.h"
 
 #include <optional>
+#include <vector>
 
 namespace muskox
 {
@@ -25,7 +26,8 @@ struct rside
 {
     symbol_list symbols_; /// List of symbols in the right-hand side.
     std::optional<size_t> precedence_; /// Optional precedence for the rule.
-
+    std::vector<size_t> potentially_nullable_suffixes_; /// Remaining counts for potentially nullable suffixes.
+    std::optional<size_t> effective_precedence_; /// Effective precedence, computed in ruleset::calculate_rside_precedence. Stored for optimization.
     /**
      * @brief Constructs a right-hand side.
      *
@@ -33,7 +35,9 @@ struct rside
      * @param precedence Optional precedence (default nullopt).
      */
     rside(symbol_list symbols = {}, std::optional<size_t> precedence = std::nullopt)
-        : symbols_(std::move(symbols)), precedence_(precedence)
+        : symbols_(std::move(symbols)), 
+          precedence_(precedence), 
+          effective_precedence_(std::nullopt)
     {}
 };
 

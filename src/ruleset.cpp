@@ -22,10 +22,8 @@ namespace muskox
 
 ruleset::ruleset(const symbol_collection& symbols)
     : symbols_(symbols), 
-      rsides_(symbols.get_nterm_count()),
+      nterms_data_(symbols.get_nterm_count()),
       validated_(false),
-      potentially_empty_rsides_(),
-      appearances_in_pot_rsides_(symbols.get_nterm_count()),
       nullable_nterms_({symbols.get_nterm_count()})
 {
     if (!symbols_.is_validated())
@@ -38,8 +36,10 @@ ruleset::ruleset(const symbol_collection& symbols)
 
 void ruleset::validate()
 {
+    validated_ = true;
+    
     // Add implicit rule for $root, throw if rules for $root already exist
-    if (!rsides_[0].empty())
+    if (!nterms_data_[0].rsides_.empty())
     {
         throw std::runtime_error("Unexpected $root rside");
     }
@@ -56,9 +56,14 @@ void ruleset::validate()
         }
     }
     
-    compute_all_suffixes_nullable();
-    
-    validated_ = true;
+    // calculate all effective rside precedences
+    for (size_t i = 0; i < get_nterm_count(); ++i)
+    {
+        for (size_t j = 0; j < get_nterm_rside_count(i); ++j)
+        {
+            calculate_effective_rside_precedence(i, j);
+        }
+    }
 }
 
 bool ruleset::is_validated() const
@@ -68,6 +73,11 @@ bool ruleset::is_validated() const
 
 symbol_ref ruleset::set_root(std::string_view name)
 {
+    if (validated_)
+    {
+        throw std::runtime_error("Cannot set root after validation");
+    }
+    
     if (name[0] == '$')
     {
         throw grammar_error(grammar_error::code::cannot_refer_special, name);
@@ -93,6 +103,11 @@ symbol_ref ruleset::set_root(std::string_view name)
 
 size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence)
 {
+    if (validated_)
+    {
+        throw std::runtime_error("Cannot add rules after validation");
+    }
+    
     auto [lref, rrefs] = validate_add_rule_inputs(left, rights);
     return add_rside_impl(lref.index_, std::move(rrefs), precedence);
 }
@@ -120,15 +135,15 @@ size_t ruleset::get_term_plus_nterm_count() const
 size_t ruleset::get_nterm_rside_count(size_t nterm_idx) const
 {
     validate_nterm_idx(nterm_idx);
-    return rsides_[nterm_idx].size();
+    return nterms_data_[nterm_idx].rsides_.size();
 }
 
 size_t ruleset::get_max_rside_count() const
 {
     size_t max = 0;
-    for (const auto& nterm_rsides : rsides_)
+    for (const auto& nd : nterms_data_)
     {
-        max = std::max(max, nterm_rsides.size());
+        max = std::max(max, nd.rsides_.size());
     }
     return max;
 }
@@ -136,7 +151,7 @@ size_t ruleset::get_max_rside_count() const
 size_t ruleset::get_symbol_count(size_t nterm_idx, size_t rside_idx) const
 {
     validate_rside_idx(nterm_idx, rside_idx);
-    return rsides_[nterm_idx][rside_idx].symbols_.size();
+    return nterms_data_[nterm_idx].rsides_[rside_idx].symbols_.size();
 }
 
 size_t ruleset::get_max_symbol_count() const
@@ -155,7 +170,7 @@ size_t ruleset::get_max_symbol_count() const
 symbol_ref ruleset::get_symbol(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
     validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
-    return rsides_[nterm_idx][rside_idx].symbols_[suffix_idx];
+    return nterms_data_[nterm_idx].rsides_[rside_idx].symbols_[suffix_idx];
 }
 
 symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
@@ -193,56 +208,65 @@ associativity::type ruleset::get_term_assoc(size_t term_idx) const
     return symbols_.get_term_assoc(term_idx).get();
 }
 
-std::optional<size_t> ruleset::get_rside_precedence(size_t nterm_idx, size_t rside_idx) const
+size_t ruleset::get_effective_rside_precedence(size_t nterm_idx, size_t rside_idx) const
 {
-    validate_rside_idx(nterm_idx, rside_idx);
-    return rsides_[nterm_idx][rside_idx].precedence_;
-}
-
-size_t ruleset::calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) const
-{
-    validate_rside_idx(nterm_idx, rside_idx);
-    
-    auto r_prec = get_rside_precedence(nterm_idx, rside_idx);
-    if (r_prec.has_value())
-        return r_prec.value();
-    
-    size_t ret = 0;
-    
-    for (size_t i = get_symbol_count(nterm_idx, rside_idx); i-- > 0;)
+    if (!validated_)
     {
-        auto ref = get_symbol(nterm_idx, rside_idx, i);
-        if (ref.type_ == symbol_type::terminal)
-        {
-            auto s_prec = symbols_.get_term_prec(ref.index_);
-            if (s_prec.has_value())
-            {
-                return s_prec.value();
-            }
-        }
+        throw std::runtime_error("Cannot query effective rside precedence before validation");
     }
     
-    return ret;
+    validate_rside_idx(nterm_idx, rside_idx);
+    
+    return nterms_data_[nterm_idx].rsides_[rside_idx].effective_precedence_.value();
+}
+
+std::optional<size_t> ruleset::get_explicit_rside_precedence(size_t nterm_idx, size_t rside_idx) const
+{
+    validate_rside_idx(nterm_idx, rside_idx);
+    
+    return nterms_data_[nterm_idx].rsides_[rside_idx].precedence_;
 }
 
 std::array<size_t, 3> ruleset::get_suffix_space_dims() const
 {
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot query suffix space dims before validation");
+    }
+    
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count()};
 }
 
 std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
 {
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot lr1 set item space dims before validation");
+    }
+    
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count() + 1, get_term_count()};
 }
 
 bool ruleset::is_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot query suffix nullability before validation");
+    }
+    
     validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
-    return nullable_suffixes_.value().contains(nterm_idx, rside_idx, suffix_idx);
+    
+    const auto& count = nterms_data_[nterm_idx].rsides_[rside_idx].potentially_nullable_suffixes_[suffix_idx];
+    return count == 0;
 }
 
 bool ruleset::is_nterm_nullable(size_t idx) const
 {
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot query nterm nullability before validation");
+    }
+    
     validate_nterm_idx(idx);
     return nullable_nterms_.contains(idx);
 }
@@ -282,13 +306,18 @@ std::string ruleset::to_string() const
     };
     
     list_printer ruleset_printer("", "\n\n", "");
-    return ruleset_printer.print_container(rsides_, print_nterm);
+    std::vector<std::vector<rside>> all_rsides;
+    for (const auto& nd : nterms_data_)
+    {
+        all_rsides.push_back(nd.rsides_);
+    }
+    return ruleset_printer.print_container(all_rsides, print_nterm);
 }
 
 std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
 {
     std::string_view left = symbols_.get_nterm_name(item.nterm_idx_);
-    const auto& rs = rsides_[item.nterm_idx_][item.rside_idx_];
+    const auto& rs = nterms_data_[item.nterm_idx_].rsides_[item.rside_idx_];
     
     list_printer lp;
     
@@ -342,16 +371,17 @@ void ruleset::propagate_nullable(size_t nt_idx)
     {
         size_t nt = q.front();
         q.pop();
-        for (size_t pot_idx : appearances_in_pot_rsides_[nt])
+        for (const auto& appearance : nterms_data_[nt].appearances_in_potentially_nullable_suffixes_)
         {
-            auto& per = potentially_empty_rsides_[pot_idx];
-            if (per.remaining_ > 0)
+            auto& rside = nterms_data_[appearance.nterm_idx].rsides_[appearance.rside_idx];
+            auto& remaining = rside.potentially_nullable_suffixes_[appearance.suffix_idx];
+            if (remaining > 0)
             {
-                --per.remaining_;
-                if (per.remaining_ == 0)
+                --remaining;
+                if (remaining == 0)
                 {
-                    size_t lhs = per.nterm_idx_;
-                    if (nullable_nterms_.add(lhs))
+                    size_t lhs = appearance.nterm_idx;
+                    if (appearance.suffix_idx == 0 && nullable_nterms_.add(lhs))
                     {
                         q.push(lhs);
                     }
@@ -359,23 +389,6 @@ void ruleset::propagate_nullable(size_t nt_idx)
             }
         }
     }
-}
-
-bool ruleset::compute_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx)
-{
-    bool ret = true;
-    
-    for (size_t symbol_idx = suffix_idx; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
-    {
-        auto ref = get_symbol(nterm_idx, rside_idx, symbol_idx);
-        if (ref.type_ == symbol_type::terminal || !is_nterm_nullable(ref.index_))
-        {
-            ret = false;
-            break;
-        }
-    }
-    
-    return ret;
 }
 
 std::pair<symbol_ref, symbol_list> ruleset::validate_add_rule_inputs(std::string_view left, const std::vector<std::string_view>& rights) const
@@ -423,84 +436,55 @@ std::pair<symbol_ref, symbol_list> ruleset::validate_add_rule_inputs(std::string
 
 size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence)
 {
-    rsides_[lhs_idx].emplace_back(std::move(symbols), precedence);
-    size_t new_rside_idx = rsides_[lhs_idx].size() - 1;
-
-    // Incremental nullable update
-    const auto& new_symbols = rsides_[lhs_idx][new_rside_idx].symbols_;
-    bool all_nterms = true;
-    size_t remaining = 0;
-    for (const auto& sym : new_symbols)
+    auto& nd = nterms_data_[lhs_idx];
+    nd.rsides_.emplace_back(std::move(symbols), precedence);
+    size_t new_rside_idx = nd.rsides_.size() - 1;
+    auto& new_rside = nd.rsides_.back();
+    const auto& new_symbols = new_rside.symbols_;
+    new_rside.potentially_nullable_suffixes_.resize(new_symbols.size(), std::numeric_limits<size_t>::max());
+    
+    // Immediately propagate, nothing to track
+    if (new_symbols.empty())
     {
-        if (sym.type_ == symbol_type::terminal)
+        if (nullable_nterms_.add(lhs_idx))
         {
-            all_nterms = false;
-            break;
+            propagate_nullable(lhs_idx);
         }
-        else
-        {
-            size_t nt_idx = sym.index_;
-            if (!nullable_nterms_.contains(nt_idx))
-            {
-                ++remaining;
-                appearances_in_pot_rsides_[nt_idx].push_back(potentially_empty_rsides_.size());
-            }
-        }
+        return new_rside_idx;
+    }
+    
+    // Find the start of the trailing all-non-terminals segment
+    size_t trail_start = new_symbols.size();
+    while (trail_start != 0 && new_symbols[trail_start - 1].type_ != symbol_type::terminal)
+    {
+        --trail_start;
     }
 
-    if (all_nterms)
+    if (trail_start < new_symbols.size())
     {
-        potentially_empty_rsides_.emplace_back(potentially_empty_rside{lhs_idx, new_rside_idx, remaining});
-        if (remaining == 0)
+        // Compute cumulative remaining from the end
+        size_t cumulative_remaining = 0;
+        for (std::size_t i = new_symbols.size(); i-- != trail_start; )
         {
-            if (nullable_nterms_.add(lhs_idx))
+            size_t suffix_idx = i;
+            size_t nt_idx = new_symbols[suffix_idx].index_;
+            size_t add_to_remaining = nullable_nterms_.contains(nt_idx) ? 0 : 1;
+            cumulative_remaining += add_to_remaining;
+            new_rside.potentially_nullable_suffixes_[suffix_idx] = cumulative_remaining;
+            if (add_to_remaining > 0)
             {
-                propagate_nullable(lhs_idx);
+                nterms_data_[nt_idx].appearances_in_potentially_nullable_suffixes_.emplace_back(suffix_ref{lhs_idx, new_rside_idx, suffix_idx});
             }
-        }
-    }
-
-    return new_rside_idx;
-}
-
-void ruleset::compute_all_suffixes_nullable()
-{
-    nullable_suffixes_ = base_index_subset<3>(get_suffix_space_dims(), false);
-    for (size_t nterm_idx = 0; nterm_idx < get_nterm_count(); ++nterm_idx)
-    {
-        for (size_t rside_idx = 0; rside_idx < get_nterm_rside_count(nterm_idx); ++rside_idx)
-        {
-            for (size_t suffix_idx = 0; suffix_idx < get_symbol_count(nterm_idx, rside_idx); ++suffix_idx)
+            if (cumulative_remaining == 0 && suffix_idx == 0)
             {
-                bool is_nullable = compute_suffix_nullable(nterm_idx, rside_idx, suffix_idx);
-                if (is_nullable)
+                if (nullable_nterms_.add(lhs_idx))
                 {
-                    nullable_suffixes_.value().add(nterm_idx, rside_idx, suffix_idx);
+                    propagate_nullable(lhs_idx);
                 }
             }
         }
     }
-}
-
-bool ruleset::calculate_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx)
-{
-    validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
-    
-    if (!nullable_suffixes_.has_value())
-    {
-        nullable_suffixes_ = base_index_subset<3>(get_suffix_space_dims());
-    }
-    
-    if (nullable_suffixes_.value().contains(nterm_idx, rside_idx, suffix_idx))
-    {
-        return true;
-    }
-    bool ret = compute_suffix_nullable(nterm_idx, rside_idx, suffix_idx);
-    if (ret)
-    {
-        nullable_suffixes_.value().add(nterm_idx, rside_idx, suffix_idx);
-    }
-    return ret;
+    return new_rside_idx;
 }
 
 symbol_ref ruleset::set_root_impl(symbol_ref root)
@@ -508,5 +492,37 @@ symbol_ref ruleset::set_root_impl(symbol_ref root)
     root_ = root;
     return root_;
 }
-        
+
+size_t ruleset::calculate_effective_rside_precedence(size_t nterm_idx, size_t rside_idx)
+{
+    size_t ret = 0;
+    
+    auto& stored_effective_prec = nterms_data_[nterm_idx].rsides_[rside_idx].effective_precedence_;
+    
+    auto opt_explicit_prec = nterms_data_[nterm_idx].rsides_[rside_idx].precedence_;
+    if (opt_explicit_prec.has_value())
+    {
+        ret = opt_explicit_prec.value();
+    }
+    else
+    {
+        for (size_t i = get_symbol_count(nterm_idx, rside_idx); i-- > 0;)
+        {
+            auto ref = get_symbol(nterm_idx, rside_idx, i);
+            if (ref.type_ == symbol_type::terminal)
+            {
+                auto s_prec = symbols_.get_term_prec(ref.index_);
+                if (s_prec.has_value())
+                {
+                    ret = s_prec.value();
+                    break;
+                }
+            }
+        }
+    }
+    
+    stored_effective_prec = ret;
+    return ret;
+}
+
 } // namespace muskox

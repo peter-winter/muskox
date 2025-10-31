@@ -24,24 +24,30 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("basic add")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a", "B"});
-        REQUIRE(ridx == 0);
+        [[maybe_unused]] size_t r1_idx = rs.add_rule("S", {"a", "B"});
+        [[maybe_unused]] size_t r2_idx = rs.add_rule("B", {"a"});
+        rs.validate();
+        
+        REQUIRE(r1_idx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 2);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 0) == symbol_type::terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx, 0) == a_idx);
-        REQUIRE(rs.get_symbol_type(s_idx, ridx, 1) == symbol_type::non_terminal);
-        REQUIRE(rs.get_symbol_index(s_idx, ridx, 1) == b_idx);
-        REQUIRE(!rs.get_rside_precedence(s_idx, ridx).has_value());
+        REQUIRE(rs.get_symbol_count(s_idx, r1_idx) == 2);
+        REQUIRE(rs.get_symbol_type(s_idx, r1_idx, 0) == symbol_type::terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, r1_idx, 0) == a_idx);
+        REQUIRE(rs.get_symbol_type(s_idx, r1_idx, 1) == symbol_type::non_terminal);
+        REQUIRE(rs.get_symbol_index(s_idx, r1_idx, 1) == b_idx);
+        REQUIRE(!rs.get_explicit_rside_precedence(s_idx, r1_idx).has_value());
     }
 
     SECTION("empty right side")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {});
-        REQUIRE(ridx == 0);
+        [[maybe_unused]] size_t r1_idx = rs.add_rule("S", {});
+        [[maybe_unused]] size_t r2_idx = rs.add_rule("B", {"a"});
+        rs.validate();
+        
+        REQUIRE(r1_idx == 0);
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 1);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx) == 0);
-        REQUIRE(!rs.get_rside_precedence(s_idx, ridx).has_value());
+        REQUIRE(rs.get_symbol_count(s_idx, r1_idx) == 0);
+        REQUIRE(!rs.get_explicit_rside_precedence(s_idx, r1_idx).has_value());
     }
 
     SECTION("lside_not_exists")
@@ -73,17 +79,26 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 
     SECTION("explicit precedence")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a", "B"}, 5);
-        REQUIRE(rs.get_rside_precedence(s_idx, ridx) == 5);
+        [[maybe_unused]] size_t r1_idx = rs.add_rule("S", {"a", "B"}, 5);
+        [[maybe_unused]] size_t r2_idx = rs.add_rule("B", {"a"});
+        rs.validate();
+        
+        REQUIRE_FALSE(rs.get_explicit_rside_precedence(b_idx, r2_idx).has_value());
+        REQUIRE(rs.get_explicit_rside_precedence(s_idx, r1_idx).has_value());
+        REQUIRE(rs.get_explicit_rside_precedence(s_idx, r1_idx).value() == 5);
     }
 
     SECTION("multiple rules")
     {
-        [[maybe_unused]] size_t ridx1 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t ridx2 = rs.add_rule("S", {"B"});
+        [[maybe_unused]] size_t r1_idx = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t r2_idx = rs.add_rule("S", {"B"});
+        [[maybe_unused]] size_t r3_idx = rs.add_rule("B", {});
+        rs.validate();
+        
         REQUIRE(rs.get_nterm_rside_count(s_idx) == 2);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx1) == 1);
-        REQUIRE(rs.get_symbol_count(s_idx, ridx2) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, r1_idx) == 1);
+        REQUIRE(rs.get_symbol_count(s_idx, r2_idx) == 1);
+        REQUIRE(rs.get_symbol_count(b_idx, r3_idx) == 0);
     }
 }
 
@@ -104,6 +119,8 @@ TEST_CASE("ruleset dims", "[ruleset]")
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
+    
+    rs.validate();
 
     SECTION("rside part space dims")
     {
@@ -138,6 +155,8 @@ TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
 
+    rs.validate();
+    
     SECTION("dot at beginning")
     {
         lr1_set_item item(expr_idx, expr_r0, 0, c_idx);
@@ -224,7 +243,7 @@ TEST_CASE("ruleset root", "[ruleset]")
     }
 }
 
-TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
+TEST_CASE("ruleset get_effective_rside_precedence", "[ruleset]")
 {
     symbol_collection sc;
         
@@ -238,63 +257,82 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
     sc.validate();
     
     ruleset rs(sc);
-
+    
     SECTION("explicit precedence")
     {
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {"Expr"});
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "b"}, 100);
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 100);
+        
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 100);
     }
 
     SECTION("no explicit, last term prec")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
-        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 10);
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {"a"});
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {});
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(s_idx, ridx) == 10);
     }
 
     SECTION("no explicit, multiple terms, last with prec")
     {
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {});
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"Expr", "+", "Expr"});
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 20);
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 20);
     }
 
     SECTION("no explicit, last no prec, previous has")
     {
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {"Expr"});
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"Expr", "*", "id"});
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 30);
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 30);
     }
 
     SECTION("no terms with prec")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"id"});
-        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 0);
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {"id"});
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {});
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(s_idx, ridx) == 0);
     }
 
     SECTION("empty rside")
     {
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {});
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {});
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 0);
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 0);
     }
 
     SECTION("only nonterms")
     {
-        [[maybe_unused]] size_t ridx = rs.add_rule("S", {"Expr"});
-        REQUIRE(rs.calculate_rside_precedence(s_idx, ridx) == 0);
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {"Expr"});
+        [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {});
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(s_idx, sidx) == 0);
     }
 
     SECTION("mixed, last terminal no prec, but earlier has")
     {
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "Expr", "b"});
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 10);  // last b has none, previous a has 10
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {});
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 10);  // last b has none, previous a has 10
     }
 
     SECTION("no explicit, first has prec, last no")
     {
         [[maybe_unused]] size_t ridx = rs.add_rule("Expr", {"a", "id"});
-        REQUIRE(rs.calculate_rside_precedence(expr_idx, ridx) == 10);
+        [[maybe_unused]] size_t sidx = rs.add_rule("S", {});
+        rs.validate();
+        REQUIRE(rs.get_effective_rside_precedence(expr_idx, ridx) == 10);
     }
 }
 
-TEST_CASE("ruleset delegation", "[ruleset]")
+TEST_CASE("ruleset to symbol collection delegation", "[ruleset]")
 {
     symbol_collection sc;
     
@@ -358,6 +396,8 @@ TEST_CASE("ruleset space dims", "[ruleset]")
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
 
+    rs.validate();
+    
     SECTION("get_suffix_space_dims")
     {
         auto dims = rs.get_suffix_space_dims();
@@ -389,6 +429,8 @@ TEST_CASE("ruleset user idx validation", "[ruleset]")
 
     [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
 
+    rs.validate();
+    
     SECTION("validate_term_idx valid")
     {
         REQUIRE_NOTHROW(rs.validate_term_idx(a_idx));
@@ -467,3 +509,79 @@ TEST_CASE("ruleset validation", "[ruleset]")
     }
 }
 
+TEST_CASE("ruleset before/after validation", "[ruleset]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_idx = sc.add_term("b");
+    sc.validate();
+
+    ruleset rs(sc);
+
+    SECTION("before validation")
+    {
+        [[maybe_unused]] size_t r_idx = rs.add_rule("S", {"a"});
+        
+        REQUIRE_NOTHROW(rs.add_rule("S", {"a"}));
+        REQUIRE_NOTHROW(rs.set_root("S"));
+                
+        REQUIRE_THROWS_MATCHES(
+            rs.get_effective_rside_precedence(s_idx, r_idx),
+            std::runtime_error,
+            Message("Cannot query effective rside precedence before validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_suffix_space_dims(),
+            std::runtime_error,
+            Message("Cannot query suffix space dims before validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_lr1_set_item_space_dims(),
+            std::runtime_error,
+            Message("Cannot lr1 set item space dims before validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.is_suffix_nullable(s_idx, r_idx, 0),
+            std::runtime_error,
+            Message("Cannot query suffix nullability before validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.is_nterm_nullable(s_idx),
+            std::runtime_error,
+            Message("Cannot query nterm nullability before validation")
+        );
+    
+        rs.validate();
+    
+        REQUIRE_THROWS_MATCHES(
+            rs.add_rule("S", {"b"}), 
+            std::runtime_error,
+            Message("Cannot add rules after validation")
+        );
+    
+        REQUIRE_THROWS_MATCHES(
+            rs.set_root("S"),
+            std::runtime_error,
+            Message("Cannot set root after validation")
+        );
+        
+        REQUIRE_NOTHROW(rs.get_effective_rside_precedence(s_idx, r_idx));
+        REQUIRE_NOTHROW(rs.get_suffix_space_dims());
+        REQUIRE_NOTHROW(rs.get_lr1_set_item_space_dims());
+        REQUIRE_NOTHROW(rs.is_suffix_nullable(s_idx, r_idx, 0));
+        REQUIRE_NOTHROW(rs.is_nterm_nullable(s_idx));
+    }
+
+    SECTION("is_validated")
+    {
+        REQUIRE(!rs.is_validated());
+        rs.add_rule("S", {"b"});
+        rs.validate();
+        REQUIRE(rs.is_validated());
+    }
+}

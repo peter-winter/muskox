@@ -6,8 +6,7 @@
  * rules of a grammar, including left-hand non-terminals and right-hand symbol lists.
  * It supports adding rules, setting the root, querying dimensions and counts,
  * and generating string representations. Validation methods ensure index integrity.
- * Additionally, it computes nullable non-terminals incrementally during rule addition
- * and all nullable rule suffixes during validation.
+ * Additionally, it computes nullable non-terminals and all nullable rule suffixes incrementally during rule addition.
  *
  * Integrates with symbol_collection for symbol references.
  *
@@ -21,6 +20,7 @@
 #include "lr1_set_item.h"
 #include "base_index_subset.h"
 #include "rside.h"
+#include "nterm_data.h"
 
 #include <string_view>
 #include <vector>
@@ -38,8 +38,7 @@ namespace muskox
  * Each right-hand side is a list of symbols with optional precedence.
  * Provides methods for adding rules, setting the root, querying structure,
  * and string conversion. Ensures consistency with the symbol collection.
- * Computes nullable non-terminals incrementally upon adding rules and
- * nullable suffixes on demand.
+ * Computes nullable non-terminals all nullable rule suffixes incrementally upon adding rules .
  */
 class ruleset
 {
@@ -79,10 +78,13 @@ public:
 
     /**
      * @brief Sets the root non-terminal by name.
+     * 
+     * Requires validation to not have been called.
      *
      * @param name The name of the root non-terminal.
      * @return The root reference.
      * @throw grammar_error If invalid name or not a non-terminal.
+     * @throw std::runtime_error If called after validation.
      */
     symbol_ref set_root(std::string_view name);
 
@@ -90,12 +92,14 @@ public:
      * @brief Adds a production rule by names.
      *
      * Validates inputs, adds to rules, updates nullables incrementally.
-     *
+     * Requires validation to not have been called.
+     * 
      * @param left Left-hand non-terminal name.
      * @param rights Right-hand symbol names.
      * @param precedence Optional precedence.
      * @return New right-hand side index for the non-terminal.
      * @throw grammar_error On invalid inputs or duplicates.
+     * @throw std::runtime_error If called after validation.
      */
     size_t add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence = std::nullopt);
 
@@ -230,40 +234,46 @@ public:
     associativity::type get_term_assoc(size_t term_idx) const;
 
     /**
-     * @brief Gets the explicit precedence of a right-hand side.
+     * @brief Gets the effective precedence of a right-hand side.
+     * 
+     * Calls calculate_rside_precedence and stores it in rside for future calls.
+     * Requires validation to have been called.
      *
+     * @param nterm_idx The non-terminal index.
+     * @param rside_idx The right-hand side index.
+     * @return Precedence.
+     * @throw std::out_of_range If indices invalid.
+     * @throw std::runtime_error If called before validation.
+     */
+    size_t get_effective_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
+    
+    /**
+     * @brief Gets the explicit precedence of a right-hand side.
+     * 
      * @param nterm_idx The non-terminal index.
      * @param rside_idx The right-hand side index.
      * @return Optional precedence.
      * @throw std::out_of_range If indices invalid.
      */
-    std::optional<size_t> get_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
-
-    /**
-     * @brief Calculates the effective precedence of a right-hand side.
-     *
-     * Uses the explicit precedence if set; otherwise, scans the right-hand side from right to left
-     * and returns the precedence of the first (rightmost) terminal that has a defined precedence.
-     * Returns 0 if no explicit precedence is set and no terminal in the right-hand side has a defined precedence.
-     *
-     * @param nterm_idx The non-terminal index.
-     * @param rside_idx The right-hand side index.
-     * @return The effective precedence (0 if none).
-     * @throw std::out_of_range If indices invalid.
-     */
-    size_t calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
-
+    std::optional<size_t> get_explicit_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
+    
     /**
      * @brief Gets dimensions for suffixes.
      *
+     * Requires validation to have been called.
+     * 
      * @return Array of {nterms, max rsides, max symbols}.
+     * @throw std::runtime_error If called before validation.
      */
     std::array<size_t, 3> get_suffix_space_dims() const;
 
     /**
      * @brief Gets dimensions for LR(1) set items.
      *
+     * Requires validation to have been called.
+     * 
      * @return Array of {nterms, max rsides, max symbols + 1, terms}.
+     * @throw std::runtime_error If called before validation.
      */
     std::array<size_t, 4> get_lr1_set_item_space_dims() const;
     
@@ -276,16 +286,20 @@ public:
      * @param rside_idx Right-hand side index.
      * @param suffix_idx Start index.
      * @return True if nullable.
-     * @throw std::out_of_range If invalid or not validated.
+     * @throw std::out_of_range If invalid.
+     * @throw std::runtime_error If called before validation.
      */
     bool is_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
     /**
      * @brief Checks if a non-terminal is nullable.
+     * 
+     * Requires validation to have been called.
      *
      * @param idx Index.
      * @return True if nullable.
      * @throw std::out_of_range If invalid.
+     * @throw std::runtime_error If called before validation.
      */
     bool is_nterm_nullable(size_t idx) const;
 
@@ -341,23 +355,11 @@ public:
 
 private:
     const symbol_collection& symbols_; /// Reference to the symbol collection.
-    std::vector<std::vector<rside>> rsides_; /// Rules indexed by non-terminal.
+    std::vector<nterm_data> nterms_data_; /// Data for each non-terminal.
     symbol_ref root_ = {}; /// The root non-terminal reference.
     bool validated_ = false; /// Flag indicating if validated.
 
-    // Incremental nullable non-terminals
-    struct potentially_empty_rside
-    {
-        size_t nterm_idx_;  /// left side nonterminal
-        size_t rside_idx_;  /// rside index (all symbols are nonterminals in this rside)
-        size_t remaining_;  /// number of nonterminals in rside still not determined
-    };
-
-    std::vector<potentially_empty_rside> potentially_empty_rsides_; /// Potentially empty productions.
-    std::vector<std::vector<size_t>> appearances_in_pot_rsides_; /// Reverse index: nterm to potential rside indices.
     base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
-
-    std::optional<base_index_subset<3>> nullable_suffixes_; /// Nullable rule suffixes, precalculated during validation, optional for lazy init.
 
     /**
      * @brief Propagates nullability when a non-terminal becomes nullable.
@@ -365,16 +367,6 @@ private:
      * @param nt_idx The newly nullable non-terminal index.
      */
     void propagate_nullable(size_t nt_idx);
-
-    /**
-     * @brief Internal computation for suffix nullability.
-     *
-     * @param nterm_idx Non-terminal index.
-     * @param rside_idx Right-hand side index.
-     * @param suffix_idx Starting suffix index.
-     * @return True if nullable.
-     */
-    bool compute_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx);
 
     /**
      * @brief Validates inputs for adding a rule.
@@ -395,22 +387,6 @@ private:
      * @return New rside index.
      */
     size_t add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence = std::nullopt);
-
-    /**
-     * @brief Computes all suffix nullabilities.
-     */
-    void compute_all_suffixes_nullable();
-    
-    /**
-     * @brief Computes and gets if rule suffix is nullable (on demand).
-     *
-     * @param nterm_idx Non-terminal index.
-     * @param rside_idx Right-hand side index.
-     * @param suffix_idx Start index.
-     * @return True if nullable.
-     * @throw std::out_of_range If invalid indices.
-     */
-    bool calculate_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx);
     
     /**
      * @brief Internal method to set the root by reference.
@@ -421,6 +397,20 @@ private:
      * @return The set root reference.
      */
     symbol_ref set_root_impl(symbol_ref root);
+    
+    /**
+     * @brief Calculates the effective precedence of a right-hand side and stores the result for future use.
+     *
+     * Uses the explicit precedence if set; otherwise, scans the right-hand side from right to left
+     * and returns the precedence of the first (rightmost) terminal that has a defined precedence.
+     * Returns 0 if no explicit precedence is set and no terminal in the right-hand side has a defined precedence.
+     *
+     * @param nterm_idx The non-terminal index.
+     * @param rside_idx The right-hand side index.
+     * @return The effective precedence (0 if none).
+     * @throw std::out_of_range If indices invalid.
+     */
+    size_t calculate_effective_rside_precedence(size_t nterm_idx, size_t rside_idx);
 };
 
 } // namespace muskox
