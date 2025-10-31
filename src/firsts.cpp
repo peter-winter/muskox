@@ -1,5 +1,5 @@
-#include <firsts.h>
-#include <grammar_error.h>
+#include "firsts.h"
+#include "grammar_error.h"
 
 namespace muskox
 {
@@ -7,14 +7,14 @@ namespace muskox
 firsts::firsts(const ruleset& rs)
     : rs_(rs),
       nterms_({rs.get_nterm_count()}, std::nullopt),
-      rside_parts_(rs.get_rside_part_space_dims(), std::nullopt)
+      rside_parts_(rs.get_suffix_space_dims(), std::nullopt)
 { 
 }
 
 void firsts::calculate_all()
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    base_index_subset<3> calculating_rside_parts(rs_.get_suffix_space_dims());
 
     for (size_t nterm_idx = 0; nterm_idx < rs_.get_nterm_count(); ++nterm_idx)
     {
@@ -36,7 +36,7 @@ void firsts::calculate_all()
 const index_subset<1>& firsts::calculate_nterm(size_t nterm_idx)
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    base_index_subset<3> calculating_rside_parts(rs_.get_suffix_space_dims());
     
     const auto& result = calculate_nterm_impl(nterm_idx, calculating_nterms, calculating_rside_parts);
     
@@ -52,7 +52,7 @@ const index_subset<1>& firsts::calculate_nterm(size_t nterm_idx)
 const index_subset<1>& firsts::calculate_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
 {
     base_index_subset<1> calculating_nterms({rs_.get_nterm_count()});
-    base_index_subset<3> calculating_rside_parts(rs_.get_rside_part_space_dims());
+    base_index_subset<3> calculating_rside_parts(rs_.get_suffix_space_dims());
     
     const auto& result = calculate_rside_part_impl(nterm_idx, rside_idx, symbol_start_idx, calculating_nterms, calculating_rside_parts);
     
@@ -175,7 +175,7 @@ const firsts::opt_subset& firsts::get_nterm_firsts(size_t nterm_idx) const
 
 const firsts::opt_subset& firsts::get_rside_part_firsts(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
 {
-    rs_.validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
+    rs_.validate_suffix_idx(nterm_idx, rside_idx, symbol_idx);
     return rside_parts_.get(nterm_idx, rside_idx, symbol_idx);
 }
 

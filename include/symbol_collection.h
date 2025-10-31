@@ -19,7 +19,7 @@
 
 #include "associativity.h"
 #include "nterm.h"
-#include "symbol_ref.h"
+#include "refs.h"
 #include "term.h"
 #include "symbol_list.h"
 

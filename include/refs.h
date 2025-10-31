@@ -1,10 +1,11 @@
 /**
- * @file symbol_ref.h
- * @brief Defines a reference to a symbol, distinguishing between terminals and non-terminals.
+ * @file refs.h
+ * @brief Defines references to symbols, right-hand sides, and suffixes in the grammar.
  *
- * This header introduces an enumeration for symbol types and a struct to reference
- * symbols by their type and index. It also provides comparison operators for sorting
- * and equality checks, useful in collections and parsing algorithms.
+ * This header introduces enumerations and structs to reference
+ * symbols, right-hand sides, and suffixes by their indices. It also provides 
+ * comparison operators for sorting and equality checks, useful in collections 
+ * and parsing algorithms.
  *
  * Symbols are fundamental in the MuskOx grammar system, where terminals represent
  * leaf nodes (e.g., tokens) and non-terminals represent rules or productions.
@@ -63,5 +64,28 @@ inline bool operator<(const symbol_ref& lhs, const symbol_ref& rhs)
 {
     return std::tie(lhs.type_, lhs.index_) < std::tie(rhs.type_, rhs.index_);
 }
+
+/**
+ * @brief Struct representing a reference to a right-hand side.
+ *
+ * References a specific right-hand side by non-terminal index and right-hand side index.
+ */
+struct rside_ref
+{
+    size_t nterm_idx; /// The non-terminal index.
+    size_t rside_idx; /// The right-hand side index.
+};
+
+/**
+ * @brief Struct representing a reference to a suffix.
+ *
+ * References a specific suffix by non-terminal index, right-hand side index, and suffix index.
+ */
+struct suffix_ref
+{
+    size_t nterm_idx; /// The non-terminal index.
+    size_t rside_idx; /// The right-hand side index.
+    size_t suffix_idx; /// The suffix index.
+};
 
 } // namespace muskox

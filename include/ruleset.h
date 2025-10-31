@@ -7,7 +7,7 @@
  * It supports adding rules, setting the root, querying dimensions and counts,
  * and generating string representations. Validation methods ensure index integrity.
  * Additionally, it computes nullable non-terminals incrementally during rule addition
- * and all nullable rule parts during validation.
+ * and all nullable rule suffixes during validation.
  *
  * Integrates with symbol_collection for symbol references.
  *
@@ -39,7 +39,7 @@ namespace muskox
  * Provides methods for adding rules, setting the root, querying structure,
  * and string conversion. Ensures consistency with the symbol collection.
  * Computes nullable non-terminals incrementally upon adding rules and
- * nullable rule parts on demand.
+ * nullable suffixes on demand.
  */
 class ruleset
 {
@@ -63,7 +63,7 @@ public:
      * @brief Validates the ruleset.
      *
      * Adds implicit $root rule, checks for non-terminals without rules.
-     * Computes all nullable rule parts.
+     * Computes all nullable rule suffixes.
      *
      * @throw grammar_error On validation errors.
      * @throw std::runtime_error If unexpected $root rules.
@@ -165,33 +165,33 @@ public:
      *
      * @param nterm_idx The non-terminal index.
      * @param rside_idx The right-hand side index.
-     * @param symbol_idx The symbol index.
+     * @param suffix_idx The suffix index.
      * @return The symbol reference.
      * @throw std::out_of_range If indices invalid.
      */
-    symbol_ref get_symbol(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    symbol_ref get_symbol(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
     /**
      * @brief Gets the type of a symbol in a right-hand side.
      *
      * @param nterm_idx The non-terminal index.
      * @param rside_idx The right-hand side index.
-     * @param symbol_idx The symbol index.
+     * @param suffix_idx The suffix index.
      * @return The symbol type.
      * @throw std::out_of_range If indices invalid.
      */
-    symbol_type get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    symbol_type get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
     /**
      * @brief Gets the index of a symbol in a right-hand side.
      *
      * @param nterm_idx The non-terminal index.
      * @param rside_idx The right-hand side index.
-     * @param symbol_idx The symbol index.
+     * @param suffix_idx The suffix index.
      * @return The symbol's index in its collection.
      * @throw std::out_of_range If indices invalid.
      */
-    size_t get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    size_t get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
     /**
      * @brief Gets the name of a non-terminal.
@@ -254,11 +254,11 @@ public:
     size_t calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
 
     /**
-     * @brief Gets dimensions for right-hand side parts.
+     * @brief Gets dimensions for suffixes.
      *
      * @return Array of {nterms, max rsides, max symbols}.
      */
-    std::array<size_t, 3> get_rside_part_space_dims() const;
+    std::array<size_t, 3> get_suffix_space_dims() const;
 
     /**
      * @brief Gets dimensions for LR(1) set items.
@@ -274,11 +274,11 @@ public:
      *
      * @param nterm_idx Non-terminal index.
      * @param rside_idx Right-hand side index.
-     * @param symbol_idx Start index.
+     * @param suffix_idx Start index.
      * @return True if nullable.
      * @throw std::out_of_range If invalid or not validated.
      */
-    bool is_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    bool is_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
     /**
      * @brief Checks if a non-terminal is nullable.
@@ -330,14 +330,14 @@ public:
     void validate_rside_idx(size_t nterm_idx, size_t rside_idx) const;
 
     /**
-     * @brief Validates a symbol index in a right-hand side.
+     * @brief Validates a suffix index in a right-hand side.
      *
      * @param nterm_idx The non-terminal index.
      * @param rside_idx The right-hand side index.
-     * @param symbol_idx The symbol index.
+     * @param suffix_idx The suffix index.
      * @throw std::out_of_range If invalid.
      */
-    void validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const;
+    void validate_suffix_idx(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
 private:
     const symbol_collection& symbols_; /// Reference to the symbol collection.
@@ -357,7 +357,7 @@ private:
     std::vector<std::vector<size_t>> appearances_in_pot_rsides_; /// Reverse index: nterm to potential rside indices.
     base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
 
-    std::optional<base_index_subset<3>> nullable_rside_parts_; /// Nullable rule suffixes, precalculated during validation, optional for lazy init.
+    std::optional<base_index_subset<3>> nullable_suffixes_; /// Nullable rule suffixes, precalculated during validation, optional for lazy init.
 
     /**
      * @brief Propagates nullability when a non-terminal becomes nullable.
@@ -367,14 +367,14 @@ private:
     void propagate_nullable(size_t nt_idx);
 
     /**
-     * @brief Internal computation for rule part nullability.
+     * @brief Internal computation for suffix nullability.
      *
      * @param nterm_idx Non-terminal index.
      * @param rside_idx Right-hand side index.
-     * @param symbol_start_idx Starting symbol index.
+     * @param suffix_idx Starting suffix index.
      * @return True if nullable.
      */
-    bool compute_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx);
+    bool compute_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx);
 
     /**
      * @brief Validates inputs for adding a rule.
@@ -397,20 +397,20 @@ private:
     size_t add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence = std::nullopt);
 
     /**
-     * @brief Computes all rule part nullabilities.
+     * @brief Computes all suffix nullabilities.
      */
-    void compute_all_rside_parts_nullable();
+    void compute_all_suffixes_nullable();
     
     /**
      * @brief Computes and gets if rule suffix is nullable (on demand).
      *
      * @param nterm_idx Non-terminal index.
      * @param rside_idx Right-hand side index.
-     * @param symbol_idx Start index.
+     * @param suffix_idx Start index.
      * @return True if nullable.
      * @throw std::out_of_range If invalid indices.
      */
-    bool calculate_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx);
+    bool calculate_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx);
     
     /**
      * @brief Internal method to set the root by reference.

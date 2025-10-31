@@ -1,8 +1,8 @@
 #pragma once
 
-#include <closure.h>
-#include <ruleset.h>
-#include <lr1_state.h>
+#include "closure.h"
+#include "ruleset.h"
+#include "lr1_state.h"
 
 #include <vector>
 #include <string>

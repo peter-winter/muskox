@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ruleset.h>
-#include <index_subset.h>
+#include "ruleset.h"
+#include "index_subset.h"
 
 #include <variant>
 #include <map>

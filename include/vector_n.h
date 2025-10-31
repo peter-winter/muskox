@@ -11,7 +11,8 @@
 
 #pragma once
 
-#include <flat_indexer.h>
+#include "flat_indexer.h"
+
 #include <vector>
 
 namespace muskox

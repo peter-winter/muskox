@@ -1,8 +1,8 @@
 /**
  * @file term.h
- * @brief Defines a class for terminal symbols in a grammar.
+ * @brief Defines a struct for terminal symbols in a grammar.
  *
- * This header provides a class to represent terminal symbols, which are the
+ * This header provides a struct to represent terminal symbols, which are the
  * basic tokens or leaves in a parse tree. Terminals can have optional precedence
  * and associativity for handling operator grammars.
  *
@@ -20,12 +20,15 @@ namespace muskox
 {
 
 /**
- * @class term
+ * @struct term
  * @brief Represents a terminal symbol.
  */
-class term
+struct term
 {
-public:
+    std::string_view name_; /// The name of the terminal.
+    associativity assoc_; /// The associativity.
+    std::optional<size_t> prec_; /// The optional precedence.
+
     /**
      * @brief Constructs a terminal.
      *
@@ -37,37 +40,6 @@ public:
         : name_(name), assoc_(assoc), prec_(prec)
     {
     }
-
-    /**
-     * @brief Destructor.
-     */
-    ~term() = default;
-
-    /**
-     * @brief Gets the name.
-     *
-     * @return The name.
-     */
-    std::string_view name() const { return name_; }
-
-    /**
-     * @brief Gets the associativity.
-     *
-     * @return The associativity.
-     */
-    associativity assoc() const { return assoc_; }
-
-    /**
-     * @brief Gets the precedence.
-     *
-     * @return Optional precedence.
-     */
-    std::optional<size_t> prec() const { return prec_; }
-
-private:
-    std::string_view name_; /// The name of the terminal.
-    associativity assoc_; /// The associativity.
-    std::optional<size_t> prec_; /// The optional precedence.
 };
 
 } // namespace muskox

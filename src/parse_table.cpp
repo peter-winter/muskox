@@ -1,4 +1,4 @@
-#include <parse_table.h>
+#include "parse_table.h"
 
 #include <stdexcept>
 

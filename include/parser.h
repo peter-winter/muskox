@@ -4,7 +4,7 @@
 #include "parse_context.h"
 #include "parse_result.h"
 #include "ruleset.h"
-#include "symbol_ref.h"
+#include "refs.h"
 #include "symbol_stream.h"
 
 namespace muskox

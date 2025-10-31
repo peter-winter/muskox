@@ -1,6 +1,6 @@
-#include <parse_table_generator.h>
-#include <grammar_error.h>
-#include <list_printer.h>
+#include "parse_table_generator.h"
+#include "grammar_error.h"
+#include "list_printer.h"
 
 #include <queue>
 

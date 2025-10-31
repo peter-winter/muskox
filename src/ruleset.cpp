@@ -56,7 +56,7 @@ void ruleset::validate()
         }
     }
     
-    compute_all_rside_parts_nullable();
+    compute_all_suffixes_nullable();
     
     validated_ = true;
 }
@@ -152,20 +152,20 @@ size_t ruleset::get_max_symbol_count() const
     return max;
 }
 
-symbol_ref ruleset::get_symbol(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+symbol_ref ruleset::get_symbol(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
-    validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
-    return rsides_[nterm_idx][rside_idx].symbols_[symbol_idx];
+    validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
+    return rsides_[nterm_idx][rside_idx].symbols_[suffix_idx];
 }
 
-symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+symbol_type ruleset::get_symbol_type(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
-    return get_symbol(nterm_idx, rside_idx, symbol_idx).type_;
+    return get_symbol(nterm_idx, rside_idx, suffix_idx).type_;
 }
 
-size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
-    return get_symbol(nterm_idx, rside_idx, symbol_idx).index_;
+    return get_symbol(nterm_idx, rside_idx, suffix_idx).index_;
 }
 
 std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
@@ -225,7 +225,7 @@ size_t ruleset::calculate_rside_precedence(size_t nterm_idx, size_t rside_idx) c
     return ret;
 }
 
-std::array<size_t, 3> ruleset::get_rside_part_space_dims() const
+std::array<size_t, 3> ruleset::get_suffix_space_dims() const
 {
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count()};
 }
@@ -235,10 +235,10 @@ std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count() + 1, get_term_count()};
 }
 
-bool ruleset::is_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+bool ruleset::is_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
-    validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
-    return nullable_rside_parts_.value().contains(nterm_idx, rside_idx, symbol_idx);
+    validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
+    return nullable_suffixes_.value().contains(nterm_idx, rside_idx, suffix_idx);
 }
 
 bool ruleset::is_nterm_nullable(size_t idx) const
@@ -324,11 +324,11 @@ void ruleset::validate_rside_idx(size_t nterm_idx, size_t rside_idx) const
     }
 }
 
-void ruleset::validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+void ruleset::validate_suffix_idx(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
     validate_nterm_idx(nterm_idx);
     validate_rside_idx(nterm_idx, rside_idx);
-    if (symbol_idx >= get_symbol_count(nterm_idx, rside_idx))
+    if (suffix_idx >= get_symbol_count(nterm_idx, rside_idx))
     {
         throw std::out_of_range("Symbol index out of range");
     }
@@ -361,11 +361,11 @@ void ruleset::propagate_nullable(size_t nt_idx)
     }
 }
 
-bool ruleset::compute_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
+bool ruleset::compute_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx)
 {
     bool ret = true;
     
-    for (size_t symbol_idx = symbol_start_idx; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
+    for (size_t symbol_idx = suffix_idx; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
     {
         auto ref = get_symbol(nterm_idx, rside_idx, symbol_idx);
         if (ref.type_ == symbol_type::terminal || !is_nterm_nullable(ref.index_))
@@ -463,42 +463,42 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
     return new_rside_idx;
 }
 
-void ruleset::compute_all_rside_parts_nullable()
+void ruleset::compute_all_suffixes_nullable()
 {
-    nullable_rside_parts_ = base_index_subset<3>(get_rside_part_space_dims(), false);
+    nullable_suffixes_ = base_index_subset<3>(get_suffix_space_dims(), false);
     for (size_t nterm_idx = 0; nterm_idx < get_nterm_count(); ++nterm_idx)
     {
         for (size_t rside_idx = 0; rside_idx < get_nterm_rside_count(nterm_idx); ++rside_idx)
         {
-            for (size_t symbol_idx = 0; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
+            for (size_t suffix_idx = 0; suffix_idx < get_symbol_count(nterm_idx, rside_idx); ++suffix_idx)
             {
-                bool is_nullable = compute_rside_part_nullable(nterm_idx, rside_idx, symbol_idx);
+                bool is_nullable = compute_suffix_nullable(nterm_idx, rside_idx, suffix_idx);
                 if (is_nullable)
                 {
-                    nullable_rside_parts_.value().add(nterm_idx, rside_idx, symbol_idx);
+                    nullable_suffixes_.value().add(nterm_idx, rside_idx, suffix_idx);
                 }
             }
         }
     }
 }
 
-bool ruleset::calculate_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
+bool ruleset::calculate_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suffix_idx)
 {
-    validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
+    validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
     
-    if (!nullable_rside_parts_.has_value())
+    if (!nullable_suffixes_.has_value())
     {
-        nullable_rside_parts_ = base_index_subset<3>(get_rside_part_space_dims());
+        nullable_suffixes_ = base_index_subset<3>(get_suffix_space_dims());
     }
     
-    if (nullable_rside_parts_.value().contains(nterm_idx, rside_idx, symbol_idx))
+    if (nullable_suffixes_.value().contains(nterm_idx, rside_idx, suffix_idx))
     {
         return true;
     }
-    bool ret = compute_rside_part_nullable(nterm_idx, rside_idx, symbol_idx);
+    bool ret = compute_suffix_nullable(nterm_idx, rside_idx, suffix_idx);
     if (ret)
     {
-        nullable_rside_parts_.value().add(nterm_idx, rside_idx, symbol_idx);
+        nullable_suffixes_.value().add(nterm_idx, rside_idx, suffix_idx);
     }
     return ret;
 }

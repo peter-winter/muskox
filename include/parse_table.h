@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ruleset.h>
-#include <symbol_ref.h>
-#include <vector_n.h>
+#include "ruleset.h"
+#include "refs.h"
+#include "vector_n.h"
 
 #include <cstdint>
 #include <limits>

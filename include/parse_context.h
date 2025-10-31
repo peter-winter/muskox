@@ -2,7 +2,7 @@
 
 #include "ruleset.h"
 #include "state_stacks.h"
-#include "symbol_ref.h"
+#include "refs.h"
 
 #include <string>
 #include <vector>

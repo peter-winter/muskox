@@ -241,14 +241,14 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
     SECTION("term defaults") 
     {
         term t1("name1");
-        REQUIRE(t1.name() == "name1");
-        REQUIRE(t1.assoc().to_string() == "left");
-        REQUIRE(!t1.prec().has_value());
+        REQUIRE(t1.name_ == "name1");
+        REQUIRE(t1.assoc_.to_string() == "left");
+        REQUIRE(!t1.prec_.has_value());
 
         term t2("name2", 5, associativity::right());
-        REQUIRE(t2.name() == "name2");
-        REQUIRE(t2.assoc().to_string() == "right");
-        REQUIRE(t2.prec() == 5);
+        REQUIRE(t2.name_ == "name2");
+        REQUIRE(t2.assoc_.to_string() == "right");
+        REQUIRE(t2.prec_ == 5);
     }
 
     SECTION("add_term defaults") 

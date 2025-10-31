@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#include "symbol_ref.h"
+#include "refs.h"
 
 namespace muskox
 {

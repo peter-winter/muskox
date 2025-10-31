@@ -97,25 +97,25 @@ std::string_view symbol_collection::get_symbol_name(symbol_ref ref) const
 std::string_view symbol_collection::get_term_name(size_t index) const
 {
     validate_term_idx(index);
-    return terms_[index].name();
+    return terms_[index].name_;
 }
 
 std::string_view symbol_collection::get_nterm_name(size_t index) const
 {
     validate_nterm_idx(index);
-    return nterms_[index].name();
+    return nterms_[index].name_;
 }
 
 associativity symbol_collection::get_term_assoc(size_t index) const
 {
     validate_term_idx(index);
-    return terms_[index].assoc();
+    return terms_[index].assoc_;
 }
 
 std::optional<size_t> symbol_collection::get_term_prec(size_t index) const
 {
     validate_term_idx(index);
-    return terms_[index].prec();
+    return terms_[index].prec_;
 }
 
 size_t symbol_collection::get_term_count() const

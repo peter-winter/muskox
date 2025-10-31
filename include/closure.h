@@ -1,9 +1,9 @@
 #pragma once
 
-#include <firsts.h>
-#include <ruleset.h>
-#include <index_subset.h>
-#include <lr1_set_item.h>
+#include "firsts.h"
+#include "ruleset.h"
+#include "index_subset.h"
+#include "lr1_set_item.h"
 #include <vector_n.h>
 
 namespace muskox

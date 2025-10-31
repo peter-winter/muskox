@@ -107,7 +107,7 @@ TEST_CASE("ruleset dims", "[ruleset]")
 
     SECTION("rside part space dims")
     {
-        auto dims = rs.get_rside_part_space_dims();
+        auto dims = rs.get_suffix_space_dims();
         REQUIRE(dims[0] == 3);  // nterm count, including $root
         REQUIRE(dims[1] == 2);  // max rside count
         REQUIRE(dims[2] == 3);  // max symbol count
@@ -358,9 +358,9 @@ TEST_CASE("ruleset space dims", "[ruleset]")
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
 
-    SECTION("get_rside_part_space_dims")
+    SECTION("get_suffix_space_dims")
     {
-        auto dims = rs.get_rside_part_space_dims();
+        auto dims = rs.get_suffix_space_dims();
         REQUIRE(dims[0] == rs.get_nterm_count());
         REQUIRE(dims[1] == rs.get_max_rside_count());
         REQUIRE(dims[2] == rs.get_max_symbol_count());
@@ -424,24 +424,24 @@ TEST_CASE("ruleset user idx validation", "[ruleset]")
         REQUIRE_THROWS_AS(rs.validate_rside_idx(s_idx, 100), std::out_of_range);
     }
 
-    SECTION("validate_symbol_idx valid")
+    SECTION("validate_suffix_idx valid")
     {
-        REQUIRE_NOTHROW(rs.validate_symbol_idx(s_idx, ridx, 0));
+        REQUIRE_NOTHROW(rs.validate_suffix_idx(s_idx, ridx, 0));
     }
 
-    SECTION("validate_symbol_idx invalid nterm")
+    SECTION("validate_suffix_idx invalid nterm")
     {
-        REQUIRE_THROWS_AS(rs.validate_symbol_idx(100, ridx, 0), std::out_of_range);
+        REQUIRE_THROWS_AS(rs.validate_suffix_idx(100, ridx, 0), std::out_of_range);
     }
 
-    SECTION("validate_symbol_idx invalid rside")
+    SECTION("validate_suffix_idx invalid rside")
     {
-        REQUIRE_THROWS_AS(rs.validate_symbol_idx(s_idx, 100, 0), std::out_of_range);
+        REQUIRE_THROWS_AS(rs.validate_suffix_idx(s_idx, 100, 0), std::out_of_range);
     }
 
-    SECTION("validate_symbol_idx invalid symbol")
+    SECTION("validate_suffix_idx invalid symbol")
     {
-        REQUIRE_THROWS_AS(rs.validate_symbol_idx(s_idx, ridx, 100), std::out_of_range);
+        REQUIRE_THROWS_AS(rs.validate_suffix_idx(s_idx, ridx, 100), std::out_of_range);
     }
 }
 
