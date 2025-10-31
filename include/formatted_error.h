@@ -32,10 +32,10 @@ template <typename ErrorTemplates>
 class formatted_message
 {
 private:
-    std::string message_; //!< The formatted message string.
+    std::string message_; /// The formatted message string.
 
 public:
-    using code = typename ErrorTemplates::code; //!< Type alias for error code.
+    using code = typename ErrorTemplates::code; /// Type alias for error code.
 
     /**
      * @brief Constructs the message.
@@ -81,7 +81,7 @@ template <typename ErrorTemplates>
 class formatted_error : public std::runtime_error
 {
 public:
-    using code = typename ErrorTemplates::code; //!< Type alias for error code.
+    using code = typename ErrorTemplates::code; /// Type alias for error code.
 
     /**
      * @brief Constructs the error.

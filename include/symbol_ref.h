@@ -34,8 +34,8 @@ enum class symbol_type { terminal, non_terminal };
  */
 struct symbol_ref
 {
-    symbol_type type_; //!< The type of the symbol (terminal or non-terminal).
-    size_t index_; //!< The index within the type's collection.
+    symbol_type type_; /// The type of the symbol (terminal or non-terminal).
+    size_t index_; /// The index within the type's collection.
 };
 
 /**

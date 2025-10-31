@@ -34,7 +34,7 @@ struct grammar_error_templates
         lside_not_exists, 
         lside_term, 
         rside_not_exist, 
-        nterm_no_rules, 
+        nterm_no_rsides,
         root_term, 
         root_not_exists, 
         cannot_refer_special, 
@@ -51,7 +51,7 @@ struct grammar_error_templates
         conflict_unresolved
     };
 
-    static constexpr const char* templates_[] = //!< Array of template strings.
+    static constexpr const char* templates_[] = /// Array of template strings.
     {
         "Ok",
         "Symbol '{}' already exists",
@@ -76,8 +76,8 @@ struct grammar_error_templates
     };
 };
 
-using grammar_error = formatted_error<grammar_error_templates>; //!< Type alias for grammar error.
+using grammar_error = formatted_error<grammar_error_templates>; /// Type alias for grammar error.
 
-using grammar_warning = formatted_message<grammar_error_templates>; //!< Type alias for grammar warning.
+using grammar_warning = formatted_message<grammar_error_templates>; /// Type alias for grammar warning.
 
 } // namespace muskox

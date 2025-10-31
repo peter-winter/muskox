@@ -17,7 +17,10 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-    ruleset rs(sc);
+    
+    sc.validate();
+    
+    ruleset rs(sc);    
 
     SECTION("basic add")
     {
@@ -87,11 +90,14 @@ TEST_CASE("ruleset add_rule", "[ruleset]")
 TEST_CASE("ruleset dims", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    sc.validate();
+    
     ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
@@ -120,10 +126,13 @@ TEST_CASE("ruleset dims", "[ruleset]")
 TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    sc.validate();
+    
     ruleset rs(sc);
 
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
@@ -163,9 +172,12 @@ TEST_CASE("ruleset lr1_set_item_to_string", "[ruleset]")
 TEST_CASE("ruleset root", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t other_idx = sc.add_nterm("Other");
+    
+    sc.validate();
     
     SECTION("valid root")
     {
@@ -174,6 +186,10 @@ TEST_CASE("ruleset root", "[ruleset]")
         REQUIRE(rs.set_root("Other") == symbol_ref{symbol_type::non_terminal, 2});
         REQUIRE(rs.get_root().index_ == 2);
         REQUIRE(sc.get_symbol_name(rs.get_root()) == "Other");
+        
+        rs.add_rule("S", {});
+        rs.add_rule("Other", {"a"});
+        rs.validate();
         REQUIRE(rs.get_symbol(0, 0, 0) == sc.get_symbol_ref("Other"));
     }
 
@@ -206,21 +222,12 @@ TEST_CASE("ruleset root", "[ruleset]")
             Message("Cannot refer special '$root' symbol")
         );
     }
-
-    SECTION("no nterms")
-    {
-        symbol_collection empty_sc;
-        REQUIRE_THROWS_MATCHES(
-            [&]{ ruleset rs(empty_sc); }(),
-            grammar_error,
-            Message("No nonterminals")
-        );
-    }
 }
 
 TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
 {
     symbol_collection sc;
+        
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a", 10);
@@ -228,6 +235,8 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
     [[maybe_unused]] size_t mul_idx = sc.add_term("*", 30);
     [[maybe_unused]] size_t b_idx = sc.add_term("b");  // no prec
     [[maybe_unused]] size_t id_idx = sc.add_term("id");  // no prec
+    sc.validate();
+    
     ruleset rs(sc);
 
     SECTION("explicit precedence")
@@ -288,10 +297,13 @@ TEST_CASE("ruleset calculate_rside_precedence", "[ruleset]")
 TEST_CASE("ruleset delegation", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b", 10);
+    sc.validate();
+    
     ruleset rs(sc);
 
     SECTION("get_nterm_count")
@@ -331,11 +343,14 @@ TEST_CASE("ruleset delegation", "[ruleset]")
 TEST_CASE("ruleset space dims", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    sc.validate();
+    
     ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
@@ -361,11 +376,15 @@ TEST_CASE("ruleset space dims", "[ruleset]")
     }
 }
 
-TEST_CASE("ruleset validation", "[ruleset]")
+TEST_CASE("ruleset user idx validation", "[ruleset]")
 {
     symbol_collection sc;
+    
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    
+    sc.validate();
+    
     ruleset rs(sc);
 
     [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
@@ -423,6 +442,28 @@ TEST_CASE("ruleset validation", "[ruleset]")
     SECTION("validate_symbol_idx invalid symbol")
     {
         REQUIRE_THROWS_AS(rs.validate_symbol_idx(s_idx, ridx, 100), std::out_of_range);
+    }
+}
+
+TEST_CASE("ruleset validation", "[ruleset]")
+{
+    SECTION("nterm no rsides")
+    {
+        symbol_collection sc;
+        [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+        [[maybe_unused]] size_t a_idx = sc.add_term("a");
+        [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
+        
+        sc.validate();
+        
+        ruleset rs(sc);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+
+        REQUIRE_THROWS_MATCHES(
+            rs.validate(),
+            grammar_error,
+            Message("Nonterminal 'B' has no productions")
+        );
     }
 }
 

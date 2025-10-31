@@ -28,8 +28,8 @@ template <typename T, size_t Dim>
 class vector_n
 {
 private:
-    flat_indexer<Dim> indexer_; //!< The indexer for access.
-    std::vector<T> data_; //!< The flat data storage.
+    flat_indexer<Dim> indexer_; /// The indexer for access.
+    std::vector<T> data_; /// The flat data storage.
 
 public:
     /**

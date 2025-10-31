@@ -4,7 +4,6 @@
  *
  * This header defines the nullable class, which computes whether non-terminals
  * and segments of right-hand sides in production rules can be nullable (derive epsilon).
- * It uses recursive checks with cycle detection via calculating sets.
  * Supports individual and bulk calculations for efficiency in parsing algorithms.
  *
  * Integrates with ruleset for grammar structure.
@@ -25,45 +24,16 @@ namespace muskox
  * @brief Computes nullability for non-terminals and rule segments.
  *
  * Determines if non-terminals or parts of right-hand sides can be nullable
- * (derive epsilon). Uses memoization with bitsets for efficiency and
- * handles recursion with temporary calculating sets to detect cycles.
+ * (derive epsilon). Uses memoization with bitsets for efficiency.
  */
 class nullable
 {
 private:
     const ruleset& rs_; //!< Reference to the ruleset.
-    base_index_subset<1> nterms_; //!< Bitset for nullable non-terminals.
-    base_index_subset<3> rside_parts_; //!< Bitset for nullable rule parts.
-
-    /**
-     * @brief Internal recursive check for non-terminal nullability.
-     *
-     * @param nterm_idx The non-terminal index.
-     * @param calculating_nterms Set for cycle detection in non-terminals.
-     * @param calculating_rside_parts Set for cycle detection in rule parts.
-     * @return True if nullable.
-     */
-    bool calculate_nterm_impl(
-        size_t nterm_idx,
-        base_index_subset<1>& calculating_nterms, 
-        base_index_subset<3>& calculating_rside_parts);
-        
-    /**
-     * @brief Internal recursive check for rule part nullability.
-     *
-     * @param nterm_idx The non-terminal index.
-     * @param rside_idx The right-hand side index.
-     * @param symbol_start_idx Starting symbol index in the rule.
-     * @param calculating_nterms Set for cycle detection in non-terminals.
-     * @param calculating_rside_parts Set for cycle detection in rule parts.
-     * @return True if the part is nullable.
-     */
-    bool calculate_rside_part_impl(
-        size_t nterm_idx, 
-        size_t rside_idx, 
-        size_t symbol_start_idx,
-        base_index_subset<1>& calculating_nterms, 
-        base_index_subset<3>& calculating_rside_parts);
+    base_index_subset<1> nullable_nterms_; //!< Bitset for nullable non-terminals.
+    base_index_subset<3> non_nullable_rside_parts_; //!< Bitset for non-nullable rule parts.
+    base_index_subset<1> nullable_nterms_completed_; //!< Bitset for calculate_nterm memoization.
+    base_index_subset<3> non_nullable_rside_parts_completed_; //!< Bitset for calculate_rside_part memoization.
 
 public:
     /**

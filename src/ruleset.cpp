@@ -4,6 +4,7 @@
  *
  * This file contains the implementation of methods for managing grammar rules,
  * including addition, validation, querying, and string conversion.
+ * Rule addition incrementally updates nullable non-terminals.
  *
  * Part of the larger MuskOx project.
  */
@@ -14,24 +15,69 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <queue>
 
 namespace muskox
 {
 
-symbol_ref ruleset::set_root(symbol_ref root)
+ruleset::ruleset(const symbol_collection& symbols)
+    : symbols_(symbols), 
+      rsides_(symbols.get_nterm_count()),
+      validated_(false),
+      potentially_empty_rsides_(),
+      appearances_in_pot_rsides_(symbols.get_nterm_count()),
+      nullable_nterms_({symbols.get_nterm_count()})
 {
-    if (rsides_[0].empty())
+    if (!symbols_.is_validated())
     {
-        symbol_list rrefs{root};
-        rsides_[0].emplace_back(std::move(rrefs));
+        throw std::runtime_error("Symbol collection not validated");
     }
-    else
-    {
-        rsides_[0][0].symbols_[0] = root;
-    }
-    root_ = root;
     
-    return root_;
+    set_root_impl(symbol_ref{symbol_type::non_terminal, 1}); // First user nterm
+}
+
+void ruleset::validate()
+{
+    // Add implicit rule for $root, throw if rules for $root already exist
+    if (!rsides_[0].empty())
+    {
+        throw std::runtime_error("Unexpected $root rside");
+    }
+    
+    add_rside_impl(0, symbol_list{root_});
+    
+    // Check for nonterminals with no rsides
+    for (size_t i = 0; i < get_nterm_count(); ++i)
+    {
+        if (get_nterm_rside_count(i) == 0)
+        {
+            const std::string_view name = get_nterm_name(i);
+            throw grammar_error(grammar_error::code::nterm_no_rsides, name);
+        }
+    }
+    
+    compute_all_rside_parts_nullable();
+    
+    validated_ = true;
+}
+
+void ruleset::compute_all_rside_parts_nullable()
+{
+    nullable_rside_parts_ = base_index_subset<3>(get_rside_part_space_dims(), false);
+    for (size_t nterm_idx = 0; nterm_idx < get_nterm_count(); ++nterm_idx)
+    {
+        for (size_t rside_idx = 0; rside_idx < get_nterm_rside_count(nterm_idx); ++rside_idx)
+        {
+            for (size_t symbol_idx = 0; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
+            {
+                bool is_nullable = compute_rside_part_nullable(nterm_idx, rside_idx, symbol_idx);
+                if (is_nullable)
+                {
+                    nullable_rside_parts_.value().add(nterm_idx, rside_idx, symbol_idx);
+                }
+            }
+        }
+    }
 }
 
 void ruleset::validate_term_idx(size_t term_idx) const
@@ -69,15 +115,10 @@ void ruleset::validate_symbol_idx(size_t nterm_idx, size_t rside_idx, size_t sym
     }
 }
 
-ruleset::ruleset(const symbol_collection& symbols)
-    : symbols_(symbols), rsides_(symbols.get_nterm_count())
+symbol_ref ruleset::set_root_impl(symbol_ref root)
 {
-    if (symbols_.get_nterm_count() <= 1)
-    {
-        throw grammar_error(grammar_error::code::no_nterm);
-    }
-    std::string_view root_name = symbols_.get_nterm_name(1);
-    root_ = set_root(root_name);
+    root_ = root;
+    return root_;
 }
 
 symbol_ref ruleset::set_root(std::string_view name)
@@ -102,10 +143,10 @@ symbol_ref ruleset::set_root(std::string_view name)
         throw grammar_error(grammar_error::code::root_term, name);
     }
     
-    return set_root(ref);
+    return set_root_impl(ref);
 }
 
-size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence)
+std::pair<symbol_ref, symbol_list> ruleset::validate_add_rule_inputs(std::string_view left, const std::vector<std::string_view>& rights) const
 {
     if (left[0] == '$')
     {
@@ -145,8 +186,67 @@ size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_vi
         }
     }
 
-    rsides_[lref.index_].emplace_back(std::move(rrefs), precedence);
-    return rsides_[lref.index_].size() - 1;
+    return {lref, std::move(rrefs)};
+}
+
+size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optional<size_t> precedence)
+{
+    rsides_[lhs_idx].emplace_back(std::move(symbols), precedence);
+    size_t new_rside_idx = rsides_[lhs_idx].size() - 1;
+
+    // Incremental nullable update
+    const auto& new_symbols = rsides_[lhs_idx][new_rside_idx].symbols_;
+    if (new_symbols.empty())
+    {
+        // Epsilon rule
+        if (nullable_nterms_.add(lhs_idx))
+        {
+            propagate_nullable(lhs_idx);
+        }
+    }
+    else
+    {
+        bool has_term = false;
+        for (auto ref : new_symbols)
+        {
+            if (ref.type_ == symbol_type::terminal)
+            {
+                has_term = true;
+                break;
+            }
+        }
+        if (!has_term)
+        {
+            // Potentially empty production
+            size_t pot_idx = potentially_empty_rsides_.size();
+            size_t remaining = new_symbols.size();
+            for (auto ref : new_symbols)
+            {
+                size_t nt_idx = ref.index_;
+                appearances_in_pot_rsides_[nt_idx].push_back(pot_idx);
+                if (nullable_nterms_.contains(nt_idx))
+                {
+                    --remaining;
+                }
+            }
+            potentially_empty_rsides_.emplace_back(lhs_idx, new_rside_idx, remaining);
+            if (remaining == 0)
+            {
+                if (nullable_nterms_.add(lhs_idx))
+                {
+                    propagate_nullable(lhs_idx);
+                }
+            }
+        }
+    }
+
+    return new_rside_idx;
+}
+
+size_t ruleset::add_rule(std::string_view left, const std::vector<std::string_view>& rights, std::optional<size_t> precedence)
+{
+    auto [lref, rrefs] = validate_add_rule_inputs(left, rights);
+    return add_rside_impl(lref.index_, std::move(rrefs), precedence);
 }
 
 symbol_ref ruleset::get_root() const
@@ -282,6 +382,83 @@ std::array<size_t, 3> ruleset::get_rside_part_space_dims() const
 std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
 {
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count() + 1, get_term_count()};
+}
+
+void ruleset::propagate_nullable(size_t nt_idx)
+{
+    std::queue<size_t> q;
+    q.push(nt_idx);
+    while (!q.empty())
+    {
+        size_t nt = q.front();
+        q.pop();
+        for (size_t pot_idx : appearances_in_pot_rsides_[nt])
+        {
+            auto& per = potentially_empty_rsides_[pot_idx];
+            if (per.remaining_ > 0)
+            {
+                --per.remaining_;
+                if (per.remaining_ == 0)
+                {
+                    size_t lhs = per.nterm_idx_;
+                    if (nullable_nterms_.add(lhs))
+                    {
+                        q.push(lhs);
+                    }
+                }
+            }
+        }
+    }
+}
+
+bool ruleset::is_nterm_nullable(size_t idx) const
+{
+    validate_nterm_idx(idx);
+    return nullable_nterms_.contains(idx);
+}
+
+bool ruleset::compute_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_start_idx)
+{
+    bool ret = true;
+    
+    for (size_t symbol_idx = symbol_start_idx; symbol_idx < get_symbol_count(nterm_idx, rside_idx); ++symbol_idx)
+    {
+        auto ref = get_symbol(nterm_idx, rside_idx, symbol_idx);
+        if (ref.type_ == symbol_type::terminal || !is_nterm_nullable(ref.index_))
+        {
+            ret = false;
+            break;
+        }
+    }
+    
+    return ret;
+}
+
+bool ruleset::calculate_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
+{
+    validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
+    
+    if (!nullable_rside_parts_.has_value())
+    {
+        nullable_rside_parts_ = base_index_subset<3>(get_rside_part_space_dims());
+    }
+    
+    if (nullable_rside_parts_.value().contains(nterm_idx, rside_idx, symbol_idx))
+    {
+        return true;
+    }
+    bool ret = compute_rside_part_nullable(nterm_idx, rside_idx, symbol_idx);
+    if (ret)
+    {
+        nullable_rside_parts_.value().add(nterm_idx, rside_idx, symbol_idx);
+    }
+    return ret;
+}
+
+bool ruleset::is_rside_part_nullable(size_t nterm_idx, size_t rside_idx, size_t symbol_idx) const
+{
+    validate_symbol_idx(nterm_idx, rside_idx, symbol_idx);
+    return nullable_rside_parts_.value().contains(nterm_idx, rside_idx, symbol_idx);
 }
 
 std::string ruleset::to_string() const

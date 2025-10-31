@@ -60,7 +60,7 @@ public:
     using const_iter = const_iterator<T>;
 
 private:
-    node_ptr root_; //!< Root of the tree
+    node_ptr root_; /// Root of the tree
 
 public:
     /**
@@ -195,10 +195,10 @@ public:
     using node_weak_ptr = std::weak_ptr<tree_node>;
 
 private:
-    std::vector<T> data_; //!< Local data elements in this node.
-    node_weak_ptr parent_weak_; //!< Weak pointer to parent to avoid cycles.
-    size_t prefix_length_ = 0; //!< Length of parent's data prefix visible to this node.
-    std::vector<node_ptr> children_; //!< List of child nodes.
+    std::vector<T> data_; /// Local data elements in this node.
+    node_weak_ptr parent_weak_; /// Weak pointer to parent to avoid cycles.
+    size_t prefix_length_ = 0; /// Length of parent's data prefix visible to this node.
+    std::vector<node_ptr> children_; /// List of child nodes.
 
     /**
      * @brief Attempts to prune this node if empty and removes it from parent.
@@ -556,8 +556,8 @@ template <typename T>
 class iterator
 {
 private:
-    tree_node<T>::node_ptr current_; //!< Current node.
-    size_t offset_; //!< Offset within current node's data.
+    tree_node<T>::node_ptr current_; /// Current node.
+    size_t offset_; /// Offset within current node's data.
 
 public:
     /**
@@ -675,8 +675,8 @@ template <typename T>
 class const_iterator
 {
 private:
-    tree_node<T>::node_const_ptr current_; //!< Current node (const).
-    size_t offset_; //!< Offset within current node's data.
+    tree_node<T>::node_const_ptr current_; /// Current node (const).
+    size_t offset_; /// Offset within current node's data.
 
 public:
     /**

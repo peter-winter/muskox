@@ -82,7 +82,7 @@ public:
     type get() const { return type_; }
     
 private:
-    type type_; //!< The stored associativity type.
+    type type_; /// The stored associativity type.
 };
 
 } // namespace muskox

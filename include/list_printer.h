@@ -28,12 +28,12 @@ namespace muskox
 class list_printer
 {
 private:
-    std::string_view left_delim_; //!< Left delimiter.
-    std::string_view separator_; //!< Separator.
-    std::string_view right_delim_; //!< Right delimiter.
-    mutable bool printed_any_; //!< Mutable flag if any printed.
-    mutable bool first_; //!< Mutable flag for first item.
-    bool print_empty_; //!< Flag to print empty items.
+    std::string_view left_delim_; /// Left delimiter.
+    std::string_view separator_; /// Separator.
+    std::string_view right_delim_; /// Right delimiter.
+    mutable bool printed_any_; /// Mutable flag if any printed.
+    mutable bool first_; /// Mutable flag for first item.
+    bool print_empty_; /// Flag to print empty items.
 
     /**
      * @brief Converts item to printable.

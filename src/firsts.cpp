@@ -6,7 +6,6 @@ namespace muskox
 
 firsts::firsts(const ruleset& rs)
     : rs_(rs),
-      null_(rs),
       nterms_({rs.get_nterm_count()}, std::nullopt),
       rside_parts_(rs.get_rside_part_space_dims(), std::nullopt)
 { 
@@ -64,11 +63,6 @@ const index_subset<1>& firsts::calculate_rside_part(size_t nterm_idx, size_t rsi
     }
     
     return result.value();
-}
-
-bool firsts::calculate_nullable_rside_part(size_t nterm_idx, size_t rside_idx, size_t symbol_idx)
-{
-    return null_.calculate_rside_part(nterm_idx, rside_idx, symbol_idx);
 }
 
 const firsts::opt_subset& firsts::calculate_nterm_impl(
@@ -155,7 +149,7 @@ const firsts::opt_subset& firsts::calculate_rside_part_impl(
             detected_left_recursion = true;
         }
         
-        if (!null_.calculate_nterm(ref.index_))
+        if (!rs_.is_nterm_nullable(ref.index_))
         {
             break;
         }

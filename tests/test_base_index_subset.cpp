@@ -88,6 +88,14 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
         REQUIRE(bis.contains(1, 2) == true);
         REQUIRE(bis.add(1, 2) == false);
     }
+    
+    SECTION("add 2D array")
+    {
+        BIS2 bis({3, 4});
+        REQUIRE(bis.add({1, 2}) == true);
+        REQUIRE(bis.contains({1, 2}) == true);
+        REQUIRE(bis.add({1, 2}) == false);
+    }
 
     SECTION("remove 2D")
     {
@@ -123,6 +131,13 @@ TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
         BIS3 bis({2, 3, 4});
         REQUIRE(bis.add(1, 2, 3) == true);
         REQUIRE(bis.contains(1, 2, 3) == true);
+    }
+    
+    SECTION("add 3D array")
+    {
+        BIS3 bis({2, 3, 4});
+        REQUIRE(bis.add({1, 2, 3}) == true);
+        REQUIRE(bis.contains({1, 2, 3}) == true);
     }
 
     SECTION("bulk add from another")

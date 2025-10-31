@@ -65,9 +65,9 @@ public:
     std::optional<size_t> prec() const { return prec_; }
 
 private:
-    std::string_view name_; //!< The name of the terminal.
-    associativity assoc_; //!< The associativity.
-    std::optional<size_t> prec_; //!< The optional precedence.
+    std::string_view name_; /// The name of the terminal.
+    associativity assoc_; /// The associativity.
+    std::optional<size_t> prec_; /// The optional precedence.
 };
 
 } // namespace muskox

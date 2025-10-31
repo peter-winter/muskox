@@ -13,35 +13,6 @@ using teh = table_entry_hint;
 using pte = parse_table_entry;
 using st = symbol_type;
 
-TEST_CASE("parse_table_generator validate", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-
-    SECTION("valid grammar")
-    {
-        ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
-        [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
-
-        REQUIRE_NOTHROW(parse_table_generator(rs));
-    }
-
-    SECTION("nterm no rules")
-    {
-        ruleset rs(sc);
-        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
-
-        REQUIRE_THROWS_MATCHES(
-            parse_table_generator(rs),
-            grammar_error,
-            Message("Nonterminal 'B' has no productions")
-        );
-    }
-}
-
 TEST_CASE("parse_table_generator unused symbols warnings", "[parse_table_generator]")
 {
     symbol_collection sc;
@@ -51,12 +22,16 @@ TEST_CASE("parse_table_generator unused symbols warnings", "[parse_table_generat
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
     [[maybe_unused]] size_t u_idx = sc.add_nterm("U");
     [[maybe_unused]] size_t v_idx = sc.add_term("v");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
     [[maybe_unused]] size_t u_r0 = rs.add_rule("U", {"v"});
 
+    rs.validate();
+    
     parse_table_generator lss(rs);
 
     const auto& warnings = lss.get_warnings();
@@ -75,12 +50,16 @@ TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table
     [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     SECTION("warnings")
@@ -106,6 +85,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to s
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b", 2);
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
@@ -114,6 +95,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to s
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
     [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     SECTION("warnings")
@@ -139,6 +122,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to o
     [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
@@ -148,6 +133,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to o
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
     [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     SECTION("warnings")
@@ -173,6 +160,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", 
     [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
@@ -182,6 +171,8 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", 
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
     [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     SECTION("warnings")
@@ -205,11 +196,15 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     const auto& states = ptg.get_states();
@@ -278,6 +273,8 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
     [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
@@ -285,6 +282,8 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"}, 3);
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     SECTION("warnings")
@@ -369,12 +368,16 @@ TEST_CASE("parse_table_generator states complex lookaheads", "[parse_table_gener
     [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
     [[maybe_unused]] size_t d_term_idx = sc.add_term("d");
     [[maybe_unused]] size_t e_term_idx = sc.add_term("e");
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "A", "b"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"c", "C", "d"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"e"});
     [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"e"});
+    
+    rs.validate();
 
     parse_table_generator ptg(rs);
 
@@ -482,6 +485,8 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
     [[maybe_unused]] size_t plus_idx = sc.add_term("+", 1);
     [[maybe_unused]] size_t minus_idx = sc.add_term("-", 1);
     [[maybe_unused]] size_t mul_idx = sc.add_term("*", 2);
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t expr_plus = rs.add_rule("Expr", {"Expr", "+", "Expr"});
@@ -490,6 +495,8 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
     [[maybe_unused]] size_t expr_neg = rs.add_rule("Expr", {"-", "Expr"}, 3);
     [[maybe_unused]] size_t expr_id = rs.add_rule("Expr", {"id"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     const auto& states = ptg.get_states();
@@ -818,12 +825,16 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
     [[maybe_unused]] size_t id_idx = sc.add_term("id");
     [[maybe_unused]] size_t plus_idx = sc.add_term("+", 1);
     [[maybe_unused]] size_t pow_idx = sc.add_term("^", 2, associativity::right());
+    
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t expr_plus = rs.add_rule("Expr", {"Expr", "+", "Expr"});
     [[maybe_unused]] size_t expr_pow = rs.add_rule("Expr", {"Expr", "^", "Expr"});
     [[maybe_unused]] size_t expr_id = rs.add_rule("Expr", {"id"});
 
+    rs.validate();
+    
     parse_table_generator ptg(rs);
 
     const auto& states = ptg.get_states();

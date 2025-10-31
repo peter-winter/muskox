@@ -44,7 +44,7 @@ public:
     std::string_view name() const { return name_; }
 
 private:
-    std::string_view name_; //!< The stored name of the non-terminal.
+    std::string_view name_; /// The stored name of the non-terminal.
 };
 
 } // namespace muskox

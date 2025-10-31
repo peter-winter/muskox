@@ -40,7 +40,7 @@ namespace muskox
  */
 struct string_hash
 {
-    using is_transparent = void; //!< Transparent type alias.
+    using is_transparent = void; /// Transparent type alias.
 
     /**
      * @brief Hash operator for const char*.
@@ -86,9 +86,10 @@ struct string_hash
 class symbol_collection
 {
 private:
-    std::vector<term> terms_; //!< Vector of terminal symbols.
-    std::vector<nterm> nterms_; //!< Vector of non-terminal symbols.
-    std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_; //!< Map from name to symbol reference.
+    std::vector<term> terms_; /// Vector of terminal symbols.
+    std::vector<nterm> nterms_; /// Vector of non-terminal symbols.
+    std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_; /// Map from name to symbol reference.
+    bool validated_ = false; /// Flag indicating if the collection has been validated.
 
     /**
      * @brief Validates a non-terminal index.
@@ -134,6 +135,22 @@ public:
      * @brief Destructor.
      */
     ~symbol_collection() = default;
+
+    /**
+     * @brief Validates the symbol collection.
+     *
+     * Checks for at least one non-terminal besides $root.
+     *
+     * @throw grammar_error If no non-terminals.
+     */
+    void validate();
+
+    /**
+     * @brief Checks if the collection has been validated.
+     *
+     * @return True if validated.
+     */
+    bool is_validated() const { return validated_; }
 
     /**
      * @brief Adds a terminal symbol after checks.

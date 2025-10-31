@@ -335,4 +335,24 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_nterm_name(idx1) == "nterm1");
         REQUIRE(sc.get_nterm_name(idx2) == "nterm2");
     }
+    
+    SECTION("validate")
+    {
+        symbol_collection sc;
+        
+        REQUIRE_THROWS_MATCHES(
+            sc.validate(),
+            grammar_error,
+            Message("No nonterminals")
+        );
+
+        sc.add_nterm("A");
+        sc.validate();
+        REQUIRE(sc.is_validated() == true);
+
+        // Duplicate validate ok
+        sc.validate();
+    }
 }
+
+

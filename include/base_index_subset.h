@@ -28,6 +28,12 @@ namespace muskox
 template <size_t Dim>
 class base_index_subset
 {
+public:
+    /**
+     * @brief Type alias for element (array of indices).
+     */
+    using element_type = std::array<size_t, Dim>;
+    
 private:
     flat_indexer<Dim> indexer_; //!< The indexer for flat conversions.
     std::vector<char> bits_; //!< Bit vector for membership.
@@ -39,7 +45,7 @@ public:
      * @param sizes The sizes of dimensions.
      * @param value Initial bit value (default false).
      */
-    base_index_subset(const std::array<size_t, Dim>& sizes, bool value = false)
+    base_index_subset(const element_type& sizes, bool value = false)
         : indexer_(sizes), bits_()
     {
         bits_.reserve(indexer_.get_total_size());
@@ -67,10 +73,10 @@ public:
     base_index_subset(base_index_subset&&) = default;
 
     /**
-     * @brief Adds indices to the subset.
+     * @brief Adds element with indices to the subset.
      *
      * @tparam Idx Index types.
-     * @param indices The indices.
+     * @param indices The element indices.
      * @return True if added (was not present), false otherwise.
      */
     template <typename... Idx>
@@ -102,10 +108,21 @@ public:
     }
     
     /**
-     * @brief Removes indices from the subset.
+     * @brief Adds an element with indices in array.
+     *
+     * @param indices The element.
+     * @return True if added (was not present), false otherwise.
+     */
+    bool add(const element_type& indices)
+    {
+        return add_impl(indices, std::make_index_sequence<Dim>{});
+    }
+        
+    /**
+     * @brief Removes element with indices from the subset.
      *
      * @tparam Idx Index types.
-     * @param indices The indices.
+     * @param indices The element indices.
      * @return True if removed (was present), false otherwise.
      */
     template <typename... Idx>
@@ -121,10 +138,10 @@ public:
     }
 
     /**
-     * @brief Checks if indices are in the subset.
+     * @brief Checks if element with indices is in the subset.
      *
      * @tparam Idx Index types.
-     * @param indices The indices.
+     * @param indices The element indices.
      * @return True if present.
      */
     template <typename... Idx>
@@ -132,6 +149,18 @@ public:
     {
         size_t flat = indexer_.to_flat(indices...);
         return bits_[flat] != 0;
+    }
+    
+    /**
+     * @brief Checks if element with indices array is in the subset.
+     *
+     * @tparam Idx Index types.
+     * @param indices The element indices.
+     * @return True if present.
+     */
+    bool contains(const element_type& indices) const
+    {
+        return contains_impl(indices, std::make_index_sequence<Dim>{});
     }
         
     /**
@@ -153,6 +182,33 @@ public:
     void validate_sizes(const base_index_subset<Dim>& other) const
     {
         indexer_.validate_sizes(other.indexer_);
+    }
+    
+private:
+    /**
+     * @brief Implementation for contains with index sequence.
+     *
+     * @param indices The element.
+     * @param seq Index sequence.
+     * @return True if present.
+     */
+    template <std::size_t... I>
+    bool contains_impl(const element_type& indices, std::index_sequence<I...>) const
+    {
+        return contains(indices[I]...);
+    }
+    
+    /**
+     * @brief Implementation for add with index sequence.
+     *
+     * @param indices The element.
+     * @param seq Index sequence.
+     * @return True if added (was not present), false otherwise.
+     */
+    template <std::size_t... I>
+    bool add_impl(const element_type& indices, std::index_sequence<I...>)
+    {
+        return add(indices[I]...);
     }
 };
 

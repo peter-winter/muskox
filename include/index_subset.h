@@ -39,8 +39,8 @@ public:
     using element_type = std::array<size_t, Dim>;
 
 private:
-    base_index_subset<Dim> base_; //!< Base bitset for membership.
-    std::vector<element_type> indices_; //!< List of added indices.
+    base_index_subset<Dim> base_; /// Base bitset for membership.
+    std::vector<element_type> indices_; /// List of added indices.
 
 public:
     /**
@@ -73,10 +73,10 @@ public:
     index_subset(index_subset&&) = default;
 
     /**
-     * @brief Adds indices to the subset.
+     * @brief Adds element with indices to the subset.
      *
      * @tparam Idx Index types.
-     * @param indices The indices.
+     * @param indices The single element indices.
      * @return True if added (new), false if already present.
      */
     template <typename... Idx>
@@ -107,10 +107,10 @@ public:
     }
 
     /**
-     * @brief Checks if indices are in the subset.
+     * @brief Checks if element is in the subset.
      *
      * @tparam Idx Index types.
-     * @param indices The indices.
+     * @param indices The element indices.
      * @return True if present.
      */
     template <typename... Idx>
@@ -122,7 +122,7 @@ public:
     /**
      * @brief Checks if element is in the subset.
      *
-     * @param indices The element array.
+     * @param indices The element indices array.
      * @return True if present.
      */
     bool contains(const element_type& indices) const
@@ -131,7 +131,7 @@ public:
     }
     
     /**
-     * @brief Checks if all of another's indices are contained.
+     * @brief Checks if all of another's elements are contained.
      *
      * @param other The other subset.
      * @return True if all are contained.
@@ -152,10 +152,10 @@ public:
     }
 
     /**
-     * @brief Checks if exactly matches another's items.
+     * @brief Checks if exactly matches another's elements.
      *
      * @param other The other subset.
-     * @return True if same count and contains all.
+     * @return True if same count and contains all. Order is not matched.
      * @throw std::invalid_argument If sizes don't match.
      */
     bool contains_only_items(const index_subset<Dim>& other) const
@@ -165,7 +165,7 @@ public:
     }
 
     /**
-     * @brief Gets the number of added items.
+     * @brief Gets the number of added elements.
      *
      * @return The count.
      */
@@ -175,7 +175,7 @@ public:
     }
 
     /**
-     * @brief Gets the list of indices.
+     * @brief Gets the list of added elements.
      *
      * @return Const reference to the vector.
      */
@@ -195,7 +195,7 @@ public:
     }
 
     /**
-     * @brief Adds an element array.
+     * @brief Adds an element with indices in array.
      *
      * @param indices The element.
      */
@@ -246,8 +246,8 @@ public:
     using element_type = size_t;
 
 private:
-    base_index_subset<1> base_; //!< Base bitset.
-    std::vector<element_type> indices_; //!< List of indices.
+    base_index_subset<1> base_; /// Base bitset.
+    std::vector<element_type> indices_; /// List of indices.
 
 public:
     /**
@@ -323,7 +323,7 @@ public:
     }
 
     /**
-     * @brief Checks if all of another's indices are contained.
+     * @brief Checks if all of another's elements are contained.
      *
      * @param other The other.
      * @return True if all contained.
@@ -344,7 +344,7 @@ public:
     }
 
     /**
-     * @brief Checks if exactly matches another's items.
+     * @brief Checks if exactly matches another's elements. Order is not matched
      *
      * @param other The other.
      * @return True if same.
@@ -357,7 +357,7 @@ public:
     }
     
     /**
-     * @brief Gets the count of items.
+     * @brief Gets the count of added elements.
      *
      * @return The count.
      */
@@ -367,7 +367,7 @@ public:
     }
 
     /**
-     * @brief Gets the list of indices.
+     * @brief Gets the list of added elements.
      *
      * @return Const reference.
      */
@@ -419,10 +419,10 @@ public:
     }
 
     /**
-     * @brief Adds indices fluently.
+     * @brief Adds element fluently.
      *
      * @tparam Idx Indices.
-     * @param indices The indices.
+     * @param indices The element indices.
      * @return Reference to builder.
      */
     template <typename... Idx>
@@ -454,8 +454,8 @@ public:
     }
 
 private:
-    sizes_type sizes_; //!< The sizes.
-    subset_type subset_; //!< The building subset.
+    sizes_type sizes_; /// The sizes.
+    subset_type subset_; /// The building subset.
 };
 
 } // namespace muskox

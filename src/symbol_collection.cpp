@@ -8,9 +8,9 @@
  * Part of the larger MuskOx project.
  */
 
-#include <symbol_collection.h>
-#include <list_printer.h>
-#include <grammar_error.h>
+#include "symbol_collection.h"
+#include "list_printer.h"
+#include "grammar_error.h"
 
 #include <stdexcept>
 
@@ -25,6 +25,15 @@ symbol_collection::symbol_collection()
 
     add_nterm_impl("$root");
     add_term_impl("$eof");
+}
+
+void symbol_collection::validate()
+{
+    if (get_nterm_count() <= 1)
+    {
+        throw grammar_error(grammar_error::code::no_nterm);
+    }
+    validated_ = true;
 }
 
 size_t symbol_collection::add_term_impl(std::string name, std::optional<size_t> prec, associativity assoc)

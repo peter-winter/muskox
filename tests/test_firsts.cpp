@@ -10,28 +10,6 @@ using Catch::Matchers::Message;
 
 using namespace muskox;
 
-TEST_CASE("firsts construction and basic validation", "[firsts]")
-{
-    SECTION("empty grammar throws")
-    {
-        symbol_collection sc;
-        REQUIRE_THROWS_MATCHES(
-            ruleset(sc),
-            grammar_error,
-            Message("No nonterminals")
-        );
-    }
-
-    SECTION("grammar with no rules for nterm throws in lr1_state_set but not in firsts")
-    {
-        symbol_collection sc;
-        [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-
-        ruleset rs(sc);
-
-        REQUIRE_NOTHROW(firsts(rs));  // firsts doesn't validate rules presence
-    }
-}
 
 TEST_CASE("firsts invalid index handling", "[firsts]")
 {
@@ -39,6 +17,8 @@ TEST_CASE("firsts invalid index handling", "[firsts]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
 
@@ -88,6 +68,8 @@ TEST_CASE("firsts basic calculations", "[firsts]")
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
@@ -122,6 +104,8 @@ TEST_CASE("firsts with epsilon productions", "[firsts]")
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
     [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "c"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"b"});
@@ -172,6 +156,8 @@ TEST_CASE("firsts nterm chain", "[firsts]")
     [[maybe_unused]] size_t c_idx = sc.add_nterm("C");
     [[maybe_unused]] size_t d_term_idx = sc.add_term("d");
 
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
@@ -207,12 +193,15 @@ TEST_CASE("firsts calculate_all and getters", "[firsts]")
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
     [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
 
+    sc.validate();
+    
     firsts f(rs);
 
     f.calculate_all();
@@ -259,6 +248,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+        sc.validate();
 
         ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
@@ -277,6 +267,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         symbol_collection sc;
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+        sc.validate();
 
         ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"A", "b"});
@@ -296,6 +287,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
+        sc.validate();
 
         ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
@@ -322,6 +314,7 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
+        sc.validate();
 
         ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"B"});
@@ -346,7 +339,8 @@ TEST_CASE("firsts left recursion handling", "[firsts]")
         [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
         [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
         [[maybe_unused]] size_t d_term_idx = sc.add_term("d");
-
+        sc.validate();
+        
         ruleset rs(sc);
         [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"c", "B"});
         [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"d", "A"});
@@ -374,6 +368,7 @@ TEST_CASE("firsts complex grammar", "[firsts]")
     [[maybe_unused]] size_t num_idx = sc.add_term("num");
     [[maybe_unused]] size_t lpar_idx = sc.add_term("(");
     [[maybe_unused]] size_t rpar_idx = sc.add_term(")");
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"Term"});
@@ -421,27 +416,6 @@ TEST_CASE("firsts complex grammar", "[firsts]")
     }
 }
 
-TEST_CASE("firsts calculate_nullable_rside_part", "[firsts]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
-    [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "B"});
-    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {});
-
-    firsts f(rs);
-
-    SECTION("nullable rside part")
-    {
-        REQUIRE(f.calculate_nullable_rside_part(s_idx, s_r0, 0) == true);
-        REQUIRE(f.calculate_nullable_rside_part(s_idx, s_r0, 1) == true);
-    }
-}
-
 TEST_CASE("firsts mix individual and calculate_all", "[firsts]")
 {
     symbol_collection sc;
@@ -449,6 +423,7 @@ TEST_CASE("firsts mix individual and calculate_all", "[firsts]")
     [[maybe_unused]] size_t a_idx = sc.add_nterm("A");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t c_term_idx = sc.add_term("c");
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {});

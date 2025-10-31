@@ -8,26 +8,10 @@ namespace muskox
 {
 
 parse_table_generator::parse_table_generator(const ruleset& rs)
-    : rs_(validate(rs)), cl_(rs)
+    : rs_(rs), cl_(rs)
 {
     collect_unused_warnings();
     generate_states();
-}
-
-const ruleset& parse_table_generator::validate(const ruleset& rs) const
-{
-    size_t n = rs.get_nterm_count();
-    
-    for (size_t i = 0; i < n; ++i)
-    {
-        if (rs.get_nterm_rside_count(i) == 0)
-        {
-            const std::string_view name = rs.get_nterm_name(i);
-            throw grammar_error(grammar_error::code::nterm_no_rules, name);
-        }
-    }
-    
-    return rs;
 }
 
 void parse_table_generator::collect_unused_warnings()

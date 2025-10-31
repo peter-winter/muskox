@@ -30,9 +30,9 @@ template <size_t Dim>
 class flat_indexer
 {
 private:
-    std::array<size_t, Dim> sizes_; //!< The sizes of each dimension.
-    std::array<size_t, Dim> strides_; //!< Precomputed strides for each dimension.
-    size_t total_size_; //!< Total number of elements (product of sizes).
+    std::array<size_t, Dim> sizes_; /// The sizes of each dimension.
+    std::array<size_t, Dim> strides_; /// Precomputed strides for each dimension.
+    size_t total_size_; /// Total number of elements (product of sizes).
 
     /**
      * @brief Computes the strides based on sizes.
@@ -215,7 +215,7 @@ public:
     }
     
 private:
-    std::size_t size_; //!< The size of the single dimension.
+    std::size_t size_; /// The size of the single dimension.
 };
 
 
