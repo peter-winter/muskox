@@ -484,10 +484,11 @@ private:
     size_t first_set_add_with_lazy_init(std::optional<first_set>& opt, const std::optional<first_set>& other);
     
     /**
-     * @brief Tests if symbol collection was validated, returns back the argument
+     * @brief Tests if symbol collection was validated and error free
      *
      * @param sc Symbol collection to test
      * @return The symbol collection passed as const reference
+     * @throw std::runtime_error If not validated or has errors.
      */
     const symbol_collection& test_symbol_collection_validated(const symbol_collection& sc) const;
     

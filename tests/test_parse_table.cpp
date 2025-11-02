@@ -19,10 +19,12 @@ TEST_CASE("parse_table basics", "[parse_table]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-
+    sc.validate();
+    
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    rs.validate();
 
     size_t state_count = 5;
     parse_table pt(rs, state_count);
@@ -94,10 +96,12 @@ TEST_CASE("parse_table validate", "[parse_table]")
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    rs.validate();
 
     size_t state_count = 3;
     parse_table pt(rs, state_count);
@@ -175,10 +179,12 @@ TEST_CASE("parse_table_generator create_parse_table simple", "[parse_table_gener
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
+    sc.validate();
 
     ruleset rs(sc);
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
     [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
+    rs.validate();
 
     parse_table_generator ptg(rs);
 

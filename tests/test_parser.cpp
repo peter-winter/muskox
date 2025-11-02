@@ -15,10 +15,12 @@ TEST_CASE("parser basics", "[parser]")
     [[maybe_unused]] size_t c_idx = sc.add_term("c");
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
+    sc.validate();
 
     ruleset rs(sc);
     rs.add_rule("S", {"a", "B"});
     rs.add_rule("B", {"c"});
+    rs.validate();
 
     parse_table_generator ptg(rs);
     parse_table pt = ptg.create_parse_table();
@@ -91,10 +93,12 @@ TEST_CASE("parser with epsilon production", "[parser]")
     [[maybe_unused]] size_t a_idx = sc.add_term("a");
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t e_idx = sc.add_nterm("E");
+    sc.validate();
 
     ruleset rs(sc);
     rs.add_rule("S", {"a", "E"});
     rs.add_rule("E", {});
+    rs.validate();
 
     parse_table_generator ptg(rs);
     parse_table pt = ptg.create_parse_table();

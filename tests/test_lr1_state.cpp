@@ -24,12 +24,15 @@ TEST_CASE("lr1_state", "[lr1_state]")
     [[maybe_unused]] size_t root_idx = 0;
     [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
     [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
+    sc.validate();
+    
     ruleset rs(sc);
 
     [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr"});
     [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "Expr"});
     [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {"b"});
     [[maybe_unused]] size_t expr_r2 = rs.add_rule("Expr", {});
+    rs.validate();
 
     auto dims = rs.get_lr1_set_item_space_dims();
 
