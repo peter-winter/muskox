@@ -29,11 +29,12 @@ symbol_collection::symbol_collection()
 
 void symbol_collection::validate()
 {
+    validated_ = true;
+    
     if (get_nterm_count() <= 1)
     {
         throw grammar_error(grammar_error::code::no_nterm);
     }
-    validated_ = true;
 }
 
 size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec, associativity assoc)
