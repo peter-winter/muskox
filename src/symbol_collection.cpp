@@ -27,18 +27,32 @@ symbol_collection::symbol_collection()
     add_term_impl("$eof");
 }
 
-void symbol_collection::validate()
+size_t symbol_collection::validate()
 {
-    validated_ = true;
-    
-    if (get_nterm_count() <= 1)
+    if (validated_)
     {
-        throw grammar_error(grammar_error::code::no_nterm);
+        throw std::runtime_error("Cannot validate twice");
     }
+    validated_ = true;
+    errors_.clear();
+    warnings_.clear();
+    check_no_nterms();
+    check_no_terms();
+    return errors_.size();
+}
+
+bool symbol_collection::is_validated() const
+{
+    return validated_;
 }
 
 size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec, associativity assoc)
 {
+    if (validated_)
+    {
+        throw std::runtime_error("Cannot call add_term after validation");
+    }
+    
     if (name[0] == '$')
     {
         throw grammar_error(grammar_error::code::cannot_refer_special, name);
@@ -54,6 +68,11 @@ size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec,
 
 size_t symbol_collection::add_nterm(std::string name)
 {
+    if (validated_)
+    {
+        throw std::runtime_error("Cannot call add_nterm after validation");
+    }
+    
     if (name[0] == '$')
     {
         throw grammar_error(grammar_error::code::cannot_refer_special, name);
@@ -140,6 +159,16 @@ std::string symbol_collection::print_symbol_list_from_to(const symbol_list& sl, 
     return lp.print_container_from_to(sl, [&](auto ref){ return get_symbol_name(ref); }, start, end);
 }
 
+const std::vector<std::string>& symbol_collection::get_errors() const
+{
+    return errors_;
+}
+
+const std::vector<std::string>& symbol_collection::get_warnings() const
+{
+    return warnings_;
+}
+
 void symbol_collection::validate_nterm_idx(size_t index) const
 {
     if (index >= nterms_.size())
@@ -170,6 +199,22 @@ size_t symbol_collection::add_nterm_impl(std::string name)
     auto [it, inserted] = name_to_ref_.emplace(std::move(name), symbol_ref{symbol_type::non_terminal, index});
     nterms_.emplace_back(it->first);
     return index;
+}
+
+void symbol_collection::check_no_nterms()
+{
+    if (get_nterm_count() <= 1)
+    {
+        errors_.push_back(grammar_message(grammar_error_templates::code::no_nterm).str());
+    }
+}
+
+void symbol_collection::check_no_terms()
+{
+    if (get_term_count() <= 1)
+    {
+        warnings_.push_back(grammar_message(grammar_error_templates::code::no_term).str());
+    }
 }
     
 } // namespace muskox

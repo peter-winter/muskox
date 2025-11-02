@@ -335,23 +335,61 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_nterm_name(idx1) == "nterm1");
         REQUIRE(sc.get_nterm_name(idx2) == "nterm2");
     }
-    
+}
+
+TEST_CASE("symbol_collection validate", "[symbol_collection]")
+{
     SECTION("validate")
     {
         symbol_collection sc;
         
-        REQUIRE_THROWS_MATCHES(
-            sc.validate(),
-            grammar_error,
-            Message("No nonterminals")
-        );
-
-        sc.add_nterm("A");
-        sc.validate();
+        REQUIRE(sc.validate() == 1);
+        REQUIRE(sc.get_errors().size() == 1);
+        REQUIRE(sc.get_errors()[0] == "No nonterminals");
+        REQUIRE(sc.get_warnings().size() == 1);
+        REQUIRE(sc.get_warnings()[0] == "No terminals");
         REQUIRE(sc.is_validated() == true);
 
-        // Duplicate validate ok
+        symbol_collection sc_ok;
+        sc_ok.add_nterm("A");
+        REQUIRE(sc_ok.validate() == 0);
+        REQUIRE(sc_ok.get_errors().empty());
+        REQUIRE(sc_ok.get_warnings().size() == 1);
+        REQUIRE(sc_ok.get_warnings()[0] == "No terminals");
+        REQUIRE(sc_ok.is_validated() == true);
+
+        symbol_collection sc_ok_no_warn;
+        sc_ok_no_warn.add_nterm("A");
+        sc_ok_no_warn.add_term("b");
+        REQUIRE(sc_ok_no_warn.validate() == 0);
+        REQUIRE(sc_ok_no_warn.get_errors().empty());
+        REQUIRE(sc_ok_no_warn.get_warnings().empty());
+
+        // Duplicate validate throws
+        REQUIRE_THROWS_MATCHES(
+            sc.validate(),
+            std::runtime_error,
+            Message("Cannot validate twice")
+        );
+    }
+    
+    SECTION("before/after validate")
+    {
+        symbol_collection sc;
+        sc.add_nterm("A");
         sc.validate();
+        
+        REQUIRE_THROWS_MATCHES(
+            sc.add_nterm("A"),
+            std::runtime_error,
+            Message("Cannot call add_nterm after validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            sc.add_term("b"),
+            std::runtime_error,
+            Message("Cannot call add_term after validation")
+        );
     }
 }
 

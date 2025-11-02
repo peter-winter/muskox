@@ -13,19 +13,41 @@ using namespace muskox;
 
 TEST_CASE("closure ruleset not validated", "[closure]")
 {
-    symbol_collection sc;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    sc.validate();
+    SECTION("not validated")
+    {
+        symbol_collection sc;
+        [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+        [[maybe_unused]] size_t a_idx = sc.add_term("a");
+        sc.validate();
 
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        ruleset rs(sc);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        
+        REQUIRE_THROWS_MATCHES(
+            closure(rs),
+            std::runtime_error,
+            Message("Ruleset not validated")
+        );
+    }
     
-    REQUIRE_THROWS_MATCHES(
-        closure(sc),
-        std::runtime_error,
-        Message("Ruleset not validated")
-    );
+    SECTION("has issues")
+    {
+        symbol_collection sc;
+        [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+        [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
+        [[maybe_unused]] size_t a_idx = sc.add_term("a");
+        sc.validate();
+
+        ruleset rs(sc);
+        [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        rs.validate();
+        
+        REQUIRE_THROWS_MATCHES(
+            closure(rs),
+            std::runtime_error,
+            Message("Ruleset has issues")
+        );
+    }
 }
 
 TEST_CASE("closure calculate", "[closure]")

@@ -55,7 +55,7 @@ void parse_table_generator::collect_unused_warnings()
         if (!reachable_nterms.contains(i))
         {
             std::string_view name = rs_.get_nterm_name(i);
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::unused_nterm, name));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::unused_nterm, name));
         }
     }
 
@@ -65,7 +65,7 @@ void parse_table_generator::collect_unused_warnings()
         if (!used_terms.contains(i))
         {
             std::string_view name = rs_.get_term_name(i);
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::unused_term, name));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::unused_term, name));
         }
     }
 }
@@ -206,7 +206,7 @@ void parse_table_generator::collect_conflict_warnings(
 {
     bool resolved = false;
     auto name = rs_.get_term_name(lookahead_idx);
-    warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_intro, state_idx, name));
+    warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_intro, state_idx, name));
     std::string prods;
     for (size_t i = 0; i < c.r_.size(); ++i)
     {
@@ -215,12 +215,12 @@ void parse_table_generator::collect_conflict_warnings(
         std::string prod = rs_.lr1_set_item_to_string(item);
         if (!shift_over_reduce_state_idx.has_value() && prefered_idx_reduce.has_value() && prefered_idx_reduce.value() == i)
         {
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_highest_prec, prod));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_detail_highest_prec, prod));
             resolved = true;
         }
         else
         {
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail, prod));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_detail, prod));
         }
     }
     if (c.s_.has_value())
@@ -228,21 +228,21 @@ void parse_table_generator::collect_conflict_warnings(
         if (shift_over_reduce_state_idx.has_value())
         {
             resolved = true;
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_shift_highest_prec, name, shift_over_reduce_state_idx.value()));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_detail_shift_highest_prec, name, shift_over_reduce_state_idx.value()));
         }
         else
         {
-            warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_detail_shift, name));
+            warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_detail_shift, name));
         }
     }
     
     if (resolved)
     {
-        warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_resolved, state_idx, name));
+        warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_resolved, state_idx, name));
     }
     else
     {
-        warnings_.push_back(grammar_warning(grammar_error_templates::code::conflict_unresolved, state_idx, name));
+        warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_unresolved, state_idx, name));
     }
 }
 

@@ -11,17 +11,34 @@ using Catch::Matchers::Message;
 
 using namespace muskox;
 
-TEST_CASE("symbol collection not validated", "[ruleset]")
+TEST_CASE("ruleset symbol collection not validated", "[ruleset]")
 {
-    symbol_collection sc;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    SECTION("not validated")
+    {
+        symbol_collection sc;
+        [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+        [[maybe_unused]] size_t a_idx = sc.add_term("a");
 
-    REQUIRE_THROWS_MATCHES(
-        ruleset(sc),
-        std::runtime_error,
-        Message("Symbol collection not validated")
-    );
+        REQUIRE_THROWS_MATCHES(
+            ruleset(sc),
+            std::runtime_error,
+            Message("Symbol collection not validated")
+        );
+    }
+    
+    SECTION("has issues")
+    {
+        symbol_collection sc;
+        [[maybe_unused]] size_t a_idx = sc.add_term("a");
+        
+        sc.validate();
+
+        REQUIRE_THROWS_MATCHES(
+            ruleset(sc),
+            std::runtime_error,
+            Message("Symbol collection has issues")
+        );
+    }
 }
 
 TEST_CASE("ruleset add_rule", "[ruleset]")
@@ -513,12 +530,13 @@ TEST_CASE("ruleset validation", "[ruleset]")
         
         ruleset rs(sc);
         [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a"});
+        
+        rs.validate();
 
-        REQUIRE_THROWS_MATCHES(
-            rs.validate(),
-            grammar_error,
-            Message("Nonterminal 'B' has no productions")
-        );
+        REQUIRE(rs.get_errors().size() == 1);
+        REQUIRE(rs.get_errors()[0] == "Nonterminal 'B' has no productions");
+        REQUIRE(rs.get_warnings().empty());
+        REQUIRE(rs.is_validated() == true);
     }
 }
 

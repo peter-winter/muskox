@@ -94,6 +94,11 @@ const ruleset& closure::test_ruleset_validated(const ruleset& rs) const
     {
         throw std::runtime_error("Ruleset not validated");
     }
+    
+    if (!rs.get_errors().empty())
+    {
+        throw std::runtime_error("Ruleset has issues");
+    }
     return rs;
 }
 

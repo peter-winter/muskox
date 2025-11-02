@@ -29,7 +29,7 @@ ruleset::ruleset(const symbol_collection& symbols)
     set_root_impl(symbol_ref{symbol_type::non_terminal, 1}); // First user nterm
 }
 
-void ruleset::validate()
+size_t ruleset::validate()
 {
     if (validated_)
     {
@@ -37,6 +37,8 @@ void ruleset::validate()
     }
     
     validated_ = true;
+    
+    check_nterm_no_rsides();
     
     // Add implicit rule for $root, throw if rules for $root already exist
     if (!nterms_data_[0].rsides_.empty())
@@ -46,17 +48,7 @@ void ruleset::validate()
     
     // Don't add $eof as terminal at the end, it is rather a lookahead symbol in LR(1) parsing root item
     add_rside_impl(0, symbol_list{root_});
-    
-    // Check for nonterminals with no rsides
-    for (size_t i = 0; i < get_nterm_count(); ++i)
-    {
-        if (get_nterm_rside_count(i) == 0)
-        {
-            const std::string_view name = get_nterm_name(i);
-            throw grammar_error(grammar_error::code::nterm_no_rsides, name);
-        }
-    }
-    
+        
     // Calculate all effective rside precedences
     for (size_t i = 0; i < get_nterm_count(); ++i)
     {
@@ -65,6 +57,8 @@ void ruleset::validate()
             calculate_effective_rside_precedence(i, j);
         }
     }
+    
+    return errors_.size();
 }
 
 bool ruleset::is_validated() const
@@ -394,6 +388,16 @@ void ruleset::validate_suffix_idx(size_t nterm_idx, size_t rside_idx, size_t suf
     }
 }
 
+const std::vector<std::string>& ruleset::get_errors() const
+{
+    return errors_;
+}
+
+const std::vector<std::string>& ruleset::get_warnings() const
+{
+    return warnings_;
+}
+
 void ruleset::propagate_nullable(size_t nt_idx)
 {
     std::queue<size_t> q;
@@ -710,7 +714,25 @@ const symbol_collection& ruleset::test_symbol_collection_validated(const symbol_
     {
         throw std::runtime_error("Symbol collection not validated");
     }
+    
+    if (sc.get_errors().size() != 0)
+    {
+        throw std::runtime_error("Symbol collection has issues");
+    }
     return sc;
+}
+
+void ruleset::check_nterm_no_rsides()
+{
+    // Start from 1, don't check $root
+    for (size_t i = 1; i < get_nterm_count(); ++i)
+    {
+        if (get_nterm_rside_count(i) == 0)
+        {
+            const std::string_view name = get_nterm_name(i);
+            errors_.push_back(grammar_message(grammar_error::code::nterm_no_rsides, name));
+        }
+    }
 }
 
 } // namespace muskox

@@ -11,7 +11,7 @@ namespace muskox
 class closure
 {
 public:
-    closure(const ruleset& rs);
+    explicit closure(const ruleset& rs);
     ~closure() = default;
     
     using opt_subset = std::optional<index_subset<4>>;

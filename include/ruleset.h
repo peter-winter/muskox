@@ -53,7 +53,7 @@ public:
      * @param symbols The symbol collection (must be validated).
      * @throw std::runtime_error If symbols not validated.
      */
-    ruleset(const symbol_collection& symbols);
+    explicit ruleset(const symbol_collection& symbols);
 
     /**
      * @brief Destructor.
@@ -63,13 +63,14 @@ public:
     /**
      * @brief Validates the ruleset.
      *
-     * Adds implicit $root rule, checks for non-terminals without rules.
-     * Computes all nullable rule suffixes.
+     * Adds implicit $root rule.
+     * Checks for issues in symbol collection.
      *
-     * @throw grammar_error On validation errors.
+     * @return Number of errors.
      * @throw std::runtime_error If unexpected $root rules.
+     * @throw std::runtime_error If validated twice.
      */
-    void validate();
+    size_t validate();
 
     /**
      * @brief Checks if the ruleset has been validated.
@@ -381,14 +382,29 @@ public:
      * @throw std::out_of_range If invalid.
      */
     void validate_suffix_idx(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
+    
+    /**
+     * @brief Gets the errors.
+     *
+     * @return The vector of errors.
+     */
+    const std::vector<std::string>& get_errors() const;
+
+    /**
+     * @brief Gets the warnings.
+     *
+     * @return The vector of warnings.
+     */
+    const std::vector<std::string>& get_warnings() const;
 
 private:
     const symbol_collection& symbols_; /// Reference to the symbol collection.
     std::vector<nterm_data> nterms_data_; /// Data for each non-terminal.
     symbol_ref root_ = {}; /// The root non-terminal reference.
     bool validated_ = false; /// Flag indicating if validated.
-
     base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
+    std::vector<std::string> errors_; /// Vector of errors.
+    std::vector<std::string> warnings_; /// Vector of warnings.
     
     /**
      * @brief Propagates nullability when a non-terminal becomes nullable.
@@ -474,6 +490,11 @@ private:
      * @return The symbol collection passed as const reference
      */
     const symbol_collection& test_symbol_collection_validated(const symbol_collection& sc) const;
+    
+    /**
+     * @brief Checks for non-terminals with no rsides
+     */
+    void check_nterm_no_rsides();
 };
 
 } // namespace muskox

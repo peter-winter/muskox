@@ -39,6 +39,7 @@ struct grammar_error_templates
         root_not_exists, 
         cannot_refer_special, 
         no_nterm,
+        no_term,
         nterm_unsolvable_left_recursion,
         unused_term,
         unused_nterm,
@@ -63,6 +64,7 @@ struct grammar_error_templates
         "Root symbol '{}' does not exist",
         "Cannot refer special '{}' symbol",
         "No nonterminals",
+        "No terminals",
         "Nonterminal '{}' has unsolvable left recursion",
         "Terminal '{}' is unused",
         "Nonterminal '{}' is unused",
@@ -78,6 +80,6 @@ struct grammar_error_templates
 
 using grammar_error = formatted_error<grammar_error_templates>; /// Type alias for grammar error.
 
-using grammar_warning = formatted_message<grammar_error_templates>; /// Type alias for grammar warning.
+using grammar_message = formatted_message<grammar_error_templates>; /// Type alias for grammar message.
 
 } // namespace muskox

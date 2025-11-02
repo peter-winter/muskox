@@ -22,6 +22,7 @@
 #include "refs.h"
 #include "term.h"
 #include "symbol_list.h"
+#include "grammar_error.h"
 
 #include <string>
 #include <string_view>
@@ -99,18 +100,19 @@ public:
     /**
      * @brief Validates the symbol collection.
      *
-     * Checks for at least one non-terminal besides $root.
+     * Checks for issues in symbol collection.
      *
-     * @throw grammar_error If no non-terminals.
+     * @return Number of errors.
+     * @throw std::runtime_error If validated twice.
      */
-    void validate();
+    size_t validate();
 
     /**
      * @brief Checks if the collection has been validated.
      *
      * @return True if validated.
      */
-    bool is_validated() const { return validated_; }
+    bool is_validated() const;
 
     /**
      * @brief Adds a terminal symbol after checks.
@@ -230,11 +232,27 @@ public:
      */
     std::string print_symbol_list_from_to(const symbol_list& sl, size_t start, size_t end) const;
 
+    /**
+     * @brief Gets the errors.
+     *
+     * @return The vector of errors.
+     */
+    const std::vector<std::string>& get_errors() const;
+
+    /**
+     * @brief Gets the warnings.
+     *
+     * @return The vector of warnings.
+     */
+    const std::vector<std::string>& get_warnings() const;
+
 private:
     std::vector<term> terms_; /// Vector of terminal symbols.
     std::vector<nterm> nterms_; /// Vector of non-terminal symbols.
     std::unordered_map<std::string, symbol_ref, string_hash, std::equal_to<>> name_to_ref_; /// Map from name to symbol reference.
     bool validated_ = false; /// Flag indicating if the collection has been validated.
+    std::vector<std::string> errors_; /// Vector of errors.
+    std::vector<std::string> warnings_; /// Vector of warnings.
 
     /**
      * @brief Validates a non-terminal index.
@@ -269,6 +287,16 @@ private:
      * @return The index.
      */
     size_t add_nterm_impl(std::string name);
+
+    /**
+     * @brief Checks for no non-terminals error.
+     */
+    void check_no_nterms();
+
+    /**
+     * @brief Checks for no terminals warning.
+     */
+    void check_no_terms();
 };
 
 } // namespace muskox
