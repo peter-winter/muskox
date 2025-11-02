@@ -496,6 +496,11 @@ private:
      * @brief Checks for non-terminals with no rsides
      */
     void check_nterm_no_rsides();
+    
+    /**
+     * @brief Checks for unused symbols
+     */
+    void check_usused_symbols();
 };
 
 } // namespace muskox

@@ -41,13 +41,8 @@ lr1_state::action_map lr1_state::get_actions() const
 {
     action_map result;
 
-    for (const auto& arr : items_.get_indices())
+    for (const auto& [nterm_idx, rside_idx, symbol_idx, lookahead_idx] : items_.get_indices())
     {
-        size_t nterm_idx = arr[0];
-        size_t rside_idx = arr[1];
-        size_t symbol_idx = arr[2];
-        size_t lookahead_idx = arr[3];
-
         size_t prod_len = rs_.get_symbol_count(nterm_idx, rside_idx);
 
         if (symbol_idx == prod_len)

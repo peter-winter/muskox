@@ -13,33 +13,6 @@ using teh = table_entry_hint;
 using pte = parse_table_entry;
 using st = symbol_type;
 
-TEST_CASE("parse_table_generator unused symbols warnings", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-    [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    [[maybe_unused]] size_t u_idx = sc.add_nterm("U");
-    [[maybe_unused]] size_t v_idx = sc.add_term("v");
-    
-    sc.validate();
-
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
-    [[maybe_unused]] size_t u_r0 = rs.add_rule("U", {"v"});
-
-    rs.validate();
-    
-    parse_table_generator lss(rs);
-
-    const auto& warnings = lss.get_warnings();
-    REQUIRE(warnings.size() == 2);
-    REQUIRE(warnings[0] == "Nonterminal 'U' is unused");
-    REQUIRE(warnings[1] == "Terminal 'v' is unused");
-}
-
 TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table_generator]")
 {
     symbol_collection sc;

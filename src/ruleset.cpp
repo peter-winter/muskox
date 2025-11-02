@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <queue>
+#include <ranges>
 
 namespace muskox
 {
@@ -39,6 +40,7 @@ size_t ruleset::validate()
     validated_ = true;
     
     check_nterm_no_rsides();
+    check_usused_symbols();
     
     // Add implicit rule for $root, throw if rules for $root already exist
     if (!nterms_data_[0].rsides_.empty())
@@ -298,16 +300,18 @@ const first_set& ruleset::get_nterm_first(size_t nterm_idx) const
     
 std::string ruleset::to_string() const
 {
-    size_t i = 0;
-    auto print_nterm = [&](const auto& nterm_rsides) -> std::string
+    auto nterm_view = 
+        std::views::iota(size_t(0), get_nterm_count()) |
+        std::views::transform([this](size_t i){ return std::pair{get_nterm_name(i), nterms_data_[i].rsides_}; });
+
+    auto print_nterm = [&](const auto& p) -> std::string
     {
+        const auto& [left, nterm_rsides] = p;
         if (nterm_rsides.empty())
         {
-            ++i;
             return "";
         }
         
-        std::string left(symbols_.get_nterm_name(i));
         std::string indent(left.size() + 1, ' ');
         
         auto print_rside = [&](const auto& rs)
@@ -325,18 +329,14 @@ std::string ruleset::to_string() const
             return rside_printer.print_list(symbols_s, precedence_s);
         };
         
-        list_printer nterm_printer(left + " : ", "\n" + indent + "| ", "\n" + indent + ";", true);
-        ++i;
+        std::string lhs_string{left};
+        lhs_string += " : ";
+        list_printer nterm_printer(lhs_string, "\n" + indent + "| ", "\n" + indent + ";", true);
         return nterm_printer.print_container(nterm_rsides, print_rside);
     };
     
     list_printer ruleset_printer("", "\n\n", "");
-    std::vector<std::vector<rside>> all_rsides;
-    for (const auto& nd : nterms_data_)
-    {
-        all_rsides.push_back(nd.rsides_);
-    }
-    return ruleset_printer.print_container(all_rsides, print_nterm);
+    return ruleset_printer.print_range(nterm_view, print_nterm);
 }
 
 std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
@@ -731,6 +731,61 @@ void ruleset::check_nterm_no_rsides()
         {
             const std::string_view name = get_nterm_name(i);
             errors_.push_back(grammar_message(grammar_error::code::nterm_no_rsides, name));
+        }
+    }
+}
+
+void ruleset::check_usused_symbols()
+{
+    base_index_subset<1> reachable_nterms({get_nterm_count()}, false);
+    std::queue<size_t> to_visit;
+    to_visit.push(root_.index_);
+    reachable_nterms.add(root_.index_);
+
+    base_index_subset<1> used_terms({get_term_count()}, false);
+
+    while (!to_visit.empty())
+    {
+        size_t curr = to_visit.front();
+        to_visit.pop();
+
+        for (size_t r = 0; r < get_nterm_rside_count(curr); ++r)
+        {
+            for (size_t s = 0; s < get_symbol_count(curr, r); ++s)
+            {
+                auto ref = get_symbol(curr, r, s);
+                if (ref.type_ == symbol_type::non_terminal)
+                {
+                    if (reachable_nterms.add(ref.index_))
+                    {
+                        to_visit.push(ref.index_);
+                    }
+                }
+                else
+                {
+                    used_terms.add(ref.index_);
+                }
+            }
+        }
+    }
+
+    // Skip $root (index 0)
+    for (size_t i = 1; i < get_nterm_count(); ++i)
+    {
+        if (!reachable_nterms.contains(i))
+        {
+            std::string_view name = get_nterm_name(i);
+            warnings_.push_back(grammar_message(grammar_error_templates::code::unused_nterm, name));
+        }
+    }
+
+    // Skip $eof (index 0)
+    for (size_t i = 1; i < get_term_count(); ++i)
+    {
+        if (!used_terms.contains(i))
+        {
+            std::string_view name = get_term_name(i);
+            warnings_.push_back(grammar_message(grammar_error_templates::code::unused_term, name));
         }
     }
 }

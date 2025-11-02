@@ -60,8 +60,7 @@ private:
     
     std::vector<table_entry_hint> table_entry_hints_;
     std::vector<parse_table_entry> glr_splits_;
-    
-    void collect_unused_warnings();
+
     void collect_conflict_warnings(
         size_t state_idx, 
         size_t lookahead_idx, 

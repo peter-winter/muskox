@@ -13,10 +13,10 @@
 
 #pragma once
 
-#include <ostream>
 #include <sstream>
 #include <string_view>
 #include <utility>
+#include <ranges>  // Added for ranges/views support
 
 namespace muskox
 {
@@ -81,6 +81,7 @@ private:
             os << str;
             printed_any_ = true;
         }
+        first_ = false;  // Updated to handle first item correctly
     }
 
 public:
@@ -143,7 +144,7 @@ public:
     }
     
     /**
-     * @brief Prints a container.
+     * @brief Prints a container (legacy support for indexed containers).
      *
      * @tparam Container Container type.
      * @tparam F To-string function type.
@@ -158,7 +159,7 @@ public:
     }
     
     /**
-     * @brief Prints a range of a container.
+     * @brief Prints a range of a container (legacy support for indexed containers).
      *
      * @tparam Container Container type.
      * @tparam F To-string function type.
@@ -180,6 +181,34 @@ public:
         for (size_t i = from; i < container.size() && i < to; ++i)
         {
             print_item_helper(ss, to_string_f(container[i]));
+        }
+        
+        ss << right_delim_;
+        
+        return ss.str();
+    }
+
+    /**
+     * @brief Prints a range.
+     *
+     * @tparam Range Range type (must satisfy std::ranges::input_range).
+     * @tparam F To-string function type.
+     * @param range The range to print.
+     * @param to_string_f Conversion function.
+     * @return String representation.
+     */
+    template <std::ranges::input_range Range, typename F>
+    std::string print_range(const Range& range, F to_string_f) const
+    {
+        std::stringstream ss;
+        
+        ss << left_delim_;
+        printed_any_ = false;
+        first_ = true;
+        
+        for (const auto& item : range)
+        {
+            print_item_helper(ss, to_string_f(item));
         }
         
         ss << right_delim_;
