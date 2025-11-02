@@ -1,12 +1,12 @@
 #include "closure.h"
 #include "grammar_error.h"
+#include "defs.h"
 
 namespace muskox
 {
 
 closure::closure(const ruleset& rs)
-    : firsts_(rs), 
-      rs_(rs), 
+    : rs_(test_ruleset_validated(rs)), 
       lr1_item_closures_(rs.get_lr1_set_item_space_dims(), std::nullopt),
       lr1_item_full_closures_(rs.get_lr1_set_item_space_dims(), std::nullopt)
 {
@@ -14,7 +14,7 @@ closure::closure(const ruleset& rs)
 
 const closure::opt_subset& closure::calculate(const lr1_set_item& item)
 {
-    auto& result = lr1_item_closures_.get(item.nterm_idx_, item.rside_idx_, item.symbol_idx_, item.lookahead_idx_);
+    auto& result = lr1_item_closures_.get(item.nterm_idx_, item.rside_idx_, item.suffix_idx_, item.lookahead_idx_);
     
     if (result.has_value())
     {
@@ -22,29 +22,31 @@ const closure::opt_subset& closure::calculate(const lr1_set_item& item)
     }
     
     result.emplace(rs_.get_lr1_set_item_space_dims());
-    result.value().add(item.nterm_idx_, item.rside_idx_, item.symbol_idx_, item.lookahead_idx_);
+    result.value().add(item.nterm_idx_, item.rside_idx_, item.suffix_idx_, item.lookahead_idx_);
     
     size_t rside_symbol_count = rs_.get_symbol_count(item.nterm_idx_, item.rside_idx_);
-    if (item.symbol_idx_ == rside_symbol_count)
+    if (item.suffix_idx_ == rside_symbol_count)
     {
         return result;
     }
     
-    const auto& ref = rs_.get_symbol(item.nterm_idx_, item.rside_idx_, item.symbol_idx_);
+    const auto& ref = rs_.get_symbol(item.nterm_idx_, item.rside_idx_, item.suffix_idx_);
     if (ref.type_ == symbol_type::terminal)
     {
         return result;
     }
     
-    index_subset<1> terms(rs_.get_term_count());
+    first_set terms(rs_.get_term_count());
     
-    if (item.symbol_idx_ + 1 < rside_symbol_count)
+    if (item.suffix_idx_ + 1 < rside_symbol_count)
     {
-        const auto& rside_part_first = firsts_.calculate_rside_part(item.nterm_idx_, item.rside_idx_, item.symbol_idx_ + 1);
-        terms.add(rside_part_first);
+        const auto& suffix_first = rs_.get_suffix_first(item.nterm_idx_, item.rside_idx_, item.suffix_idx_ + 1);
+        if (suffix_first.has_value())
+        {
+            terms.add(suffix_first.value());
+        }
         
-        bool rside_part_nullable = rs_.is_suffix_nullable(item.nterm_idx_, item.rside_idx_, item.symbol_idx_ + 1);
-        if (rside_part_nullable)
+        if (rs_.is_suffix_nullable(item.nterm_idx_, item.rside_idx_, item.suffix_idx_ + 1))
         {
             terms.add(item.lookahead_idx_);
         }
@@ -67,7 +69,7 @@ const closure::opt_subset& closure::calculate(const lr1_set_item& item)
 
 const closure::opt_subset& closure::calculate_full(const lr1_set_item& item)
 {
-    auto& result = lr1_item_full_closures_.get(item.nterm_idx_, item.rside_idx_, item.symbol_idx_, item.lookahead_idx_);
+    auto& result = lr1_item_full_closures_.get(item.nterm_idx_, item.rside_idx_, item.suffix_idx_, item.lookahead_idx_);
     
     if (result.has_value())
     {
@@ -84,6 +86,15 @@ const closure::opt_subset& closure::calculate_full(const lr1_set_item& item)
     }
     
     return result;
+}
+
+const ruleset& closure::test_ruleset_validated(const ruleset& rs) const
+{
+    if (!rs.is_validated())
+    {
+        throw std::runtime_error("Ruleset not validated");
+    }
+    return rs;
 }
 
 } // namespace muskox

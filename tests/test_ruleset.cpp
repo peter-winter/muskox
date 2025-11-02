@@ -11,6 +11,19 @@ using Catch::Matchers::Message;
 
 using namespace muskox;
 
+TEST_CASE("symbol collection not validated", "[ruleset]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+
+    REQUIRE_THROWS_MATCHES(
+        ruleset(sc),
+        std::runtime_error,
+        Message("Symbol collection not validated")
+    );
+}
+
 TEST_CASE("ruleset add_rule", "[ruleset]")
 {
     symbol_collection sc;
@@ -541,7 +554,7 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
         REQUIRE_THROWS_MATCHES(
             rs.get_lr1_set_item_space_dims(),
             std::runtime_error,
-            Message("Cannot lr1 set item space dims before validation")
+            Message("Cannot query lr1 set item space dims before validation")
         );
         
         REQUIRE_THROWS_MATCHES(

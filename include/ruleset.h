@@ -313,11 +313,11 @@ public:
      * @param nterm_idx Non-terminal index.
      * @param rside_idx Right-hand side index.
      * @param suffix_idx Start index.
-     * @return FIRST set of the suffix.
+     * @return FIRST set of the suffix. Returns std::nullopt when no FIRST set for suffix, either suffix with pure epsilon non-terminals, or caused by unsolvable left recursion.
      * @throw std::out_of_range If invalid.
      * @throw std::runtime_error If called before validation.
      */
-    const first_set& get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
+    const std::optional<first_set>& get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
     
     /**
      * @brief Gets a non-terminal's FIRST set
@@ -328,7 +328,7 @@ public:
      * @return FIRST set of the non-terminal.
      * @throw std::out_of_range If invalid.
      * @throw std::runtime_error If called before validation.
-     * @throw std::runtime_error no FIRST set for non-terminal, either one and only epsilon production, or unsolvable left recursoin.
+     * @throw std::runtime_error no FIRST set for non-terminal, either one and only epsilon production, or unsolvable left recursion.
      */
     const first_set& get_nterm_first(size_t nterm_idx) const;
 
@@ -466,6 +466,14 @@ private:
      * @return New size of opt
      */
     size_t first_set_add_with_lazy_init(std::optional<first_set>& opt, const std::optional<first_set>& other);
+    
+    /**
+     * @brief Tests if symbol collection was validated, returns back the argument
+     *
+     * @param sc Symbol collection to test
+     * @return The symbol collection passed as const reference
+     */
+    const symbol_collection& test_symbol_collection_validated(const symbol_collection& sc) const;
 };
 
 } // namespace muskox

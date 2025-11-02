@@ -21,16 +21,11 @@ namespace muskox
 {
 
 ruleset::ruleset(const symbol_collection& symbols)
-    : symbols_(symbols), 
+    : symbols_(test_symbol_collection_validated(symbols)),
       nterms_data_(symbols.get_nterm_count()),
       validated_(false),
       nullable_nterms_({symbols.get_nterm_count()})
 {
-    if (!symbols_.is_validated())
-    {
-        throw std::runtime_error("Symbol collection not validated");
-    }
-    
     set_root_impl(symbol_ref{symbol_type::non_terminal, 1}); // First user nterm
 }
 
@@ -49,6 +44,7 @@ void ruleset::validate()
         throw std::runtime_error("Unexpected $root rside");
     }
     
+    // Don't add $eof as terminal at the end, it is rather a lookahead symbol in LR(1) parsing root item
     add_rside_impl(0, symbol_list{root_});
     
     // Check for nonterminals with no rsides
@@ -61,7 +57,7 @@ void ruleset::validate()
         }
     }
     
-    // calculate all effective rside precedences
+    // Calculate all effective rside precedences
     for (size_t i = 0; i < get_nterm_count(); ++i)
     {
         for (size_t j = 0; j < get_nterm_rside_count(i); ++j)
@@ -246,7 +242,7 @@ std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
 {
     if (!validated_)
     {
-        throw std::runtime_error("Cannot lr1 set item space dims before validation");
+        throw std::runtime_error("Cannot query lr1 set item space dims before validation");
     }
     
     return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count() + 1, get_term_count()};
@@ -276,7 +272,7 @@ bool ruleset::is_nterm_nullable(size_t nterm_idx) const
     return nullable_nterms_.contains(nterm_idx);
 }
 
-const first_set& ruleset::get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
+const std::optional<first_set>& ruleset::get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
 {
     if (!validated_)
     {
@@ -284,7 +280,8 @@ const first_set& ruleset::get_suffix_first(size_t nterm_idx, size_t rside_idx, s
     }
     
     validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
-    return nterms_data_[nterm_idx].rsides_[rside_idx].first_[suffix_idx].value();
+    
+    return nterms_data_[nterm_idx].rsides_[rside_idx].first_[suffix_idx];
 }
     
 const first_set& ruleset::get_nterm_first(size_t nterm_idx) const
@@ -355,9 +352,9 @@ std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
     
     list_printer lp;
     
-    std::string before_dot = symbols_.print_symbol_list_from_to(rs.symbols_, 0, item.symbol_idx_);
+    std::string before_dot = symbols_.print_symbol_list_from_to(rs.symbols_, 0, item.suffix_idx_);
     
-    std::string after_dot = symbols_.print_symbol_list_from_to(rs.symbols_, item.symbol_idx_, rs.symbols_.size());
+    std::string after_dot = symbols_.print_symbol_list_from_to(rs.symbols_, item.suffix_idx_, rs.symbols_.size());
     
     return lp.print_list(left, "->", before_dot, ".", after_dot, "/", symbols_.get_term_name(item.lookahead_idx_));
 }
@@ -595,19 +592,27 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
         
         if (ref.type_ == symbol_type::terminal)
         {
-            first_set_add_with_lazy_init(new_rside.first_[suffix_idx], ref.index_);
+            for (size_t i = suffix_idx - nullable_streak; i <= suffix_idx; ++i)
+            {
+                first_set_add_with_lazy_init(new_rside.first_[i], ref.index_);
+            }
             
-            // For terminal at the start of whole rside, immediately add to lhs non-terminal FIRST, propagate if newly added
-            if (suffix_idx == 0 && first_set_add_with_lazy_init(lhs_first, ref.index_))
+            // For terminal at the start of whole rside, considering nullable streak at the start of suffix, 
+            // immediately add to lhs non-terminal FIRST, propagate if newly added
+            if (suffix_idx == nullable_streak && first_set_add_with_lazy_init(lhs_first, ref.index_))
             {
                 propagate_added_to_first_set(lhs_idx, ref.index_);
             }
         }
         else
         {
-            // Union FIRST from non-terminal at the start of suffix, considering nullable streak at the start of suffix, then also into lhs non-terminal
+            // Union FIRST from non-terminal at the start of suffix, considering nullable streak at the start of suffix, 
+            // then also union into lhs non-terminal if streak is from the very start
             
-            first_set_add_with_lazy_init(new_rside.first_[suffix_idx], nterms_data_[ref.index_].first_);
+            for (size_t i = suffix_idx - nullable_streak; i <= suffix_idx; ++i)
+            {
+                first_set_add_with_lazy_init(new_rside.first_[i], nterms_data_[ref.index_].first_);
+            }
             
             if (suffix_idx == nullable_streak)
             {
@@ -624,6 +629,10 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
             if (nullable_nterms_.contains(ref.index_))
             {
                 nullable_streak++;
+            }
+            else
+            {
+                nullable_streak = 0;
             }
             
             // Only for immediate start of suffix, if non-terminals conclude to nullable then add appearances for >0 posittions in suffix
@@ -693,6 +702,15 @@ size_t ruleset::first_set_add_with_lazy_init(std::optional<first_set>& opt, cons
     }
     
     return opt.has_value() ? opt.value().get_count() : 0;
+}
+
+const symbol_collection& ruleset::test_symbol_collection_validated(const symbol_collection& sc) const
+{
+    if (!sc.is_validated())
+    {
+        throw std::runtime_error("Symbol collection not validated");
+    }
+    return sc;
 }
 
 } // namespace muskox

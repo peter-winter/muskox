@@ -18,7 +18,6 @@ add_library(${PROJECT_NAME}_lib
   src/symbol_collection.cpp
   src/ruleset.cpp
   src/lr1_state.cpp
-  src/firsts.cpp
   src/closure.cpp
   src/parse_table.cpp
   src/parser.cpp
