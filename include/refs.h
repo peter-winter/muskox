@@ -72,8 +72,8 @@ inline bool operator<(const symbol_ref& lhs, const symbol_ref& rhs)
  */
 struct rside_ref
 {
-    size_t nterm_idx; /// The non-terminal index.
-    size_t rside_idx; /// The right-hand side index.
+    size_t nterm_idx_; /// The non-terminal index.
+    size_t rside_idx_; /// The right-hand side index.
 };
 
 /**
@@ -83,9 +83,9 @@ struct rside_ref
  */
 struct suffix_ref
 {
-    size_t nterm_idx; /// The non-terminal index.
-    size_t rside_idx; /// The right-hand side index.
-    size_t suffix_idx; /// The suffix index.
+    size_t nterm_idx_; /// The non-terminal index.
+    size_t rside_idx_; /// The right-hand side index.
+    size_t suffix_idx_; /// The suffix index.
 };
 
 } // namespace muskox

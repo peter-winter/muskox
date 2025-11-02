@@ -122,7 +122,7 @@ TEST_CASE("ruleset dims", "[ruleset]")
     
     rs.validate();
 
-    SECTION("rside part space dims")
+    SECTION("get_suffix_space_dims")
     {
         auto dims = rs.get_suffix_space_dims();
         REQUIRE(dims[0] == 3);  // nterm count, including $root
@@ -130,7 +130,7 @@ TEST_CASE("ruleset dims", "[ruleset]")
         REQUIRE(dims[2] == 3);  // max symbol count
     }
 
-    SECTION("lr1 set item space dims")
+    SECTION("get_lr1_set_item_space_dims")
     {
         auto dims = rs.get_lr1_set_item_space_dims();
         REQUIRE(dims[0] == 3);  // nterm count
@@ -555,6 +555,18 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
             std::runtime_error,
             Message("Cannot query nterm nullability before validation")
         );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_suffix_first(s_idx, r_idx, 0),
+            std::runtime_error,
+            Message("Cannot query suffix FIRST sets before validation")
+        );
+        
+        REQUIRE_THROWS_MATCHES(
+            rs.get_nterm_first(s_idx),
+            std::runtime_error,
+            Message("Cannot query nterm FIRST sets before validation")
+        );
     
         rs.validate();
     
@@ -575,6 +587,8 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
         REQUIRE_NOTHROW(rs.get_lr1_set_item_space_dims());
         REQUIRE_NOTHROW(rs.is_suffix_nullable(s_idx, r_idx, 0));
         REQUIRE_NOTHROW(rs.is_nterm_nullable(s_idx));
+        REQUIRE_NOTHROW(rs.get_suffix_first(s_idx, r_idx, 0));
+        REQUIRE_NOTHROW(rs.get_nterm_first(s_idx));
     }
 
     SECTION("is_validated")
@@ -583,5 +597,10 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
         rs.add_rule("S", {"b"});
         rs.validate();
         REQUIRE(rs.is_validated());
+        REQUIRE_THROWS_MATCHES(
+            rs.validate(),
+            std::runtime_error,
+            Message("Cannot validate twice")
+        );
     }
 }

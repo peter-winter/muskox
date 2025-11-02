@@ -11,6 +11,7 @@
 #pragma once
 
 #include "symbol_list.h"
+#include "defs.h"
 
 #include <optional>
 #include <vector>
@@ -26,8 +27,11 @@ struct rside
 {
     symbol_list symbols_; /// List of symbols in the right-hand side.
     std::optional<size_t> precedence_; /// Optional precedence for the rule.
-    std::vector<size_t> potentially_nullable_suffixes_; /// Remaining counts for potentially nullable suffixes.
     std::optional<size_t> effective_precedence_; /// Effective precedence, computed in ruleset::calculate_rside_precedence. Stored for optimization.
+    
+    std::vector<size_t> potentially_nullable_suffixes_; /// Remaining counts for potentially nullable suffixes. Sentinel value (-1) to indicate non-nullable.
+    std::vector<std::optional<first_set>> first_; /// FIRST set for every suffix.
+    
     /**
      * @brief Constructs a right-hand side.
      *

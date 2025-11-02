@@ -36,6 +36,11 @@ ruleset::ruleset(const symbol_collection& symbols)
 
 void ruleset::validate()
 {
+    if (validated_)
+    {
+        throw std::runtime_error("Cannot validate twice");
+    }
+    
     validated_ = true;
     
     // Add implicit rule for $root, throw if rules for $root already exist
@@ -260,17 +265,46 @@ bool ruleset::is_suffix_nullable(size_t nterm_idx, size_t rside_idx, size_t suff
     return count == 0;
 }
 
-bool ruleset::is_nterm_nullable(size_t idx) const
+bool ruleset::is_nterm_nullable(size_t nterm_idx) const
 {
     if (!validated_)
     {
         throw std::runtime_error("Cannot query nterm nullability before validation");
     }
     
-    validate_nterm_idx(idx);
-    return nullable_nterms_.contains(idx);
+    validate_nterm_idx(nterm_idx);
+    return nullable_nterms_.contains(nterm_idx);
 }
 
+const first_set& ruleset::get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const
+{
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot query suffix FIRST sets before validation");
+    }
+    
+    validate_suffix_idx(nterm_idx, rside_idx, suffix_idx);
+    return nterms_data_[nterm_idx].rsides_[rside_idx].first_[suffix_idx].value();
+}
+    
+const first_set& ruleset::get_nterm_first(size_t nterm_idx) const
+{
+    if (!validated_)
+    {
+        throw std::runtime_error("Cannot query nterm FIRST sets before validation");
+    }
+    
+    validate_nterm_idx(nterm_idx);
+    const auto& first = nterms_data_[nterm_idx].first_;
+    
+    if (!first.has_value())
+    {
+        throw std::runtime_error("No FIRST set for non-terminal");
+    }
+    
+    return first.value();
+}
+    
 std::string ruleset::to_string() const
 {
     size_t i = 0;
@@ -371,21 +405,83 @@ void ruleset::propagate_nullable(size_t nt_idx)
     {
         size_t nt = q.front();
         q.pop();
+        
         for (const auto& appearance : nterms_data_[nt].appearances_in_potentially_nullable_suffixes_)
         {
-            auto& rside = nterms_data_[appearance.nterm_idx].rsides_[appearance.rside_idx];
-            auto& remaining = rside.potentially_nullable_suffixes_[appearance.suffix_idx];
+            auto& rs = nterms_data_[appearance.nterm_idx_].rsides_[appearance.rside_idx_];
+            auto& remaining = rs.potentially_nullable_suffixes_[appearance.suffix_idx_];
             if (remaining > 0)
             {
                 --remaining;
                 if (remaining == 0)
                 {
-                    size_t lhs = appearance.nterm_idx;
-                    if (appearance.suffix_idx == 0 && nullable_nterms_.add(lhs))
+                    size_t lhs = appearance.nterm_idx_;
+                    if (appearance.suffix_idx_ == 0 && nullable_nterms_.add(lhs))
                     {
                         q.push(lhs);
                     }
                 }
+            }
+        }
+        
+        for (const auto& appearance : nterms_data_[nt].appearances_at_start_of_suffixes_)
+        {
+            auto& rs = nterms_data_[appearance.nterm_idx_].rsides_[appearance.rside_idx_];
+            std::optional<first_set>& suffix_first = rs.first_[appearance.suffix_idx_];
+            size_t suffix = appearance.suffix_idx_ + 1;
+            while (suffix < rs.symbols_.size())
+            {
+                symbol_ref next = rs.symbols_[suffix];
+                if (next.type_ == symbol_type::non_terminal)
+                {
+                    // Now the next non-terminal after nullable 'appears' at the start of suffix
+                    nterms_data_[next.index_].appearances_at_start_of_suffixes_.emplace_back(appearance);
+                    
+                    // Union FIRST set from next non-terminal after nullable into this suffix FIRST set
+                    first_set_add_with_lazy_init(suffix_first, nterms_data_[next.index_].first_);
+                                    
+                    if (!nullable_nterms_.contains(next.index_))
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    // Add terminal after nullable into suffix FIRST
+                    first_set_add_with_lazy_init(suffix_first, next.index_);
+                    
+                    if (appearance.suffix_idx_ == 0 && first_set_add_with_lazy_init(nterms_data_[appearance.nterm_idx_].first_, next.index_))
+                    {
+                        // Started from suffix == 0, so we are analyzing full rside, if newly added then propagate
+                        propagate_added_to_first_set(appearance.nterm_idx_, next.index_);
+                    }
+                    
+                    break;
+                }
+                suffix++;
+            }
+        }
+    }
+}
+
+void ruleset::propagate_added_to_first_set(size_t nt_idx, size_t t_idx)
+{
+    std::queue<std::pair<size_t, size_t>> q;
+    q.push({nt_idx, t_idx});
+    while (!q.empty())
+    {
+        auto [nt, t] = q.front();
+        q.pop();
+        
+        for (const auto& appearance : nterms_data_[nt].appearances_at_start_of_suffixes_)
+        {
+            auto& rs = nterms_data_[appearance.nterm_idx_].rsides_[appearance.rside_idx_];
+            first_set_add_with_lazy_init(rs.first_[appearance.suffix_idx_], t);
+            
+            if (appearance.suffix_idx_ == 0 && first_set_add_with_lazy_init(nterms_data_[appearance.nterm_idx_].first_, t))
+            {
+                // Suffix == 0, so we are analyzing full rside, if newly added then propagate
+                q.push({appearance.nterm_idx_, t});
             }
         }
     }
@@ -441,9 +537,14 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
     size_t new_rside_idx = nd.rsides_.size() - 1;
     auto& new_rside = nd.rsides_.back();
     const auto& new_symbols = new_rside.symbols_;
+    
+    // Initialize with sentinel value to indicate non-nullable, 0 value means nullable, >0 means undetermined yet
     new_rside.potentially_nullable_suffixes_.resize(new_symbols.size(), std::numeric_limits<size_t>::max());
     
-    // Immediately propagate, nothing to track
+    // Initialize with nullopt for lazy init
+    new_rside.first_.resize(new_symbols.size(), std::nullopt);
+    
+    // Immediately propagate nullable non-terminal, nothing to track
     if (new_symbols.empty())
     {
         if (nullable_nterms_.add(lhs_idx))
@@ -464,17 +565,18 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
     {
         // Compute cumulative remaining from the end
         size_t cumulative_remaining = 0;
-        for (std::size_t i = new_symbols.size(); i-- != trail_start; )
+        for (std::size_t suffix_idx = new_symbols.size(); suffix_idx-- != trail_start; )
         {
-            size_t suffix_idx = i;
             size_t nt_idx = new_symbols[suffix_idx].index_;
             size_t add_to_remaining = nullable_nterms_.contains(nt_idx) ? 0 : 1;
             cumulative_remaining += add_to_remaining;
             new_rside.potentially_nullable_suffixes_[suffix_idx] = cumulative_remaining;
             if (add_to_remaining > 0)
             {
+                // Add appearance only if remaining undetermined non-terminals in suffix
                 nterms_data_[nt_idx].appearances_in_potentially_nullable_suffixes_.emplace_back(suffix_ref{lhs_idx, new_rside_idx, suffix_idx});
             }
+            // Propagate if suffix==0 (whole rside) and no undetermined remaining
             if (cumulative_remaining == 0 && suffix_idx == 0)
             {
                 if (nullable_nterms_.add(lhs_idx))
@@ -484,6 +586,51 @@ size_t ruleset::add_rside_impl(size_t lhs_idx, symbol_list symbols, std::optiona
             }
         }
     }
+    
+    size_t nullable_streak = 0;
+    for (size_t suffix_idx = 0; suffix_idx < new_symbols.size(); ++suffix_idx)
+    {
+        const symbol_ref& ref = new_symbols[suffix_idx];
+        std::optional<first_set>& lhs_first = nterms_data_[lhs_idx].first_;
+        
+        if (ref.type_ == symbol_type::terminal)
+        {
+            first_set_add_with_lazy_init(new_rside.first_[suffix_idx], ref.index_);
+            
+            // For terminal at the start of whole rside, immediately add to lhs non-terminal FIRST, propagate if newly added
+            if (suffix_idx == 0 && first_set_add_with_lazy_init(lhs_first, ref.index_))
+            {
+                propagate_added_to_first_set(lhs_idx, ref.index_);
+            }
+        }
+        else
+        {
+            // Union FIRST from non-terminal at the start of suffix, considering nullable streak at the start of suffix, then also into lhs non-terminal
+            
+            first_set_add_with_lazy_init(new_rside.first_[suffix_idx], nterms_data_[ref.index_].first_);
+            
+            if (suffix_idx == nullable_streak)
+            {
+                size_t old_size = lhs_first.has_value() ? lhs_first.value().get_count() : 0;
+                size_t new_size = first_set_add_with_lazy_init(lhs_first, nterms_data_[ref.index_].first_);
+                
+                // Propagate all newly added during union
+                for (size_t i = old_size; i < new_size; ++i)
+                {
+                    propagate_added_to_first_set(lhs_idx, lhs_first.value().get_indices()[i]);
+                }
+            }
+            
+            if (nullable_nterms_.contains(ref.index_))
+            {
+                nullable_streak++;
+            }
+            
+            // Only for immediate start of suffix, if non-terminals conclude to nullable then add appearances for >0 posittions in suffix
+            nterms_data_[ref.index_].appearances_at_start_of_suffixes_.emplace_back(suffix_ref{lhs_idx, new_rside_idx, suffix_idx});
+        }
+    }
+    
     return new_rside_idx;
 }
 
@@ -523,6 +670,29 @@ size_t ruleset::calculate_effective_rside_precedence(size_t nterm_idx, size_t rs
     
     stored_effective_prec = ret;
     return ret;
+}
+
+bool ruleset::first_set_add_with_lazy_init(std::optional<first_set>& opt, size_t t_idx)
+{
+    if (!opt.has_value())
+    {
+        opt.emplace(get_term_count());
+    }
+    return opt.value().add(t_idx);
+}
+
+size_t ruleset::first_set_add_with_lazy_init(std::optional<first_set>& opt, const std::optional<first_set>& other)
+{
+    if (other.has_value())
+    {
+        if (!opt.has_value())
+        {
+            opt.emplace(get_term_count());
+        }
+        opt.value().add(other.value());
+    }
+    
+    return opt.has_value() ? opt.value().get_count() : 0;
 }
 
 } // namespace muskox

@@ -12,6 +12,7 @@
 
 #include "rside.h"
 #include "refs.h"
+#include "defs.h"
 
 #include <vector>
 
@@ -26,6 +27,8 @@ struct nterm_data
 {
     std::vector<rside> rsides_; /// The right-hand sides for this non-terminal.
     std::vector<suffix_ref> appearances_in_potentially_nullable_suffixes_; /// Appearances in potentially nullable suffixes.
+    std::optional<first_set> first_;   // FIRST set for this non-terminal.
+    std::vector<suffix_ref> appearances_at_start_of_suffixes_;  /// Appearances at the start of suffixes.
 };
 
 } // namespace muskox

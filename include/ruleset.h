@@ -18,9 +18,11 @@
 #include "symbol_collection.h"
 #include "symbol_list.h"
 #include "lr1_set_item.h"
-#include "base_index_subset.h"
+#include "index_subset.h"
 #include "rside.h"
 #include "nterm_data.h"
+#include "vector_n.h"
+#include "defs.h"
 
 #include <string_view>
 #include <vector>
@@ -296,12 +298,39 @@ public:
      * 
      * Requires validation to have been called.
      *
-     * @param idx Index.
+     * @param nterm_idx Index.
      * @return True if nullable.
      * @throw std::out_of_range If invalid.
      * @throw std::runtime_error If called before validation.
      */
-    bool is_nterm_nullable(size_t idx) const;
+    bool is_nterm_nullable(size_t nterm_idx) const;
+    
+    /**
+     * @brief Gets a suffix's FIRST set.
+     *
+     * Requires validation to have been called.
+     *
+     * @param nterm_idx Non-terminal index.
+     * @param rside_idx Right-hand side index.
+     * @param suffix_idx Start index.
+     * @return FIRST set of the suffix.
+     * @throw std::out_of_range If invalid.
+     * @throw std::runtime_error If called before validation.
+     */
+    const first_set& get_suffix_first(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
+    
+    /**
+     * @brief Gets a non-terminal's FIRST set
+     * 
+     * Requires validation to have been called.
+     *
+     * @param nterm_idx Index.
+     * @return FIRST set of the non-terminal.
+     * @throw std::out_of_range If invalid.
+     * @throw std::runtime_error If called before validation.
+     * @throw std::runtime_error no FIRST set for non-terminal, either one and only epsilon production, or unsolvable left recursoin.
+     */
+    const first_set& get_nterm_first(size_t nterm_idx) const;
 
     /**
      * @brief Converts the ruleset to a string representation.
@@ -360,13 +389,21 @@ private:
     bool validated_ = false; /// Flag indicating if validated.
 
     base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
-
+    
     /**
      * @brief Propagates nullability when a non-terminal becomes nullable.
      *
      * @param nt_idx The newly nullable non-terminal index.
      */
     void propagate_nullable(size_t nt_idx);
+    
+    /**
+     * @brief Propagates terminal added to non-terminal FIRST set.
+     *
+     * @param nt_idx The non-terminal which FIRST set was modified.
+     * @param t_idx The terminal added to FIRST set
+     */
+    void propagate_added_to_first_set(size_t nt_idx, size_t t_idx);
 
     /**
      * @brief Validates inputs for adding a rule.
@@ -411,6 +448,24 @@ private:
      * @throw std::out_of_range If indices invalid.
      */
     size_t calculate_effective_rside_precedence(size_t nterm_idx, size_t rside_idx);
+    
+    /**
+     * @brief If nullopt passed, creates FIRST set, then adds an element with indices in array.
+     *
+     * @param opt Optional first set
+     * @param t_dix The terminal to add.
+     * @return True if newly added terminal
+     */
+    bool first_set_add_with_lazy_init(std::optional<first_set>& opt, size_t t_idx);
+    
+    /**
+     * @brief If nullopt passed, creates FIRST set, then unions the 'other' set into 'opt' one
+     *
+     * @param opt Optional first set
+     * @param other The other set (also optional) to union into 'opt'.
+     * @return New size of opt
+     */
+    size_t first_set_add_with_lazy_init(std::optional<first_set>& opt, const std::optional<first_set>& other);
 };
 
 } // namespace muskox

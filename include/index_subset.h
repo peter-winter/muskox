@@ -203,7 +203,7 @@ public:
     {
         add_impl(indices, std::make_index_sequence<Dim>{});
     }
-
+    
 private:
 
     /**
@@ -452,7 +452,7 @@ public:
         subset_ = subset_type(sizes_);
         return *this;
     }
-
+    
 private:
     sizes_type sizes_; /// The sizes.
     subset_type subset_; /// The building subset.
