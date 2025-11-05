@@ -184,7 +184,7 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
     REQUIRE(states.size() == 5);
 
     auto dims = rs.get_lr1_set_item_space_dims();
-    index_subset_builder<4> builder(dims);
+    ordered_bitset_nd_builder<4> builder(dims);
 
     SECTION("states")
     {
@@ -275,7 +275,7 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
         REQUIRE(states.size() == 5);
 
         auto dims = rs.get_lr1_set_item_space_dims();
-        index_subset_builder<4> builder(dims);
+        ordered_bitset_nd_builder<4> builder(dims);
 
         // State 0: kernel {$root -> . S / $eof}, items: that + {S -> . A / $eof, S -> . B / $eof, A -> . a / $eof, B -> . a / $eof}
         auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
@@ -358,7 +358,7 @@ TEST_CASE("parse_table_generator states complex lookaheads", "[parse_table_gener
     REQUIRE(states.size() == 10);
 
     auto dims = rs.get_lr1_set_item_space_dims();
-    index_subset_builder<4> builder(dims);
+    ordered_bitset_nd_builder<4> builder(dims);
 
     SECTION("states")
     {
@@ -476,7 +476,7 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
     REQUIRE(states.size() == 11);
 
     auto dims = rs.get_lr1_set_item_space_dims();
-    index_subset_builder<4> builder(dims);
+    ordered_bitset_nd_builder<4> builder(dims);
 
     std::vector<size_t> all_la = {eof_idx, plus_idx, minus_idx, mul_idx};
     std::vector<size_t> all_rs = {expr_plus, expr_minus, expr_mul, expr_neg, expr_id};
@@ -814,7 +814,7 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
     REQUIRE(states.size() == 7);
 
     auto dims = rs.get_lr1_set_item_space_dims();
-    index_subset_builder<4> builder(dims);
+    ordered_bitset_nd_builder<4> builder(dims);
 
     std::vector<size_t> all_la = {eof_idx, plus_idx, pow_idx};
     std::vector<size_t> all_rs = {expr_plus, expr_pow, expr_id};

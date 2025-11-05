@@ -18,10 +18,10 @@
 #include "symbol_collection.h"
 #include "symbol_list.h"
 #include "lr1_set_item.h"
-#include "index_subset.h"
+#include "ordered_bitset_nd.h"
 #include "rside.h"
 #include "nterm_data.h"
-#include "vector_n.h"
+#include "vector_nd.h"
 #include "defs.h"
 
 #include <string_view>
@@ -402,7 +402,7 @@ private:
     std::vector<nterm_data> nterms_data_; /// Data for each non-terminal.
     symbol_ref root_ = {}; /// The root non-terminal reference.
     bool validated_ = false; /// Flag indicating if validated.
-    base_index_subset<1> nullable_nterms_; /// Nullable non-terminals.
+    bitset_nd<1> nullable_nterms_; /// Nullable non-terminals.
     std::vector<std::string> errors_; /// Vector of errors.
     std::vector<std::string> warnings_; /// Vector of warnings.
     
@@ -501,6 +501,13 @@ private:
      * @brief Checks for unused symbols
      */
     void check_usused_symbols();
+    
+    /**
+     * @brief Checks for unsolvable non-terminals. 
+     * 
+     * It means unresolved left recursion, no productions for  non-terminal is reported from check_nterm_no_rsides
+     */
+    void check_unsolvable_nterms();
 };
 
 } // namespace muskox

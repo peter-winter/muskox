@@ -1,36 +1,43 @@
 /**
- * @file index_subset.h
- * @brief Subset management for multi-dimensional indices with list and bitset.
+ * @file ordered_bitset_nd.h
+ * @brief Multi-dimensional bitset with insertion order tracking.
  *
- * This header provides a templated class for managing subsets of multi-dimensional
- * indices, combining a list of added indices with a bitset for fast lookups.
+ * This header provides a templated class for managing multi-dimensional bitsets for fast lookups.
  * Supports add, contains, union, and checks like contains_all. Includes a 1D
  * specialization and a builder class for fluent addition.
  *
- * Extends base_index_subset for efficiency in the MuskOx project.
+ * Extends bitset_nd for insertion order (or custom order using a Comp parameter) tracking and enumeration in the MuskOx project.
  *
  * Part of the larger MuskOx project.
  */
 
 #pragma once
 
-#include "base_index_subset.h"
+#include "bitset_nd.h"
 
 #include <array>
 #include <vector>
 #include <utility>
+#include <algorithm>
 
 namespace muskox
 {
 
 /**
- * @class index_subset
- * @brief Subset of multi-dimensional indices with list and membership check.
+ * @brief Type representing no comparator
+ */
+struct no_comp
+{};
+
+/**
+ * @class ordered_bitset_nd
+ * @brief Multi-dimensional bitset with order and membership check.
  *
  * @tparam Dim The number of dimensions.
+ * @tparam Comp The comparator.
  */
-template <size_t Dim>
-class index_subset
+template <size_t Dim, typename Comp = no_comp>
+class ordered_bitset_nd
 {
 public:
     /**
@@ -39,44 +46,64 @@ public:
     using element_type = std::array<size_t, Dim>;
 
 private:
-    base_index_subset<Dim> base_; /// Base bitset for membership.
+    bitset_nd<Dim> base_; /// Base bitset for membership.
     std::vector<element_type> indices_; /// List of added indices.
-
+    Comp comp_;
+    
 public:
     /**
-     * @brief Constructs the subset with sizes.
+     * @brief Constructs the bitset with sizes.
+     *
+     * @param sizes The sizes of dimensions.
+     * @param comp The comparator.
+     */
+    ordered_bitset_nd(const element_type& sizes, Comp comp)
+        : base_(sizes), indices_(), comp_(comp)
+    {}
+    
+    /**
+     * @brief Constructs the bitset with sizes.
      *
      * @param sizes The sizes of dimensions.
      */
-    index_subset(const element_type& sizes)
+    ordered_bitset_nd(const element_type& sizes)
         : base_(sizes), indices_()
     {}
 
     /**
      * @brief Destructor.
      */
-    ~index_subset() = default;
+    ~ordered_bitset_nd() = default;
 
     /**
      * @brief Copy constructor.
      */
-    index_subset(const index_subset&) = default;
+    ordered_bitset_nd(const ordered_bitset_nd&) = default;
 
     /**
      * @brief Copy assignment.
      */
-    index_subset& operator = (const index_subset&) = default;
+    ordered_bitset_nd& operator = (const ordered_bitset_nd&) = default;
 
     /**
      * @brief Move constructor.
      */
-    index_subset(index_subset&&) = default;
+    ordered_bitset_nd(ordered_bitset_nd&&) = default;
 
     /**
-     * @brief Adds element with indices to the subset.
+     * @brief Base bitset accessor
+     * @return The base object
+     */
+    const bitset_nd<Dim>& get_base() const
+    {
+        return base_;
+    }
+    
+    /**
+     * @brief Adds element with indices to the bitset.
      *
      * @tparam Idx Index types.
-     * @param indices The single element indices.
+     * @param indices The element indices.
      * @return True if added (new), false if already present.
      */
     template <typename... Idx>
@@ -85,29 +112,40 @@ public:
         bool inserted = base_.add(indices...);
         if (inserted)
         {
-            indices_.push_back({static_cast<size_t>(indices)...});
+            element_type val{static_cast<size_t>(indices)...};
+            if constexpr (std::is_same_v<Comp, no_comp>)
+            {
+                indices_.push_back(val);
+            }
+            else
+            {
+                auto it = std::upper_bound(indices_.begin(), indices_.end(), val, comp_);
+                indices_.insert(it, val);
+            }
         }
         return inserted;
     }
 
     /**
-     * @brief Unions with another subset.
+     * @brief Unions with another bitset.
      *
-     * @param other The other subset.
+     * @param other The other bitset.
+     * @tparam OtherComp Other bitset comparator
      * @throw std::invalid_argument If sizes don't match.
      */
-    void add(const index_subset<Dim>& other)
+    template<typename OtherComp>
+    void add(const ordered_bitset_nd<Dim, OtherComp>& other)
     {
-        base_.validate_sizes(other.base_);
+        base_.validate_sizes(other.get_base());
         
-        for (const auto& arr : other.indices_)
+        for (const auto& arr : other.get_indices())
         {
             add(arr);
         }
     }
 
     /**
-     * @brief Checks if element is in the subset.
+     * @brief Checks if element is in the bitset.
      *
      * @tparam Idx Index types.
      * @param indices The element indices.
@@ -120,7 +158,7 @@ public:
     }
     
     /**
-     * @brief Checks if element is in the subset.
+     * @brief Checks if element is in the bitset.
      *
      * @param indices The element indices array.
      * @return True if present.
@@ -133,11 +171,11 @@ public:
     /**
      * @brief Checks if all of another's elements are contained.
      *
-     * @param other The other subset.
+     * @param other The other bitset.
      * @return True if all are contained.
      * @throw std::invalid_argument If sizes don't match.
      */
-    bool contains_all(const index_subset<Dim>& other) const
+    bool contains_all(const ordered_bitset_nd<Dim, Comp>& other) const
     {
         base_.validate_sizes(other.base_);
         
@@ -154,11 +192,11 @@ public:
     /**
      * @brief Checks if exactly matches another's elements.
      *
-     * @param other The other subset.
+     * @param other The other bitset.
      * @return True if same count and contains all. Order is not matched.
      * @throw std::invalid_argument If sizes don't match.
      */
-    bool contains_only_items(const index_subset<Dim>& other) const
+    bool contains_only_items(const ordered_bitset_nd<Dim, Comp>& other) const
     {
         base_.validate_sizes(other.base_);
         return get_count() == other.get_count() && contains_all(other);
@@ -232,12 +270,15 @@ private:
     }
 };
 
+
 /**
- * @class index_subset<1>
- * @brief Specialization for 1D index subset.
+ * @class ordered_bitset_nd<1>
+ * @brief Specialization for 1D index bitset.
+ * 
+ * @tparam Comp The comparator.
  */
-template <>
-class index_subset<1>
+template <typename Comp>
+class ordered_bitset_nd<1, Comp>
 {
 public:
     /**
@@ -246,39 +287,59 @@ public:
     using element_type = size_t;
 
 private:
-    base_index_subset<1> base_; /// Base bitset.
+    bitset_nd<1> base_; /// Base bitset.
     std::vector<element_type> indices_; /// List of indices.
-
+    Comp comp_;
+    
 public:
     /**
      * @brief Constructs with size.
      *
      * @param size The size.
+     * @param comp The comparator
      */
-    index_subset(size_t size)
+    ordered_bitset_nd(size_t size, Comp comp)
+        : base_({size}), indices_(), comp_(comp)
+    {}
+    
+    /**
+     * @brief Constructs with size.
+     *
+     * @param size The size.
+     */
+    ordered_bitset_nd(size_t size)
         : base_({size}), indices_()
     {}
 
     /**
      * @brief Destructor.
      */
-    ~index_subset() = default;
+    ~ordered_bitset_nd() = default;
 
     /**
      * @brief Copy constructor.
      */
-    index_subset(const index_subset&) = default;
+    ordered_bitset_nd(const ordered_bitset_nd&) = default;
 
     /**
      * @brief Copy assignment.
      */
-    index_subset& operator = (const index_subset&) = default;
+    ordered_bitset_nd& operator = (const ordered_bitset_nd&) = default;
 
     /**
      * @brief Move constructor.
      */
-    index_subset(index_subset&&) = default;
+    ordered_bitset_nd(ordered_bitset_nd&&) = default;
 
+    /**
+     * @brief Base bitset accessor
+     * @return The base object
+     */
+    const bitset_nd<1>& get_base() const
+    {
+        return base_;
+    }
+    
     /**
      * @brief Adds an index.
      *
@@ -290,22 +351,32 @@ public:
         bool inserted = base_.add(idx);
         if (inserted)
         {
-            indices_.push_back(idx);
+            if constexpr (std::is_same_v<Comp, no_comp>)
+            {
+                indices_.push_back(idx);
+            }
+            else
+            {
+                auto it = std::upper_bound(indices_.begin(), indices_.end(), idx, comp_);
+                indices_.insert(it, idx);
+            }
         }
         return inserted;
     }
 
     /**
-     * @brief Unions with another 1D subset.
+     * @brief Unions with another 1D bitset.
      *
      * @param other The other.
+     * @tparam OtherComp Other bitset comparator
      * @throw std::invalid_argument If sizes don't match.
      */
-    void add(const index_subset<1>& other)
+    template<typename OtherComp>
+    void add(const ordered_bitset_nd<1, OtherComp>& other)
     {
-        base_.validate_sizes(other.base_);
+        base_.validate_sizes(other.get_base());
         
-        for (const auto& idx : other.indices_)
+        for (const auto& idx : other.get_indices())
         {
             add(idx);
         }
@@ -329,7 +400,7 @@ public:
      * @return True if all contained.
      * @throw std::invalid_argument If sizes don't match.
      */
-    bool contains_all(const index_subset<1>& other) const
+    bool contains_all(const ordered_bitset_nd<1, Comp>& other) const
     {
         base_.validate_sizes(other.base_);
         
@@ -350,7 +421,7 @@ public:
      * @return True if same.
      * @throw std::invalid_argument If sizes don't match.
      */
-    bool contains_only_items(const index_subset<1>& other) const
+    bool contains_only_items(const ordered_bitset_nd<1, Comp>& other) const
     {
         base_.validate_sizes(other.base_);
         return get_count() == other.get_count() && contains_all(other);
@@ -388,31 +459,32 @@ public:
 };
 
 /**
- * @class index_subset_builder
- * @brief Fluent builder for index_subset.
+ * @class ordered_bitset_nd_builder
+ * @brief Fluent builder for ordered_bitset_nd.
  *
  * @tparam Dim Dimensions.
+ * @tparam Comp The comparator.
  */
-template <size_t Dim>
-class index_subset_builder
+template <size_t Dim, typename Comp = no_comp>
+class ordered_bitset_nd_builder
 {
 public:
     /**
-     * @brief Type alias for subset.
+     * @brief Type alias for bitset.
      */
-    using subset_type = index_subset<Dim>;
+    using bitset_type = ordered_bitset_nd<Dim, Comp>;
 
     /**
      * @brief Type alias for sizes.
      */
-    using sizes_type = typename subset_type::element_type;
+    using sizes_type = typename bitset_type::element_type;
 
     /**
      * @brief Constructs builder with sizes.
      *
      * @param sizes The sizes.
      */
-    index_subset_builder(const sizes_type& sizes)
+    ordered_bitset_nd_builder(const sizes_type& sizes)
         : sizes_(sizes), subset_(sizes)
     {
         reset();
@@ -426,18 +498,18 @@ public:
      * @return Reference to builder.
      */
     template <typename... Idx>
-    index_subset_builder& operator()(Idx... indices)
+    ordered_bitset_nd_builder& operator()(Idx... indices)
     {
         subset_.add(indices...);
         return *this;
     }
 
     /**
-     * @brief Builds the subset.
+     * @brief Builds the bitset.
      *
-     * @return The built subset.
+     * @return The built bitset.
      */
-    subset_type build()
+    bitset_type build()
     {
         return subset_;
     }
@@ -447,15 +519,15 @@ public:
      *
      * @return Reference to builder.
      */
-    index_subset_builder& reset()
+    ordered_bitset_nd_builder& reset()
     {
-        subset_ = subset_type(sizes_);
+        subset_ = bitset_type(sizes_);
         return *this;
     }
     
 private:
     sizes_type sizes_; /// The sizes.
-    subset_type subset_; /// The building subset.
+    bitset_type subset_; /// The building subset.
 };
 
 } // namespace muskox

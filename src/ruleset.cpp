@@ -41,6 +41,7 @@ size_t ruleset::validate()
     
     check_nterm_no_rsides();
     check_usused_symbols();
+    check_unsolvable_nterms();
     
     // Add implicit rule for $root, throw if rules for $root already exist
     if (!nterms_data_[0].rsides_.empty())
@@ -737,12 +738,12 @@ void ruleset::check_nterm_no_rsides()
 
 void ruleset::check_usused_symbols()
 {
-    base_index_subset<1> reachable_nterms({get_nterm_count()}, false);
+    bitset_nd<1> reachable_nterms({get_nterm_count()}, false);
     std::queue<size_t> to_visit;
     to_visit.push(root_.index_);
     reachable_nterms.add(root_.index_);
 
-    base_index_subset<1> used_terms({get_term_count()}, false);
+    bitset_nd<1> used_terms({get_term_count()}, false);
 
     while (!to_visit.empty())
     {
@@ -786,6 +787,21 @@ void ruleset::check_usused_symbols()
         {
             std::string_view name = get_term_name(i);
             warnings_.push_back(grammar_message(grammar_error_templates::code::unused_term, name));
+        }
+    }
+}
+
+void ruleset::check_unsolvable_nterms()
+{
+    for (size_t i = 1; i < get_nterm_count(); ++i)
+    {
+        // If doesn't have FIRST set and is not pure epsilon non-terminal
+        if (!nterms_data_[i].first_.has_value() && 
+            !nterms_data_[i].rsides_.empty() &&     // No productions, this is reported as such, not unsolvable
+            !(nterms_data_[i].rsides_.size() == 1 && nterms_data_[i].rsides_[0].symbols_.empty()))
+        {
+            std::string_view name = get_nterm_name(i);
+            errors_.push_back(grammar_message(grammar_error_templates::code::nterm_unsolvable, name));
         }
     }
 }

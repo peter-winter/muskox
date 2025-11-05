@@ -1,5 +1,5 @@
 /**
- * @file vector_n.h
+ * @file vector_nd.h
  * @brief Multi-dimensional vector with flat storage.
  *
  * This header provides a templated class for multi-dimensional vectors
@@ -19,14 +19,14 @@ namespace muskox
 {
 
 /**
- * @class vector_n
+ * @class vector_nd
  * @brief Multi-dimensional vector with flat underlying storage.
  *
  * @tparam T The element type.
  * @tparam Dim The number of dimensions.
  */
 template <typename T, size_t Dim>
-class vector_n
+class vector_nd
 {
 private:
     flat_indexer<Dim> indexer_; /// The indexer for access.
@@ -39,7 +39,7 @@ public:
      * @param sizes The sizes of dimensions.
      * @param init_value The initial value for all elements.
      */
-    vector_n(const std::array<size_t, Dim>& sizes, const T& init_value)
+    vector_nd(const std::array<size_t, Dim>& sizes, const T& init_value)
         : indexer_(sizes), data_()
     {
         data_.assign(indexer_.get_total_size(), init_value);
@@ -48,7 +48,7 @@ public:
     /**
      * @brief Destructor.
      */
-    ~vector_n() = default;
+    ~vector_nd() = default;
 
     /**
      * @brief Gets mutable reference to element at indices.

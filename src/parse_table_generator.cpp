@@ -20,7 +20,7 @@ const std::vector<std::string>& parse_table_generator::get_warnings() const
 
 void parse_table_generator::generate_states()
 {
-    index_subset<4> root_kernel(rs_.get_lr1_set_item_space_dims());
+    ordered_bitset_nd<4> root_kernel(rs_.get_lr1_set_item_space_dims());
     root_kernel.add(0, 0, 0, 0);
     
     states_.emplace_back(rs_, std::move(root_kernel));
@@ -61,7 +61,7 @@ void parse_table_generator::generate_states()
 
 size_t parse_table_generator::process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s)
 {
-    index_subset<4> new_kernel(rs_.get_lr1_set_item_space_dims());
+    ordered_bitset_nd<4> new_kernel(rs_.get_lr1_set_item_space_dims());
     for (const auto& item : s.items_)
     {
         new_kernel.add(item);
@@ -189,7 +189,7 @@ void parse_table_generator::collect_conflict_warnings(
     }
 }
 
-std::optional<size_t> parse_table_generator::find_state(const index_subset<4>& kernel) const
+std::optional<size_t> parse_table_generator::find_state(const ordered_bitset_nd<4>& kernel) const
 {
     for (size_t i = 0; i < states_.size(); ++i)
     {

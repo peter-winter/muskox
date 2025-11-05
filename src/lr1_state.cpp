@@ -4,12 +4,12 @@
 namespace muskox
 {
     
-void lr1_state::add_items(const index_subset<4>& c)
+void lr1_state::add_items(const ordered_bitset_nd<4>& c)
 {
     items_.add(c);
 }
 
-lr1_state::lr1_state(const ruleset& rs, index_subset<4>&& kernel)
+lr1_state::lr1_state(const ruleset& rs, ordered_bitset_nd<4>&& kernel)
     : rs_(rs),
       items_(rs.get_lr1_set_item_space_dims()),
       kernel_(std::move(kernel))
@@ -17,22 +17,22 @@ lr1_state::lr1_state(const ruleset& rs, index_subset<4>&& kernel)
     add_items(kernel_);
 }
 
-bool lr1_state::contains_all_items(const index_subset<4>& items) const
+bool lr1_state::contains_all_items(const ordered_bitset_nd<4>& items) const
 {
     return items_.contains_all(items);
 }
 
-const index_subset<4>& lr1_state::get_all_items() const
+const ordered_bitset_nd<4>& lr1_state::get_all_items() const
 {
     return items_;
 }
 
-bool lr1_state::kernel_contains_all_items(const index_subset<4>& items) const
+bool lr1_state::kernel_contains_all_items(const ordered_bitset_nd<4>& items) const
 {
     return kernel_.contains_all(items);
 }
 
-const index_subset<4>& lr1_state::get_kernel() const
+const ordered_bitset_nd<4>& lr1_state::get_kernel() const
 {
     return kernel_;
 }
@@ -116,12 +116,12 @@ std::string lr1_state::to_string() const
     return lp.print_container(items_.get_indices(), to_string_f);
 }
 
-bool lr1_state::kernel_matches(const index_subset<4>& other) const
+bool lr1_state::kernel_matches(const ordered_bitset_nd<4>& other) const
 {
     return kernel_.contains_only_items(other);
 }
 
-bool lr1_state::matches(const index_subset<4>& other) const
+bool lr1_state::matches(const ordered_bitset_nd<4>& other) const
 {
     return items_.contains_only_items(other);
 }

@@ -11,17 +11,18 @@ FetchContent_MakeAvailable(Catch2)
 include(Catch)
 
 add_executable(unit_tests
-  test_base_index_subset.cpp
+  test_bitset_nd.cpp
   test_parse_table_generator.cpp
-  test_index_subset.cpp
+  test_ordered_bitset_nd.cpp
   test_grammar_error.cpp
   test_associativity.cpp
   test_symbol_collection.cpp
   test_ruleset.cpp
+  test_ruleset_issues.cpp
   test_nullable.cpp
   test_lr1_state.cpp
   test_firsts.cpp
-  test_vector_n.cpp
+  test_vector_nd.cpp
   test_flat_indexer.cpp
   test_closure.cpp
   test_list_printer.cpp

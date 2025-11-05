@@ -1,17 +1,17 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
-#include <vector_n.h>
+#include <vector_nd.h>
 
 using Catch::Matchers::Message;
 
 using namespace muskox;
 
-TEST_CASE("vector_n basic operations", "[vector_n]")
+TEST_CASE("vector_nd basic operations", "[vector_nd]")
 {
-    using VN1 = vector_n<int, 1>;
-    using VN2 = vector_n<int, 2>;
-    using VN3 = vector_n<int, 3>;
+    using VN1 = vector_nd<int, 1>;
+    using VN2 = vector_nd<int, 2>;
+    using VN3 = vector_nd<int, 3>;
 
     SECTION("constructor 1D")
     {

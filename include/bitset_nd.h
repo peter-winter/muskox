@@ -1,9 +1,9 @@
 /**
- * @file base_index_subset.h
- * @brief Base class for managing subsets of multi-dimensional indices using bitsets.
+ * @file bitset_ndd.h
+ * @brief A class for managing multi-dimensional bitsets.
  *
- * This header provides a templated base class for tracking subsets of indices
- * in multi-dimensional spaces using a bit vector. It uses flat_indexer for
+ * This header provides a templated base class for tracking 
+ * multi-dimensional spaces using a bit vector. It uses flat_indexer for
  * conversions and supports add, remove, contains, and union operations.
  *
  * Designed for efficient membership testing in the MuskOx project.
@@ -21,13 +21,13 @@ namespace muskox
 {
 
 /**
- * @class base_index_subset
- * @brief Bit-based subset for multi-dimensional indices.
+ * @class bitset_nd
+ * @brief Multi-dimensional bitset.
  *
  * @tparam Dim The number of dimensions.
  */
 template <size_t Dim>
-class base_index_subset
+class bitset_nd
 {
 public:
     /**
@@ -41,12 +41,12 @@ private:
 
 public:
     /**
-     * @brief Constructs the subset with given sizes.
+     * @brief Constructs the bitset with given sizes.
      *
      * @param sizes The sizes of dimensions.
      * @param value Initial bit value (default false).
      */
-    base_index_subset(const element_type& sizes, bool value = false)
+    bitset_nd(const element_type& sizes, bool value = false)
         : indexer_(sizes), bits_()
     {
         bits_.reserve(indexer_.get_total_size());
@@ -56,29 +56,29 @@ public:
     /**
      * @brief Destructor.
      */
-    ~base_index_subset() = default;
+    ~bitset_nd() = default;
 
     /**
      * @brief Copy constructor.
      */
-    base_index_subset(const base_index_subset&) = default;
+    bitset_nd(const bitset_nd&) = default;
 
     /**
      * @brief Copy assignment.
      */
-    base_index_subset& operator = (const base_index_subset&) = default;
+    bitset_nd& operator = (const bitset_nd&) = default;
 
     /**
      * @brief Move constructor.
      */
-    base_index_subset(base_index_subset&&) = default;
+    bitset_nd(bitset_nd&&) = default;
 
     /**
-     * @brief Adds element with indices to the subset.
+     * @brief Sets a bit under indices.
      *
      * @tparam Idx Index types.
-     * @param indices The element indices.
-     * @return True if added (was not present), false otherwise.
+     * @param indices The indices.
+     * @return True if set (was not present), false otherwise.
      */
     template <typename... Idx>
     bool add(Idx... indices)
@@ -93,12 +93,12 @@ public:
     }
 
     /**
-     * @brief Unions with another subset.
+     * @brief Unions with another bitset.
      *
-     * @param other The other subset.
+     * @param other The other bitset.
      * @throw std::invalid_argument If sizes don't match.
      */
-    void add(const base_index_subset<Dim>& other)
+    void add(const bitset_nd<Dim>& other)
     {
         validate_sizes(other);
         
@@ -120,11 +120,11 @@ public:
     }
         
     /**
-     * @brief Removes element with indices from the subset.
+     * @brief Clears bit under indices.
      *
      * @tparam Idx Index types.
-     * @param indices The element indices.
-     * @return True if removed (was present), false otherwise.
+     * @param indices The indices.
+     * @return True if cleared (was present), false otherwise.
      */
     template <typename... Idx>
     bool remove(Idx... indices)
@@ -139,10 +139,10 @@ public:
     }
 
     /**
-     * @brief Checks if element with indices is in the subset.
+     * @brief Checks if bit under indices is set.
      *
      * @tparam Idx Index types.
-     * @param indices The element indices.
+     * @param indices The  indices.
      * @return True if present.
      */
     template <typename... Idx>
@@ -153,10 +153,10 @@ public:
     }
     
     /**
-     * @brief Checks if element with indices array is in the subset.
+     * @brief Checks if bit under indices is set.
      *
      * @tparam Idx Index types.
-     * @param indices The element indices.
+     * @param indices The indices.
      * @return True if present.
      */
     bool contains(const element_type& indices) const
@@ -175,12 +175,12 @@ public:
     }
 
     /**
-     * @brief Validates sizes against another subset.
+     * @brief Validates sizes against another bitset.
      *
-     * @param other The other subset.
+     * @param other The other bitset.
      * @throw std::invalid_argument If sizes don't match.
      */
-    void validate_sizes(const base_index_subset<Dim>& other) const
+    void validate_sizes(const bitset_nd<Dim>& other) const
     {
         indexer_.validate_sizes(other.indexer_);
     }

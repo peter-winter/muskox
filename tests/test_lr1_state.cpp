@@ -38,7 +38,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("basic construction")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -50,7 +50,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("construction with multiple kernel items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
 
@@ -64,12 +64,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("add items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
-        index_subset<4> additional(dims);
+        ordered_bitset_nd<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
         additional.add(expr_idx, expr_r0, 0, a_idx);
 
@@ -84,12 +84,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("add duplicate items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
-        index_subset<4> additional(dims);
+        ordered_bitset_nd<4> additional(dims);
         additional.add(root_idx, 0, 0, eof_idx);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
@@ -103,22 +103,22 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("contains all items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
-        index_subset<4> subset(dims);
+        ordered_bitset_nd<4> subset(dims);
         subset.add(root_idx, 0, 0, eof_idx);
         REQUIRE(state.contains_all_items(subset));
 
-        index_subset<4> full(dims);
+        ordered_bitset_nd<4> full(dims);
         full.add(root_idx, 0, 0, eof_idx);
         full.add(s_idx, s_r0, 0, eof_idx);
         REQUIRE(state.contains_all_items(full));
 
-        index_subset<4> extra(dims);
+        ordered_bitset_nd<4> extra(dims);
         extra.add(root_idx, 0, 0, eof_idx);
         extra.add(s_idx, s_r0, 0, eof_idx);
         extra.add(expr_idx, expr_r0, 0, a_idx);
@@ -127,12 +127,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get all items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
-        index_subset<4> additional(dims);
+        ordered_bitset_nd<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
         state.add_items(additional);
@@ -148,7 +148,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift on terminal")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -171,7 +171,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - multiple shifts on same symbol")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r0, 0, c_idx);
 
@@ -196,7 +196,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift on non_terminal")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(s_idx, s_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -219,7 +219,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - reduction")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -242,7 +242,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - reduce reduce conflict")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
 
@@ -270,7 +270,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift reduce conflict")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
 
@@ -298,7 +298,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - add to existing conflict")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
@@ -331,7 +331,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
     
     SECTION("to string - single item")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -341,12 +341,12 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - multiple items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
-        index_subset<4> additional(dims);
+        ordered_bitset_nd<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
 
         state.add_items(additional);
@@ -359,7 +359,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift item")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -369,7 +369,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - reduction item")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -379,7 +379,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - empty production item")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r2, 0, a_idx);
 
         lr1_state state(rs, std::move(kernel));
@@ -389,7 +389,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - mixed shift and reduce")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r1, 1, b_idx);
 
@@ -403,7 +403,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - mixed with empty production")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(expr_idx, expr_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r2, 0, b_idx);
 
@@ -417,7 +417,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift on nonterm, reduce, and empty")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(s_idx, s_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r1, 1, a_idx);
         kernel.add(expr_idx, expr_r2, 0, c_idx);
@@ -433,7 +433,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - four mixed items")
     {
-        index_subset<4> kernel(dims);
+        ordered_bitset_nd<4> kernel(dims);
         kernel.add(root_idx, 0, 0, eof_idx);
         kernel.add(s_idx, s_r0, 0, eof_idx);
         kernel.add(expr_idx, expr_r0, 1, b_idx);

@@ -13,9 +13,9 @@
 #pragma once
 
 #include "ruleset.h"
-#include "index_subset.h"
+#include "ordered_bitset_nd.h"
 #include "lr1_set_item.h"
-#include "vector_n.h"
+#include "vector_nd.h"
 
 namespace muskox
 {
@@ -43,7 +43,7 @@ public:
     explicit closure(const ruleset& rs);
     ~closure() = default;
     
-    using opt_subset = std::optional<index_subset<4>>;
+    using opt_subset = std::optional<ordered_bitset_nd<4>>;
 
     /**
      * @brief Computes the full (transitive) closure of an LR(1) item.
@@ -71,7 +71,7 @@ private:
     const ruleset& test_ruleset_validated(const ruleset& rs) const;
     const ruleset& rs_;
     
-    vector_n<opt_subset, 4> lr1_item_full_closures_;
+    vector_nd<opt_subset, 4> lr1_item_full_closures_;
 };
 
 } // namespace muskox

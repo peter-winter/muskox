@@ -8,6 +8,7 @@ namespace muskox
 
 struct lr1_set_item
 {
+    using array_type = std::array<size_t, 4>;
     std::size_t nterm_idx_;
     std::size_t rside_idx_;
     std::size_t suffix_idx_;
@@ -18,7 +19,7 @@ struct lr1_set_item
     {
     }
     
-    lr1_set_item(const std::array<size_t, 4>& arr)
+    lr1_set_item(const array_type& arr)
         : nterm_idx_(arr[0]), rside_idx_(arr[1]), suffix_idx_(arr[2]), lookahead_idx_(arr[3])
     {
     }

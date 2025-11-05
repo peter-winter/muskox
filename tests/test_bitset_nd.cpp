@@ -1,17 +1,17 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
-#include <base_index_subset.h>
+#include <bitset_nd.h>
 
 using Catch::Matchers::Message;
 
 using namespace muskox;
 
-TEST_CASE("base_index_subset basic operations", "[base_index_subset]")
+TEST_CASE("bitset_nd basic operations", "[bitset_nd]")
 {
-    using BIS1 = base_index_subset<1>;
-    using BIS2 = base_index_subset<2>;
-    using BIS3 = base_index_subset<3>;
+    using BIS1 = bitset_nd<1>;
+    using BIS2 = bitset_nd<2>;
+    using BIS3 = bitset_nd<3>;
 
     SECTION("constructor 1D")
     {

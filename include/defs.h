@@ -5,9 +5,9 @@
  * Part of the larger MuskOx project.
  */
  
-#include "index_subset.h"
+#include "ordered_bitset_nd.h"
  
 namespace muskox
 {
-    using first_set = index_subset<1>;
+    using first_set = ordered_bitset_nd<1>;
 }

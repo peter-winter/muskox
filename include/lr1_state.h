@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ruleset.h"
-#include "index_subset.h"
+#include "ordered_bitset_nd.h"
 
 #include <variant>
 #include <map>
@@ -34,25 +34,25 @@ public:
     
 private:
     const ruleset& rs_;
-    index_subset<4> items_;
-    index_subset<4> kernel_;
+    ordered_bitset_nd<4> items_;
+    ordered_bitset_nd<4> kernel_;
         
 public:
-    lr1_state(const ruleset& rs, index_subset<4>&& kernel);
+    lr1_state(const ruleset& rs, ordered_bitset_nd<4>&& kernel);
 
-    void add_items(const index_subset<4>& items);
+    void add_items(const ordered_bitset_nd<4>& items);
         
-    bool contains_all_items(const index_subset<4>& items) const;
-    const index_subset<4>& get_all_items() const;
-    bool kernel_contains_all_items(const index_subset<4>& items) const;
-    const index_subset<4>& get_kernel() const;
+    bool contains_all_items(const ordered_bitset_nd<4>& items) const;
+    const ordered_bitset_nd<4>& get_all_items() const;
+    bool kernel_contains_all_items(const ordered_bitset_nd<4>& items) const;
+    const ordered_bitset_nd<4>& get_kernel() const;
     
     action_map get_actions() const;
     
     std::string to_string() const;
     
-    bool kernel_matches(const index_subset<4>& other) const;
-    bool matches(const index_subset<4>& other) const;
+    bool kernel_matches(const ordered_bitset_nd<4>& other) const;
+    bool matches(const ordered_bitset_nd<4>& other) const;
 };
 
 } // namespace muskox
