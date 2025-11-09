@@ -23,6 +23,26 @@ struct lr1_set_item
         : nterm_idx_(arr[0]), rside_idx_(arr[1]), suffix_idx_(arr[2]), lookahead_idx_(arr[3])
     {
     }
+    
+    array_type get_array() const
+    {
+        return {nterm_idx_, rside_idx_, suffix_idx_, lookahead_idx_};
+    }
+    
+    bool operator == (const lr1_set_item& other) const
+    {
+        return nterm_idx_ == other.nterm_idx_ &&
+            rside_idx_ == other.rside_idx_ &&
+            suffix_idx_ == other.suffix_idx_ &&
+            lookahead_idx_ == other.lookahead_idx_;
+    }
+    
+    bool operator == (const array_type& arr) const
+    {
+        return (*this == lr1_set_item(arr));
+    }
 };
+
+using lr1_set = std::vector<lr1_set_item>;
 
 } // namespace muskox

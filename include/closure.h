@@ -43,7 +43,7 @@ public:
     explicit closure(const ruleset& rs);
     ~closure() = default;
     
-    using opt_subset = std::optional<ordered_bitset_nd<4>>;
+    using opt_bitset = std::optional<ordered_bitset_nd<4>>;
 
     /**
      * @brief Computes the full (transitive) closure of an LR(1) item.
@@ -56,9 +56,9 @@ public:
      * Uses memoization: caches and reuses results.
      *
      * @param item The LR(1) item to fully close.
-     * @return Reference to the computed optional subset.
+     * @return Reference to the computed optional bitset.
      */
-    const opt_subset& calculate_full(const lr1_set_item& item);
+    const opt_bitset& calculate_full(const lr1_set_item& item);
     
 private:
     /**
@@ -71,7 +71,7 @@ private:
     const ruleset& test_ruleset_validated(const ruleset& rs) const;
     const ruleset& rs_;
     
-    vector_nd<opt_subset, 4> lr1_item_full_closures_;
+    vector_nd<opt_bitset, 4> lr1_item_full_closures_;
 };
 
 } // namespace muskox

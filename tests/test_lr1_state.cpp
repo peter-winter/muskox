@@ -38,36 +38,59 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("basic construction")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
+        
+        REQUIRE(state.kernel_matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
 
-        const auto& all_items = state.get_all_items();
-        REQUIRE(all_items.get_count() == 1);
-        REQUIRE(all_items.contains(root_idx, 0, 0, eof_idx));
+        REQUIRE(state.matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
     }
 
     SECTION("construction with multiple kernel items")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
-        kernel.add(s_idx, s_r0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
+        kernel.emplace_back(s_idx, s_r0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
+        
+        REQUIRE(state.kernel_matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx},
+            {s_idx, s_r0, 0, eof_idx}
+        }));
 
-        const auto& all_items = state.get_all_items();
-        REQUIRE(all_items.get_count() == 2);
-        REQUIRE(all_items.contains(root_idx, 0, 0, eof_idx));
-        REQUIRE(all_items.contains(s_idx, s_r0, 0, eof_idx));
+        REQUIRE(state.matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx},
+            {s_idx, s_r0, 0, eof_idx}
+        }));
     }
 
     SECTION("add items")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
+        
+        REQUIRE(state.kernel_matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
+        
+        REQUIRE(state.matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
 
         ordered_bitset_nd<4> additional(dims);
         additional.add(s_idx, s_r0, 0, eof_idx);
@@ -75,19 +98,30 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
         state.add_items(additional);
 
-        const auto& all_items = state.get_all_items();
-        REQUIRE(all_items.get_count() == 3);
-        REQUIRE(all_items.contains(root_idx, 0, 0, eof_idx));
-        REQUIRE(all_items.contains(s_idx, s_r0, 0, eof_idx));
-        REQUIRE(all_items.contains(expr_idx, expr_r0, 0, a_idx));
+        REQUIRE(state.matches(lr1_set
+        {
+            {expr_idx, expr_r0, 0, a_idx},
+            {root_idx, 0, 0, eof_idx},
+            {s_idx, s_r0, 0, eof_idx}
+        }));
     }
 
     SECTION("add duplicate items")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
+        
+        REQUIRE(state.kernel_matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
+        
+        REQUIRE(state.matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx}
+        }));
 
         ordered_bitset_nd<4> additional(dims);
         additional.add(root_idx, 0, 0, eof_idx);
@@ -95,61 +129,17 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
         state.add_items(additional);
 
-        const auto& all_items = state.get_all_items();
-        REQUIRE(all_items.get_count() == 2);
-        REQUIRE(all_items.contains(root_idx, 0, 0, eof_idx));
-        REQUIRE(all_items.contains(s_idx, s_r0, 0, eof_idx));
-    }
-
-    SECTION("contains all items")
-    {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
-        kernel.add(s_idx, s_r0, 0, eof_idx);
-
-        lr1_state state(rs, std::move(kernel));
-
-        ordered_bitset_nd<4> subset(dims);
-        subset.add(root_idx, 0, 0, eof_idx);
-        REQUIRE(state.contains_all_items(subset));
-
-        ordered_bitset_nd<4> full(dims);
-        full.add(root_idx, 0, 0, eof_idx);
-        full.add(s_idx, s_r0, 0, eof_idx);
-        REQUIRE(state.contains_all_items(full));
-
-        ordered_bitset_nd<4> extra(dims);
-        extra.add(root_idx, 0, 0, eof_idx);
-        extra.add(s_idx, s_r0, 0, eof_idx);
-        extra.add(expr_idx, expr_r0, 0, a_idx);
-        REQUIRE_FALSE(state.contains_all_items(extra));
-    }
-
-    SECTION("get all items")
-    {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
-
-        lr1_state state(rs, std::move(kernel));
-
-        ordered_bitset_nd<4> additional(dims);
-        additional.add(s_idx, s_r0, 0, eof_idx);
-
-        state.add_items(additional);
-
-        const auto& all_items = state.get_all_items();
-        REQUIRE(all_items.get_count() == 2);
-
-        const auto& indices = all_items.get_indices();
-        REQUIRE(indices.size() == 2);
-        REQUIRE(indices[0] == std::array<size_t, 4>{root_idx, 0, 0, eof_idx});
-        REQUIRE(indices[1] == std::array<size_t, 4>{s_idx, s_r0, 0, eof_idx});
+        REQUIRE(state.matches(lr1_set
+        {
+            {root_idx, 0, 0, eof_idx},
+            {s_idx, s_r0, 0, eof_idx}
+        }));
     }
 
     SECTION("get actions - shift on terminal")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -171,9 +161,9 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - multiple shifts on same symbol")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, b_idx);
-        kernel.add(expr_idx, expr_r0, 0, c_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, b_idx);
+        kernel.emplace_back(expr_idx, expr_r0, 0, c_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -190,14 +180,14 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
         auto& s = std::get<lr1_state::shift>(it->second);
         REQUIRE(s.items_.size() == 2);
-        REQUIRE(s.items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
-        REQUIRE(s.items_[1] == std::array<size_t, 4>{expr_idx, expr_r0, 1, c_idx});
+        REQUIRE(s.items_[0] == lr1_set_item{expr_idx, expr_r0, 1, b_idx});
+        REQUIRE(s.items_[1] == lr1_set_item{expr_idx, expr_r0, 1, c_idx});
     }
 
     SECTION("get actions - shift on non_terminal")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(s_idx, s_r0, 0, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(s_idx, s_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -214,13 +204,13 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
         auto& s = std::get<lr1_state::shift>(it->second);
         REQUIRE(s.items_.size() == 1);
-        REQUIRE(s.items_[0] == std::array<size_t, 4>{s_idx, s_r0, 1, b_idx});
+        REQUIRE(s.items_[0] == lr1_set_item{s_idx, s_r0, 1, b_idx});
     }
 
     SECTION("get actions - reduction")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r1, 1, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r1, 1, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -242,9 +232,9 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - reduce reduce conflict")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r1, 1, a_idx);
-        kernel.add(expr_idx, expr_r2, 0, a_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r1, 1, a_idx);
+        kernel.emplace_back(expr_idx, expr_r2, 0, a_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -270,9 +260,9 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - shift reduce conflict")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, b_idx);
-        kernel.add(expr_idx, expr_r1, 1, a_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, b_idx);
+        kernel.emplace_back(expr_idx, expr_r1, 1, a_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -290,7 +280,7 @@ TEST_CASE("lr1_state", "[lr1_state]")
         auto& c = std::get<lr1_state::conflict>(it->second);
         REQUIRE(c.s_.has_value());
         REQUIRE(c.s_->items_.size() == 1);
-        REQUIRE(c.s_->items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
+        REQUIRE(c.s_->items_[0] == lr1_set_item{expr_idx, expr_r0, 1, b_idx});
         REQUIRE(c.r_.size() == 1);
         REQUIRE(c.r_[0].nterm_idx_ == expr_idx);
         REQUIRE(c.r_[0].rside_idx_ == expr_r1);
@@ -298,11 +288,11 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("get actions - add to existing conflict")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r1, 1, a_idx);
-        kernel.add(expr_idx, expr_r0, 0, b_idx);
-        kernel.add(expr_idx, expr_r2, 0, a_idx);
-        kernel.add(expr_idx, expr_r0, 0, c_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r1, 1, a_idx);
+        kernel.emplace_back(expr_idx, expr_r0, 0, b_idx);
+        kernel.emplace_back(expr_idx, expr_r2, 0, a_idx);
+        kernel.emplace_back(expr_idx, expr_r0, 0, c_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -320,8 +310,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
         auto& c = std::get<lr1_state::conflict>(it->second);
         REQUIRE(c.s_.has_value());
         REQUIRE(c.s_->items_.size() == 2);
-        REQUIRE(c.s_->items_[0] == std::array<size_t, 4>{expr_idx, expr_r0, 1, b_idx});
-        REQUIRE(c.s_->items_[1] == std::array<size_t, 4>{expr_idx, expr_r0, 1, c_idx});
+        REQUIRE(c.s_->items_[0] == lr1_set_item{expr_idx, expr_r0, 1, b_idx});
+        REQUIRE(c.s_->items_[1] == lr1_set_item{expr_idx, expr_r0, 1, c_idx});
         REQUIRE(c.r_.size() == 2);
         REQUIRE(c.r_[0].nterm_idx_ == expr_idx);
         REQUIRE(c.r_[0].rside_idx_ == expr_r1);
@@ -331,8 +321,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
     
     SECTION("to string - single item")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -341,8 +331,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - multiple items")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -359,8 +349,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift item")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -369,8 +359,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - reduction item")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r1, 1, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r1, 1, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -379,8 +369,8 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - empty production item")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r2, 0, a_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r2, 0, a_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -389,9 +379,9 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - mixed shift and reduce")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, eof_idx);
-        kernel.add(expr_idx, expr_r1, 1, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, eof_idx);
+        kernel.emplace_back(expr_idx, expr_r1, 1, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -403,9 +393,9 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - mixed with empty production")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(expr_idx, expr_r0, 0, eof_idx);
-        kernel.add(expr_idx, expr_r2, 0, b_idx);
+        lr1_set kernel;
+        kernel.emplace_back(expr_idx, expr_r0, 0, eof_idx);
+        kernel.emplace_back(expr_idx, expr_r2, 0, b_idx);
 
         lr1_state state(rs, std::move(kernel));
 
@@ -417,35 +407,35 @@ TEST_CASE("lr1_state", "[lr1_state]")
 
     SECTION("to string - shift on nonterm, reduce, and empty")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(s_idx, s_r0, 0, eof_idx);
-        kernel.add(expr_idx, expr_r1, 1, a_idx);
-        kernel.add(expr_idx, expr_r2, 0, c_idx);
+        lr1_set kernel;
+        kernel.emplace_back(s_idx, s_r0, 0, eof_idx);
+        kernel.emplace_back(expr_idx, expr_r1, 1, a_idx);
+        kernel.emplace_back(expr_idx, expr_r2, 0, c_idx);
 
         lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
-            "S -> . Expr / $eof\n"
             "Expr -> b . / a\n"
-            "Expr -> . / c"
+            "Expr -> . / c\n"
+            "S -> . Expr / $eof"
         );
     }
 
     SECTION("to string - four mixed items")
     {
-        ordered_bitset_nd<4> kernel(dims);
-        kernel.add(root_idx, 0, 0, eof_idx);
-        kernel.add(s_idx, s_r0, 0, eof_idx);
-        kernel.add(expr_idx, expr_r0, 1, b_idx);
-        kernel.add(expr_idx, expr_r2, 0, c_idx);
+        lr1_set kernel;
+        kernel.emplace_back(root_idx, 0, 0, eof_idx);
+        kernel.emplace_back(s_idx, s_r0, 0, eof_idx);
+        kernel.emplace_back(expr_idx, expr_r0, 1, b_idx);
+        kernel.emplace_back(expr_idx, expr_r2, 0, c_idx);
 
         lr1_state state(rs, std::move(kernel));
 
         REQUIRE(state.to_string() ==
+            "Expr -> . / c\n"
             "$root -> . S / $eof\n"
             "S -> . Expr / $eof\n"
-            "Expr -> a . Expr / b\n"
-            "Expr -> . / c"
+            "Expr -> a . Expr / b"
         );
     }
 }

@@ -229,7 +229,7 @@ TEST_CASE("ordered_bitset_nd<1> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<1> other(10);
         other.add(3);
@@ -238,7 +238,7 @@ TEST_CASE("ordered_bitset_nd<1> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<1> other(10);
         other.add(3);
@@ -282,7 +282,7 @@ TEST_CASE("ordered_bitset_nd<2> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<2> other(sizes);
         other.add(2, 3);
@@ -291,7 +291,7 @@ TEST_CASE("ordered_bitset_nd<2> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<2> other(sizes);
         other.add(2, 3);
@@ -336,7 +336,7 @@ TEST_CASE("ordered_bitset_nd<3> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<3> other(sizes);
         other.add(1, 2, 3);
@@ -345,7 +345,7 @@ TEST_CASE("ordered_bitset_nd<3> contains_all", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_all(other) == true);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<3> other(sizes);
         other.add(1, 2, 3);
@@ -389,7 +389,7 @@ TEST_CASE("ordered_bitset_nd<1> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<1> other(10);
         other.add(1);
@@ -398,7 +398,7 @@ TEST_CASE("ordered_bitset_nd<1> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<1> other(10);
         other.add(1);
@@ -452,7 +452,7 @@ TEST_CASE("ordered_bitset_nd<2> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<2> other(sizes);
         other.add(2, 3);
@@ -461,7 +461,7 @@ TEST_CASE("ordered_bitset_nd<2> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<2> other(sizes);
         other.add(2, 3);
@@ -516,7 +516,7 @@ TEST_CASE("ordered_bitset_nd<3> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("subset")
+    SECTION("bitset")
     {
         ordered_bitset_nd<3> other(sizes);
         other.add(1, 2, 3);
@@ -525,7 +525,7 @@ TEST_CASE("ordered_bitset_nd<3> contains_only_items", "[ordered_bitset_nd]")
         REQUIRE(ob.contains_only_items(other) == false);
     }
 
-    SECTION("not subset")
+    SECTION("not bitset")
     {
         ordered_bitset_nd<3> other(sizes);
         other.add(1, 2, 3);
@@ -566,90 +566,3 @@ TEST_CASE("ordered_bitset_nd<3> contains_only_items", "[ordered_bitset_nd]")
     }
 }
 
-TEST_CASE("ordered_bitset<N> comp", "[ordered_bitset_nd]")
-{
-    auto f = [](const auto& i1, const auto& i2){ return i1[0] + i1[1] < i2[0] + i2[1]; };
-    using ob_type = ordered_bitset_nd<2, decltype(f)>;
-    ob_type ob({10, 10}, f);
-    
-    auto equiv = [&f](const auto& a, const auto& b) {
-        return !f(a, b) && !f(b, a);
-    };
-    
-    ob.add(0, 0);
-    ob.add(2, 3);
-    ob.add(5, 6);
-    ob.add(4, 7);
-    ob.add(1, 4);
-    
-    auto grouped = ob.get_indices() | std::views::chunk_by(equiv);
-
-    std::vector<std::vector<std::pair<int, int>>> pairs;
-    
-    for (const auto& group : grouped)
-    {
-        if (!group.empty())
-        {
-            pairs.push_back({});
-            for (const auto& elem : group)
-            {
-                pairs.back().push_back({elem[0], elem[1]});
-            }
-        }
-    }
-    
-    REQUIRE(pairs.size() == 3);
-    REQUIRE(pairs[0].size() == 1);
-    REQUIRE(pairs[0][0] == std::pair{0, 0});
-    REQUIRE(pairs[1].size() == 2);
-    REQUIRE(pairs[1][0] == std::pair{2, 3});
-    REQUIRE(pairs[1][1] == std::pair{1, 4});
-    REQUIRE(pairs[2].size() == 2);
-    REQUIRE(pairs[2][0] == std::pair{5, 6});
-    REQUIRE(pairs[2][1] == std::pair{4, 7});
-}
-
-TEST_CASE("ordered_bitset<1> comp", "[ordered_bitset_nd]")
-{
-    auto f = [](size_t a, size_t b){ return a % 3 < b % 3; };
-    using ob_type = ordered_bitset_nd<1, decltype(f)>;
-    ob_type ob(10, f);
-    
-    auto equiv = [&f](size_t a, size_t b) {
-        return !f(a, b) && !f(b, a);
-    };
-    
-    ob.add(0);
-    ob.add(1);
-    ob.add(2);
-    ob.add(3);
-    ob.add(4);
-    ob.add(5);
-    
-    auto grouped = ob.get_indices() | std::views::chunk_by(equiv);
-
-    std::vector<std::vector<size_t>> numbers;
-    
-    for (const auto& group : grouped)
-    {
-        if (!group.empty())
-        {
-            numbers.push_back({});
-            for (size_t n : group)
-            {
-                numbers.back().push_back(n);
-            }
-        }
-    }
-    
-    REQUIRE(numbers.size() == 3);
-    REQUIRE(numbers[0].size() == 2);
-    REQUIRE(numbers[0][0] == 0);
-    REQUIRE(numbers[0][1] == 3);
-    REQUIRE(numbers[1].size() == 2);
-    REQUIRE(numbers[1][0] == 1);
-    REQUIRE(numbers[1][1] == 4);
-    REQUIRE(numbers[2].size() == 2);
-    REQUIRE(numbers[2][0] == 2);
-    REQUIRE(numbers[2][1] == 5);
-}

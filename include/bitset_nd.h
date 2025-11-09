@@ -185,6 +185,18 @@ public:
         indexer_.validate_sizes(other.indexer_);
     }
     
+    /**
+     * @brief Tests equality with other bitset.
+     *
+     * @param other The other bitset.
+     * @throw std::invalid_argument If sizes don't match.
+     */
+    bool operator == (const bitset_nd<Dim>& other) const
+    {
+        validate_sizes(other);
+        return bits_ == other.bits_;
+    }
+    
 private:
     /**
      * @brief Implementation for contains with index sequence.

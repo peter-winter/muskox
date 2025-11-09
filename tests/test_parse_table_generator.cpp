@@ -13,6 +13,34 @@ using teh = table_entry_hint;
 using pte = parse_table_entry;
 using st = symbol_type;
 
+struct lr1_set_builder
+{
+    lr1_set_builder(const ruleset& rs)
+        :comparer_(rs), set_(comparer_)
+    {}
+    
+    template <typename... Idx>
+    lr1_set_builder& operator()(Idx... indices)
+    {
+        set_.insert(lr1_set_item(static_cast<size_t>(indices)...));
+        return *this;
+    }
+    
+    lr1_set_builder& reset()
+    {
+        set_.clear();
+        return *this;
+    }
+    
+    lr1_set build()
+    {
+        return set_.get_all();
+    }
+    
+    lr1_set_item_comp comparer_;
+    sorted_grouped_vector<lr1_set_item, lr1_set_item_comp> set_;
+};
+
 TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table_generator]")
 {
     symbol_collection sc;
@@ -183,8 +211,7 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 5);
 
-    auto dims = rs.get_lr1_set_item_space_dims();
-    ordered_bitset_nd_builder<4> builder(dims);
+    lr1_set_builder builder(rs);
 
     SECTION("states")
     {
@@ -274,8 +301,7 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
         const auto& states = ptg.get_states();
         REQUIRE(states.size() == 5);
 
-        auto dims = rs.get_lr1_set_item_space_dims();
-        ordered_bitset_nd_builder<4> builder(dims);
+        lr1_set_builder builder(rs);
 
         // State 0: kernel {$root -> . S / $eof}, items: that + {S -> . A / $eof, S -> . B / $eof, A -> . a / $eof, B -> . a / $eof}
         auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
@@ -357,8 +383,7 @@ TEST_CASE("parse_table_generator states complex lookaheads", "[parse_table_gener
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 10);
 
-    auto dims = rs.get_lr1_set_item_space_dims();
-    ordered_bitset_nd_builder<4> builder(dims);
+    lr1_set_builder builder(rs);
 
     SECTION("states")
     {
@@ -475,8 +500,7 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 11);
 
-    auto dims = rs.get_lr1_set_item_space_dims();
-    ordered_bitset_nd_builder<4> builder(dims);
+    lr1_set_builder builder(rs);
 
     std::vector<size_t> all_la = {eof_idx, plus_idx, minus_idx, mul_idx};
     std::vector<size_t> all_rs = {expr_plus, expr_minus, expr_mul, expr_neg, expr_id};
@@ -538,6 +562,7 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
             }
         }
         auto exp_kernel3 = builder.build();
+        
         REQUIRE(states[3].kernel_matches(exp_kernel3));
         REQUIRE(states[3].matches(exp_kernel3));
 
@@ -546,6 +571,9 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_neg, 2, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);
@@ -614,6 +642,9 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_plus, 3, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);
@@ -628,6 +659,9 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_minus, 3, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);
@@ -642,6 +676,9 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_mul, 3, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);
@@ -813,8 +850,7 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 7);
 
-    auto dims = rs.get_lr1_set_item_space_dims();
-    ordered_bitset_nd_builder<4> builder(dims);
+    lr1_set_builder builder(rs);
 
     std::vector<size_t> all_la = {eof_idx, plus_idx, pow_idx};
     std::vector<size_t> all_rs = {expr_plus, expr_pow, expr_id};
@@ -902,6 +938,9 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_plus, 3, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);
@@ -916,6 +955,9 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
         for (auto la : all_la)
         {
             builder(expr_idx, expr_pow, 3, la);
+        }
+        for (auto la : all_la)
+        {
             for (auto r : bin_rs)
             {
                 builder(expr_idx, r, 1, la);

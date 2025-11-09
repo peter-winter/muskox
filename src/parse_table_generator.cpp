@@ -20,8 +20,7 @@ const std::vector<std::string>& parse_table_generator::get_warnings() const
 
 void parse_table_generator::generate_states()
 {
-    ordered_bitset_nd<4> root_kernel(rs_.get_lr1_set_item_space_dims());
-    root_kernel.add(0, 0, 0, 0);
+    lr1_set root_kernel{{0, 0, 0, 0}};
     
     states_.emplace_back(rs_, std::move(root_kernel));
     
@@ -29,11 +28,10 @@ void parse_table_generator::generate_states()
     {
         auto& current_state = states_[i];
         
-        const auto& items = current_state.get_all_items().get_indices();
-        for (size_t j = 0; j < items.size(); ++j)
+        for (const auto& item : current_state.get_sorted_items().get_all())
         {
-            const auto& new_items = cl_.calculate_full(lr1_set_item(items[j])).value();
-            current_state.add_items(new_items);
+            const auto& cl = cl_.calculate_full(item).value();
+            current_state.add_items(cl);
         }
         
         lr1_state::action_map actions = current_state.get_actions();
@@ -61,13 +59,14 @@ void parse_table_generator::generate_states()
 
 size_t parse_table_generator::process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s)
 {
-    ordered_bitset_nd<4> new_kernel(rs_.get_lr1_set_item_space_dims());
+    lr1_set_item_comp comp(rs_);
+    sorted_grouped_vector<lr1_set_item, lr1_set_item_comp> new_kernel(comp);
     for (const auto& item : s.items_)
     {
-        new_kernel.add(item);
+        new_kernel.insert(item);
     }
     
-    auto found = find_state(new_kernel);
+    auto found = find_state(new_kernel.get_all());
     size_t new_state_idx;
     if (found.has_value())
     {
@@ -76,7 +75,7 @@ size_t parse_table_generator::process_shift(size_t state_idx, symbol_ref ref, co
     else
     {
         new_state_idx = states_.size();
-        states_.emplace_back(rs_, std::move(new_kernel));
+        states_.emplace_back(rs_, std::move(new_kernel.take_all()));
     }
     
     table_entry_hints_.emplace_back(state_idx, ref, parse_table_entry::shift(new_state_idx));
@@ -189,11 +188,11 @@ void parse_table_generator::collect_conflict_warnings(
     }
 }
 
-std::optional<size_t> parse_table_generator::find_state(const ordered_bitset_nd<4>& kernel) const
+std::optional<size_t> parse_table_generator::find_state(const lr1_set& kernel) const
 {
     for (size_t i = 0; i < states_.size(); ++i)
     {
-        if (states_[i].kernel_contains_all_items(kernel))
+        if (states_[i].kernel_matches(kernel))
         {
             return i;
         }

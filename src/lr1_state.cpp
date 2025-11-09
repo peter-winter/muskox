@@ -4,52 +4,54 @@
 namespace muskox
 {
     
-void lr1_state::add_items(const ordered_bitset_nd<4>& c)
-{
-    items_.add(c);
-}
-
-lr1_state::lr1_state(const ruleset& rs, ordered_bitset_nd<4>&& kernel)
+lr1_state::lr1_state(const ruleset& rs, lr1_set&& kernel)
     : rs_(rs),
       items_(rs.get_lr1_set_item_space_dims()),
-      kernel_(std::move(kernel))
+      kernel_(std::move(kernel)),
+      comparer_(rs),
+      sorted_items_(comparer_)
 {
     add_items(kernel_);
 }
 
-bool lr1_state::contains_all_items(const ordered_bitset_nd<4>& items) const
+void lr1_state::add_item(const lr1_set_item::array_type& indices)
 {
-    return items_.contains_all(items);
+    bool added = items_.add(indices);
+    if (added)
+    {
+        sorted_items_.insert(lr1_set_item(indices));
+    }
 }
 
-const ordered_bitset_nd<4>& lr1_state::get_all_items() const
+void lr1_state::add_items(const lr1_set& items)
 {
-    return items_;
+    for (const auto& it : items)
+    {
+        add_item(it.get_array());
+    }
 }
 
-bool lr1_state::kernel_contains_all_items(const ordered_bitset_nd<4>& items) const
+void lr1_state::add_items(const ordered_bitset_nd<4>& items)
 {
-    return kernel_.contains_all(items);
-}
-
-const ordered_bitset_nd<4>& lr1_state::get_kernel() const
-{
-    return kernel_;
+    for (const auto& indices : items.get_indices())
+    {
+        add_item(indices);
+    }
 }
 
 lr1_state::action_map lr1_state::get_actions() const
 {
     action_map result;
 
-    for (const auto& [nterm_idx, rside_idx, symbol_idx, lookahead_idx] : items_.get_indices())
+    for (const auto& it : sorted_items_.get_all())
     {
-        size_t prod_len = rs_.get_symbol_count(nterm_idx, rside_idx);
+        size_t prod_len = rs_.get_symbol_count(it.nterm_idx_, it.rside_idx_);
 
-        if (symbol_idx == prod_len)
+        if (it.suffix_idx_ == prod_len)
         {
             // reduce
-            symbol_ref key{symbol_type::terminal, lookahead_idx};
-            reduction red{nterm_idx, rside_idx};
+            symbol_ref key{symbol_type::terminal, it.lookahead_idx_};
+            reduction red{it.nterm_idx_, it.rside_idx_};
 
             auto [it, inserted] = result.try_emplace(key, red);
             if (!inserted)
@@ -74,8 +76,8 @@ lr1_state::action_map lr1_state::get_actions() const
         else
         {
             // shift
-            symbol_ref key = rs_.get_symbol(nterm_idx, rside_idx, symbol_idx);
-            std::array<size_t, 4> new_kernel_item{nterm_idx, rside_idx, symbol_idx + 1, lookahead_idx};
+            symbol_ref key = rs_.get_symbol(it.nterm_idx_, it.rside_idx_, it.suffix_idx_);
+            lr1_set_item new_kernel_item(it.nterm_idx_, it.rside_idx_, it.suffix_idx_ + 1, it.lookahead_idx_);
 
             auto [it, inserted] = result.try_emplace(key, shift{{new_kernel_item}});
             if (!inserted)
@@ -106,24 +108,24 @@ lr1_state::action_map lr1_state::get_actions() const
     return result;
 }
 
+const sorted_grouped_vector<lr1_set_item, lr1_set_item_comp>& lr1_state::get_sorted_items() const
+{
+    return sorted_items_;
+}
+
 std::string lr1_state::to_string() const
 {
-    auto to_string_f = [&](const std::array<size_t, 4>& arr) {
-        return rs_.lr1_set_item_to_string(lr1_set_item(arr));
-    };
-
-    list_printer lp("", "\n", "");
-    return lp.print_container(items_.get_indices(), to_string_f);
+    return rs_.lr1_set_to_string(sorted_items_.get_all());
 }
 
-bool lr1_state::kernel_matches(const ordered_bitset_nd<4>& other) const
+bool lr1_state::kernel_matches(const lr1_set& items) const
 {
-    return kernel_.contains_only_items(other);
+    return kernel_ == items;
 }
 
-bool lr1_state::matches(const ordered_bitset_nd<4>& other) const
+bool lr1_state::matches(const lr1_set& items) const
 {
-    return items_.contains_only_items(other);
+    return sorted_items_.get_all() == items;
 }
 
 } // namespace muskox

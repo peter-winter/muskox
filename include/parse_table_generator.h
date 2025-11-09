@@ -70,7 +70,7 @@ private:
     
     void generate_states();
     
-    std::optional<size_t> find_state(const ordered_bitset_nd<4>& kernel) const;
+    std::optional<size_t> find_state(const lr1_set& kernel) const;
     
     size_t process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s);
     void process_reduce(size_t state_idx, size_t lookahead_idx, const lr1_state::reduction& r);

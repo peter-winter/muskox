@@ -347,6 +347,14 @@ public:
      * @return The string representation.
      */
     std::string lr1_set_item_to_string(const lr1_set_item& item) const;
+    
+    /**
+     * @brief Converts an LR(1) set to a string.
+     *
+     * @param s The set.
+     * @return The string representation.
+     */
+    std::string lr1_set_to_string(const lr1_set& s) const;
 
     /**
      * @brief Validates a terminal index.

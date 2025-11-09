@@ -20,7 +20,7 @@ closure::closure(const ruleset& rs)
 {
 }
 
-const closure::opt_subset& closure::calculate_full(const lr1_set_item& item)
+const closure::opt_bitset& closure::calculate_full(const lr1_set_item& item)
 {
     auto& result = lr1_item_full_closures_.get(item.nterm_idx_, item.rside_idx_, item.suffix_idx_, item.lookahead_idx_);
     
@@ -30,7 +30,7 @@ const closure::opt_subset& closure::calculate_full(const lr1_set_item& item)
         return result;
     }
     
-    // Initialize the full closure subset
+    // Initialize the full closure bitset
     result.emplace(rs_.get_lr1_set_item_space_dims());
     
     // Add the seed item to the result

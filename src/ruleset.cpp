@@ -354,6 +354,16 @@ std::string ruleset::lr1_set_item_to_string(const lr1_set_item& item) const
     return lp.print_list(left, "->", before_dot, ".", after_dot, "/", symbols_.get_term_name(item.lookahead_idx_));
 }
 
+std::string ruleset::lr1_set_to_string(const lr1_set& s) const
+{
+    auto to_string_f = [&](const lr1_set_item& it) {
+        return lr1_set_item_to_string(it);
+    };
+
+    list_printer lp("", "\n", "");
+    return lp.print_container(s, to_string_f);
+}
+
 void ruleset::validate_term_idx(size_t term_idx) const
 {
     if (term_idx >= get_term_count())
