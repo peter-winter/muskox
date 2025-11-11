@@ -2,7 +2,6 @@
 #include <ranges>
 #include <algorithm>
 #include <functional>
-#include <utility>
 
 namespace muskox
 {
@@ -15,9 +14,14 @@ public:
     using value_type = T;
     
     sorted_grouped_vector(partial_comparer_type cmp)
-        : comparer_(std::move(cmp))
-    {
-    }
+        : comparer_(cmp)
+    {}
+    
+    sorted_grouped_vector(sorted_grouped_vector&& other) = default;        
+    sorted_grouped_vector& operator = (sorted_grouped_vector&& other) = default;
+    
+    sorted_grouped_vector(sorted_grouped_vector&) = delete;        
+    sorted_grouped_vector& operator = (sorted_grouped_vector&) = delete;
 
     void insert(const value_type& value)
     {
@@ -48,9 +52,9 @@ public:
         data_.clear();
     }
     
-    std::vector<value_type> take_all()
+    bool empty() const
     {
-        return std::exchange(data_, {});
+        return data_.empty();
     }
     
 private:

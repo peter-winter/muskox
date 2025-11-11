@@ -3,11 +3,12 @@
 #include "closure.h"
 #include "ruleset.h"
 #include "lr1_state.h"
+#include "parse_table.h"
+#include "action.h"
 
+#include <variant>
 #include <vector>
 #include <string>
-
-#include <parse_table.h>
 
 namespace muskox
 {
@@ -57,25 +58,27 @@ private:
     closure cl_;
     std::vector<std::string> warnings_;
     std::vector<lr1_state> states_;
+    std::vector<lr1_sorted_set> new_kernels_;
     
     std::vector<table_entry_hint> table_entry_hints_;
-    std::vector<parse_table_entry> glr_splits_;
 
+    void generate_states();
+    
+    std::optional<size_t> find_state(const lr1_sorted_set& kernel) const;
+    
     void collect_conflict_warnings(
         size_t state_idx, 
         size_t lookahead_idx, 
-        const lr1_state::conflict& c, 
+        const action::reductions& reds,
+        bool has_shift,
         std::optional<size_t> prefered_idx_reduce, 
         std::optional<size_t> shift_over_reduce_state_idx);
+        
+    std::size_t process_shift(size_t state_idx, symbol_ref ref, action& a);
+    void process_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r);
+    std::optional<std::size_t> process_conflict(size_t state_idx, size_t term_idx, action& a);
     
-    void generate_states();
-    
-    std::optional<size_t> find_state(const lr1_set& kernel) const;
-    
-    size_t process_shift(size_t state_idx, symbol_ref ref, const lr1_state::shift& s);
-    void process_reduce(size_t state_idx, size_t lookahead_idx, const lr1_state::reduction& r);
-    void process_conflict(size_t state_idx, size_t term_idx, const lr1_state::conflict& c);
-    bool shift_over_reduce(size_t term_idx, const lr1_state::reduction& r) const;
+    bool shift_over_reduce(size_t term_idx, size_t lhs_nterm_idx, size_t rside_idx) const;
 };
 
 } // namespace muskox

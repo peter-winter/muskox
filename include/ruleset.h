@@ -200,6 +200,16 @@ public:
      */
     size_t get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t suffix_idx) const;
 
+
+    /**
+     * @brief Gets the symbol reference from the LR(1) set item that is either after '.' or lookahead if '.' at the end.
+     *
+     * @param it LR(1) set item.
+     * @return The symbol reference.
+     * @throw std::out_of_range If indices invalid.
+     */
+    symbol_ref get_symbol_of_interest(const lr1_set_item& it) const;
+    
     /**
      * @brief Gets the name of a non-terminal.
      *

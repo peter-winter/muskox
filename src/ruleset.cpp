@@ -181,6 +181,18 @@ size_t ruleset::get_symbol_index(size_t nterm_idx, size_t rside_idx, size_t suff
     return get_symbol(nterm_idx, rside_idx, suffix_idx).index_;
 }
 
+symbol_ref ruleset::get_symbol_of_interest(const lr1_set_item& it) const
+{
+    if (it.suffix_idx_ < get_symbol_count(it.nterm_idx_, it.rside_idx_))
+    {
+        return get_symbol(it.nterm_idx_, it.rside_idx_, it.suffix_idx_);
+    }
+    else
+    {
+        return symbol_ref{symbol_type::terminal, it.lookahead_idx_};
+    }
+}
+
 std::string_view ruleset::get_nterm_name(size_t nterm_idx) const
 {
     validate_nterm_idx(nterm_idx);

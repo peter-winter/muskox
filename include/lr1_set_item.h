@@ -41,6 +41,11 @@ struct lr1_set_item
     {
         return (*this == lr1_set_item(arr));
     }
+    
+    lr1_set_item make_shifted() const
+    {
+        return lr1_set_item(nterm_idx_, rside_idx_, suffix_idx_ + 1, lookahead_idx_);
+    }
 };
 
 using lr1_set = std::vector<lr1_set_item>;

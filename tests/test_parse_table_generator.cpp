@@ -16,7 +16,7 @@ using st = symbol_type;
 struct lr1_set_builder
 {
     lr1_set_builder(const ruleset& rs)
-        :comparer_(rs), set_(comparer_)
+        :set_(lr1_set_item_comp(rs))
     {}
     
     template <typename... Idx>
@@ -37,9 +37,63 @@ struct lr1_set_builder
         return set_.get_all();
     }
     
-    lr1_set_item_comp comparer_;
     sorted_grouped_vector<lr1_set_item, lr1_set_item_comp> set_;
 };
+
+TEST_CASE("parse_table_generator basic", "[parse_table_generator]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    sc.validate();
+    
+    ruleset rs(sc);
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    
+    rs.validate();
+    
+    parse_table_generator ptg(rs);
+    
+    const auto& states = ptg.get_states();
+    REQUIRE(states.size() == 3);
+
+    lr1_set_builder builder(rs);
+    
+    SECTION("states")
+    {
+        // State 0: kernel {$root -> . A / $eof}, items: that + {A -> . a / $eof}
+        auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
+        REQUIRE(states[0].kernel_matches(exp_kernel0));
+
+        auto exp_items0 = builder.reset()
+            (root_idx, 0, 0, eof_idx)
+            (a_nterm_idx, a_r0, 0, eof_idx).build();
+        REQUIRE(states[0].matches(exp_items0));
+
+        // State 1: kernel {A -> a . / $eof}, items == kernel
+        auto exp_kernel1 = builder.reset()(a_nterm_idx, a_r0, 1, eof_idx).build();
+        REQUIRE(states[1].kernel_matches(exp_kernel1));
+        REQUIRE(states[1].matches(exp_kernel1));
+
+        // State 2: kernel {$root -> A . / $eof}
+        auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
+        REQUIRE(states[2].kernel_matches(exp_kernel2));
+        REQUIRE(states[2].matches(exp_kernel2));
+    }
+    
+    SECTION("hints")
+    {
+        const auto& hints = ptg.get_table_entry_hints();
+        REQUIRE(hints.size() == 4);
+
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        CHECK(hints[1] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(2)));
+        CHECK(hints[2] == teh(1, {st::terminal, eof_idx}, pte::reduce(a_nterm_idx, 0)));
+        CHECK(hints[3] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+    }
+}
 
 TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table_generator]")
 {
@@ -70,7 +124,7 @@ TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table
         REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
         REQUIRE(warnings[1] == "\n    A -> a . / $eof");
         REQUIRE(warnings[2] == "\n    B -> a . / $eof");
-        REQUIRE(warnings[3] == "Conflict in state 1 on lookahead '$eof' unresolved");
+        REQUIRE(warnings[3] == "\nConflict in state 1 on lookahead '$eof' unresolved");
     }
 }
 
@@ -103,12 +157,16 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to s
     SECTION("warnings")
     {
         const auto& warnings = ptg.get_warnings();
+        std::string s;
+        for (auto warning : warnings)
+            s.append(warning);
+        INFO(s);
         REQUIRE(warnings.size() == 5);
         REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
         REQUIRE(warnings[1] == "\n    A -> a . / b");
         REQUIRE(warnings[2] == "\n    B -> a . / b");
         REQUIRE(warnings[3] == "\n    shift on 'b' to state 6 has the highest precedence");
-        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' resolved");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
     }
 }
 
@@ -146,7 +204,7 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to o
         REQUIRE(warnings[1] == "\n    A -> a . / b (highest precedence)");
         REQUIRE(warnings[2] == "\n    B -> a . / b");
         REQUIRE(warnings[3] == "\n    shift on 'b'");
-        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' resolved");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
     }
 }
 
@@ -184,7 +242,7 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", 
         REQUIRE(warnings[1] == "\n    A -> a . / b");
         REQUIRE(warnings[2] == "\n    B -> a . / b");
         REQUIRE(warnings[3] == "\n    shift on 'b'");
-        REQUIRE(warnings[4] == "Conflict in state 1 on lookahead 'b' unresolved");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' unresolved");
     }
 }
 
@@ -293,7 +351,7 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
         REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
         REQUIRE(warnings[1] == "\n    A -> a . / $eof (highest precedence)");
         REQUIRE(warnings[2] == "\n    B -> a . / $eof");
-        REQUIRE(warnings[3] == "Conflict in state 1 on lookahead '$eof' resolved");
+        REQUIRE(warnings[3] == "\nConflict in state 1 on lookahead '$eof' resolved");
     }
 
     SECTION("states")
@@ -696,62 +754,62 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         REQUIRE(warnings[ 0] == "Conflict in state 4 on lookahead '+' :");
         REQUIRE(warnings[ 1] == "\n    Expr -> - Expr . / + (highest precedence)");
         REQUIRE(warnings[ 2] == "\n    shift on '+'");
-        REQUIRE(warnings[ 3] == "Conflict in state 4 on lookahead '+' resolved");
+        REQUIRE(warnings[ 3] == "\nConflict in state 4 on lookahead '+' resolved");
         
         REQUIRE(warnings[ 4] == "Conflict in state 4 on lookahead '-' :");
         REQUIRE(warnings[ 5] == "\n    Expr -> - Expr . / - (highest precedence)");
         REQUIRE(warnings[ 6] == "\n    shift on '-'");
-        REQUIRE(warnings[ 7] == "Conflict in state 4 on lookahead '-' resolved");
+        REQUIRE(warnings[ 7] == "\nConflict in state 4 on lookahead '-' resolved");
         
         REQUIRE(warnings[ 8] == "Conflict in state 4 on lookahead '*' :");
         REQUIRE(warnings[ 9] == "\n    Expr -> - Expr . / * (highest precedence)");
         REQUIRE(warnings[10] == "\n    shift on '*'");
-        REQUIRE(warnings[11] == "Conflict in state 4 on lookahead '*' resolved");
+        REQUIRE(warnings[11] == "\nConflict in state 4 on lookahead '*' resolved");
         
         REQUIRE(warnings[12] == "Conflict in state 8 on lookahead '+' :");
         REQUIRE(warnings[13] == "\n    Expr -> Expr + Expr . / + (highest precedence)");
         REQUIRE(warnings[14] == "\n    shift on '+'");
-        REQUIRE(warnings[15] == "Conflict in state 8 on lookahead '+' resolved");
+        REQUIRE(warnings[15] == "\nConflict in state 8 on lookahead '+' resolved");
         
         REQUIRE(warnings[16] == "Conflict in state 8 on lookahead '-' :");
         REQUIRE(warnings[17] == "\n    Expr -> Expr + Expr . / - (highest precedence)");
         REQUIRE(warnings[18] == "\n    shift on '-'");
-        REQUIRE(warnings[19] == "Conflict in state 8 on lookahead '-' resolved");
+        REQUIRE(warnings[19] == "\nConflict in state 8 on lookahead '-' resolved");
         
         REQUIRE(warnings[20] == "Conflict in state 8 on lookahead '*' :");
         REQUIRE(warnings[21] == "\n    Expr -> Expr + Expr . / *");
         REQUIRE(warnings[22] == "\n    shift on '*' to state 7 has the highest precedence");
-        REQUIRE(warnings[23] == "Conflict in state 8 on lookahead '*' resolved");
+        REQUIRE(warnings[23] == "\nConflict in state 8 on lookahead '*' resolved");
         
         REQUIRE(warnings[24] == "Conflict in state 9 on lookahead '+' :");
         REQUIRE(warnings[25] == "\n    Expr -> Expr - Expr . / + (highest precedence)");
         REQUIRE(warnings[26] == "\n    shift on '+'");
-        REQUIRE(warnings[27] == "Conflict in state 9 on lookahead '+' resolved");
+        REQUIRE(warnings[27] == "\nConflict in state 9 on lookahead '+' resolved");
         
         REQUIRE(warnings[28] == "Conflict in state 9 on lookahead '-' :");
         REQUIRE(warnings[29] == "\n    Expr -> Expr - Expr . / - (highest precedence)");
         REQUIRE(warnings[30] == "\n    shift on '-'");
-        REQUIRE(warnings[31] == "Conflict in state 9 on lookahead '-' resolved");
+        REQUIRE(warnings[31] == "\nConflict in state 9 on lookahead '-' resolved");
         
         REQUIRE(warnings[32] == "Conflict in state 9 on lookahead '*' :");
         REQUIRE(warnings[33] == "\n    Expr -> Expr - Expr . / *");
         REQUIRE(warnings[34] == "\n    shift on '*' to state 7 has the highest precedence");
-        REQUIRE(warnings[35] == "Conflict in state 9 on lookahead '*' resolved");
+        REQUIRE(warnings[35] == "\nConflict in state 9 on lookahead '*' resolved");
         
         REQUIRE(warnings[36] == "Conflict in state 10 on lookahead '+' :");
         REQUIRE(warnings[37] == "\n    Expr -> Expr * Expr . / + (highest precedence)");
         REQUIRE(warnings[38] == "\n    shift on '+'");
-        REQUIRE(warnings[39] == "Conflict in state 10 on lookahead '+' resolved");
+        REQUIRE(warnings[39] == "\nConflict in state 10 on lookahead '+' resolved");
         
         REQUIRE(warnings[40] == "Conflict in state 10 on lookahead '-' :");
         REQUIRE(warnings[41] == "\n    Expr -> Expr * Expr . / - (highest precedence)");
         REQUIRE(warnings[42] == "\n    shift on '-'");
-        REQUIRE(warnings[43] == "Conflict in state 10 on lookahead '-' resolved");
+        REQUIRE(warnings[43] == "\nConflict in state 10 on lookahead '-' resolved");
         
         REQUIRE(warnings[44] == "Conflict in state 10 on lookahead '*' :");
         REQUIRE(warnings[45] == "\n    Expr -> Expr * Expr . / * (highest precedence)");
         REQUIRE(warnings[46] == "\n    shift on '*'");
-        REQUIRE(warnings[47] == "Conflict in state 10 on lookahead '*' resolved");
+        REQUIRE(warnings[47] == "\nConflict in state 10 on lookahead '*' resolved");
     }
 
     SECTION("hints")
@@ -976,22 +1034,22 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
         REQUIRE(warnings[ 0] == "Conflict in state 5 on lookahead '+' :");
         REQUIRE(warnings[ 1] == "\n    Expr -> Expr + Expr . / + (highest precedence)");
         REQUIRE(warnings[ 2] == "\n    shift on '+'");
-        REQUIRE(warnings[ 3] == "Conflict in state 5 on lookahead '+' resolved");
+        REQUIRE(warnings[ 3] == "\nConflict in state 5 on lookahead '+' resolved");
         
         REQUIRE(warnings[ 4] == "Conflict in state 5 on lookahead '^' :");
         REQUIRE(warnings[ 5] == "\n    Expr -> Expr + Expr . / ^");
         REQUIRE(warnings[ 6] == "\n    shift on '^' to state 4 has the highest precedence");
-        REQUIRE(warnings[ 7] == "Conflict in state 5 on lookahead '^' resolved");
+        REQUIRE(warnings[ 7] == "\nConflict in state 5 on lookahead '^' resolved");
         
         REQUIRE(warnings[ 8] == "Conflict in state 6 on lookahead '+' :");
         REQUIRE(warnings[ 9] == "\n    Expr -> Expr ^ Expr . / + (highest precedence)");
         REQUIRE(warnings[10] == "\n    shift on '+'");
-        REQUIRE(warnings[11] == "Conflict in state 6 on lookahead '+' resolved");
+        REQUIRE(warnings[11] == "\nConflict in state 6 on lookahead '+' resolved");
         
         REQUIRE(warnings[12] == "Conflict in state 6 on lookahead '^' :");
         REQUIRE(warnings[13] == "\n    Expr -> Expr ^ Expr . / ^");
         REQUIRE(warnings[14] == "\n    shift on '^' to state 4 has the highest precedence");
-        REQUIRE(warnings[15] == "Conflict in state 6 on lookahead '^' resolved");
+        REQUIRE(warnings[15] == "\nConflict in state 6 on lookahead '^' resolved");
     }
 
     SECTION("table")

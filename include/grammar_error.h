@@ -73,8 +73,8 @@ struct grammar_error_templates
         "\n    {} (highest precedence)",
         "\n    shift on '{}'",
         "\n    shift on '{}' to state {} has the highest precedence",
-        "Conflict in state {} on lookahead '{}' resolved",
-        "Conflict in state {} on lookahead '{}' unresolved",
+        "\nConflict in state {} on lookahead '{}' resolved",
+        "\nConflict in state {} on lookahead '{}' unresolved",
     };
 };
 

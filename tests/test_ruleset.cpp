@@ -446,6 +446,26 @@ TEST_CASE("ruleset space dims", "[ruleset]")
     }
 }
 
+TEST_CASE("ruleset get_symbol_of_interest", "[ruleset]")
+{
+    symbol_collection sc;
+    
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_idx = sc.add_term("a");
+    [[maybe_unused]] size_t eof_idx = 0;
+    
+    sc.validate();
+    
+    ruleset rs(sc);
+
+    [[maybe_unused]] size_t ridx = rs.add_rule("S", {"a"});
+
+    rs.validate();
+    
+    REQUIRE(rs.get_symbol_of_interest(lr1_set_item(s_idx, ridx, 0, eof_idx)) == symbol_ref(symbol_type::terminal, a_idx));
+    REQUIRE(rs.get_symbol_of_interest(lr1_set_item(s_idx, ridx, 1, eof_idx)) == symbol_ref(symbol_type::terminal, eof_idx));
+}
+
 TEST_CASE("ruleset user idx validation", "[ruleset]")
 {
     symbol_collection sc;
