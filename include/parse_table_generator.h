@@ -33,11 +33,6 @@ namespace muskox
  */
 class table_entry_hint
 {
-private:
-    size_t state_idx_; /// The state index.
-    symbol_ref ref_; /// The symbol reference (terminal or non-terminal).
-    parse_table_entry entry_; /// The parse table entry (shift/reduce).
-
 public:    
     /**
      * @brief Default constructor.
@@ -86,6 +81,11 @@ public:
      * @return The state index.
      */
     size_t get_state_idx() const { return state_idx_; }
+    
+private:
+    size_t state_idx_; /// The state index.
+    symbol_ref ref_; /// The symbol reference (terminal or non-terminal).
+    parse_table_entry entry_; /// The parse table entry (shift/reduce).
 };
 
 /**
@@ -154,6 +154,7 @@ private:
     std::vector<lr1_sorted_set> new_kernels_; /// Pending new kernels during generation.
     
     std::vector<table_entry_hint> table_entry_hints_; /// Hints for populating the table.
+    std::vector<action::reduction> rr_conflict_hints_;  /// Hints for populating reduce-reduce conflicts table.
 
     /**
      * @brief Generates the LR(1) states.
@@ -175,7 +176,7 @@ private:
      * @param lookahead_idx The lookahead terminal index.
      * @param reds The reductions involved.
      * @param has_shift True if there's a shift.
-     * @param prefered_idx_reduce Optional preferred reduce index.
+     * @param all_max_precedence_reductions Collection of indices into action's reductions with max precedence value
      * @param shift_over_reduce_state_idx Optional shift state index for resolution.
      */
     void collect_conflict_warnings(
@@ -183,7 +184,7 @@ private:
         size_t lookahead_idx, 
         const action::reductions& reds,
         bool has_shift,
-        std::optional<size_t> prefered_idx_reduce, 
+        const std::vector<size_t>& all_max_precedence_reductions,
         std::optional<size_t> shift_over_reduce_state_idx);
         
     /**
@@ -197,14 +198,25 @@ private:
     std::size_t process_shift(size_t state_idx, symbol_ref ref, action& a);
 
     /**
-     * @brief Processes a reduce action.
+     * @brief Processes a reduce action, with one unique max precedence reduction
      *
      * @param state_idx The state index.
      * @param lookahead_idx The lookahead.
      * @param r The reduction.
      */
-    void process_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r);
+    void process_single_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r);
 
+    
+    /**
+     * @brief Processes a reduce action, single or multiple max precedene reductions
+     *
+     * @param state_idx The state index.
+     * @param lookahead_idx The lookahead.
+     * @param all_max_precedence_reductions Collection of indices into action's reductions with max precedence value
+     * @param a The action.
+     */
+    void process_reduce(size_t state_idx, size_t lookahead_idx, const std::vector<size_t>& all_max_precedence_reductions, const action& a);
+    
     /**
      * @brief Processes a conflict.
      *
@@ -214,6 +226,16 @@ private:
      * @return Optional state index if resolved to shift.
      */
     std::optional<std::size_t> process_conflict(size_t state_idx, size_t term_idx, action& a);
+    
+    /**
+     * @brief Processes a reduce-reduce conflict.
+     *
+     * @param state_idx The state.
+     * @param lookahead_idx The lookahead.
+     * @param all_max_precedence_reductions Collection of indices into action's reductions with max precedence value
+     * @param a The action with conflict.
+     */
+    void process_rr_conflict(size_t state_idx, size_t lookahead_idx, const std::vector<size_t>& all_max_precedence_reductions, const action& a);
     
     /**
      * @brief Checks if shift should be preferred over reduce.

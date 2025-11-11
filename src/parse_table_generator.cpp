@@ -59,7 +59,7 @@ void parse_table_generator::generate_states()
             }
             else if (a.is_one_reduction_only())
             {
-                process_reduce(i, ref.index_, a.get_only_reduction());
+                process_single_reduce(i, ref.index_, a.get_only_reduction());
             }
             else
             {
@@ -96,7 +96,21 @@ std::size_t parse_table_generator::process_shift(size_t state_idx, symbol_ref re
     return new_state_idx;
 }
 
-void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r)
+void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_idx, const std::vector<size_t>& all_max_precedence_reductions, const action& a)
+{
+    if (all_max_precedence_reductions.size() == 1)
+    {
+        // single unique max precedence reduction
+        process_single_reduce(state_idx, lookahead_idx, a.get_reductions()[all_max_precedence_reductions[0]]);
+    }
+    else
+    {
+        // Handle reduce-reduce conflict
+        process_rr_conflict(state_idx, lookahead_idx, all_max_precedence_reductions, a);
+    }
+}
+
+void parse_table_generator::process_single_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r)
 {
     // Add reduce entry hint
     table_entry_hints_.emplace_back(state_idx, symbol_ref{symbol_type::terminal, lookahead_idx}, parse_table_entry::reduce(r.nterm_idx_, r.rside_idx_));
@@ -104,12 +118,16 @@ void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_id
 
 std::optional<std::size_t> parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, action& a)
 {
+    const auto& reductions = a.get_reductions();
+    
     // Determine highest precedence reduction
-    // If no single unique highest precedence reduction, then single_max_prec_reduction_idx == nullopt, i_max is first in order of declarations
+    // Put all max precedence reductions into a collection of indices into 'reductions'
+    // If no single unique highest precedence reduction, then i_max is first in order of declarations
     size_t r_prec_max = 0;
     size_t i_max = 0;
-    std::optional<size_t> single_max_prec_reduction_idx;
-    const auto& reductions = a.get_reductions();
+    
+    std::vector<std::size_t> all_max_precedence_reductions;
+    all_max_precedence_reductions.reserve(reductions.size());
     
     for (size_t i = 0; i < reductions.size(); ++i)
     {
@@ -119,45 +137,65 @@ std::optional<std::size_t> parse_table_generator::process_conflict(size_t state_
         {
             r_prec_max = r_prec;
             i_max = i;
-            single_max_prec_reduction_idx = i_max;
+            all_max_precedence_reductions.clear();
+            all_max_precedence_reductions.push_back(i);
         }
         else if (r_prec == r_prec_max)
         {
-            single_max_prec_reduction_idx = std::nullopt;
+            all_max_precedence_reductions.push_back(i);
         }
     }
     
-    const auto& red = reductions[i_max];
+    // one of the max precedence reductions (first in declaration order)
+    const auto& first_in_order_max_precedence_reduction = reductions[i_max];
     
     std::optional<size_t> shift_over_reduce_state_idx;
     
     bool has_shift = a.has_shift(); // store the value, process_shift changes the action object calling 'action::take_new_kernel'
     
-    // Handle conflicts
-    // If shift has higher precedence over all of the reductions, prefer it
-    // Handle reduce-reduce conflict by choosing highest precedence (or first in order if no single unique highest precedence)
     if (a.has_shift())
     {
-        if (shift_over_reduce(term_idx, red.nterm_idx_, red.rside_idx_))
+        // Handle shift-reduce conflict
+        if (shift_over_reduce(term_idx, first_in_order_max_precedence_reduction.nterm_idx_, first_in_order_max_precedence_reduction.rside_idx_))
         {
             // Prefer shift based on precedence/associativity
+            // If shift has higher precedence over all of the reductions, prefer it
             shift_over_reduce_state_idx = process_shift(state_idx, symbol_ref{symbol_type::terminal, term_idx}, a);
         }
         else
         {
-            // Prefer reduction
-            process_reduce(state_idx, term_idx, red);
+            // Prefer reduction, may be single or reduce-reduce conflict
+            process_reduce(state_idx, term_idx, all_max_precedence_reductions, a);
         }
     }
     else
     {
-        process_reduce(state_idx, term_idx, red);
+        // No shift, so single reduce or reduce-reduce conflict
+        process_reduce(state_idx, term_idx, all_max_precedence_reductions, a);
     }
     
     // Collect warnings for the conflict
-    collect_conflict_warnings(state_idx, term_idx, a.get_reductions(), has_shift, single_max_prec_reduction_idx, shift_over_reduce_state_idx);
+    collect_conflict_warnings(state_idx, term_idx, a.get_reductions(), has_shift, all_max_precedence_reductions, shift_over_reduce_state_idx);
     
     return shift_over_reduce_state_idx;
+}
+
+void parse_table_generator::process_rr_conflict(size_t state_idx, size_t lookahead_idx, const std::vector<size_t>& all_max_precedence_reductions, const action& a)
+{
+    const auto& reds = a.get_reductions();
+    size_t current_rr_conflict_hints_size = rr_conflict_hints_.size();
+    
+    for (size_t i : all_max_precedence_reductions)
+    {
+        const auto& r = reds[i];
+        rr_conflict_hints_.push_back(r);
+    }
+ 
+    table_entry_hints_.emplace_back(
+        state_idx, 
+        symbol_ref{symbol_type::terminal, lookahead_idx}, 
+        parse_table_entry::rr_conflict(current_rr_conflict_hints_size, all_max_precedence_reductions.size())
+    );   
 }
 
 bool parse_table_generator::shift_over_reduce(size_t term_idx, size_t lhs_nterm_idx, size_t rside_idx) const
@@ -175,14 +213,21 @@ void parse_table_generator::collect_conflict_warnings(
     size_t lookahead_idx, 
     const action::reductions& reds, 
     bool has_shift,
-    std::optional<size_t> prefered_idx_reduce, 
+    const std::vector<size_t>& all_max_precedence_reductions,
     std::optional<size_t> shift_over_reduce_state_idx)
 {
     bool resolved = false;
     auto name = rs_.get_term_name(lookahead_idx);
+    
     // Intro warning for conflict
     warnings_.push_back(grammar_message(grammar_error_templates::code::conflict_intro, state_idx, name));
     std::string prods;
+    
+    std::optional<size_t> prefered_idx_reduce = std::nullopt;
+    if (all_max_precedence_reductions.size() == 1)
+    {
+        prefered_idx_reduce = all_max_precedence_reductions[0];
+    }
     
     for (size_t i = 0; i < reds.size(); ++i)
     {
@@ -266,7 +311,7 @@ const std::vector<table_entry_hint>& parse_table_generator::get_table_entry_hint
 parse_table parse_table_generator::create_parse_table() const
 {
     size_t state_count = states_.size();
-    parse_table pt(rs_, state_count);
+    parse_table pt(rs_, state_count, rr_conflict_hints_.size());
 
     // Populate the parse table from hints
     for (const auto& hint : table_entry_hints_)
@@ -274,6 +319,13 @@ parse_table parse_table_generator::create_parse_table() const
         pt.get(hint.get_state_idx(), hint.get_ref()) = hint.get_entry();
     }
 
+    // Populate the reduce-reduce conflicts table from hints
+    for (size_t i = 0; i < rr_conflict_hints_.size(); ++i)
+    {
+        const auto& hint = rr_conflict_hints_[i];
+        pt.get_rr_conflict(i) = parse_table_entry::reduction{static_cast<uint16_t>(hint.nterm_idx_), static_cast<uint16_t>(hint.rside_idx_)};
+    }
+    
     return pt;
 }
 

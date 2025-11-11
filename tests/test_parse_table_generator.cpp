@@ -95,7 +95,7 @@ TEST_CASE("parse_table_generator basic", "[parse_table_generator]")
     }
 }
 
-TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table_generator]")
+TEST_CASE("parse_table_generator rr conflict unresolved", "[parse_table_generator]")
 {
     symbol_collection sc;
     [[maybe_unused]] size_t root_idx = 0;
@@ -117,155 +117,6 @@ TEST_CASE("parse_table_generator rr conflict unresolved warnings", "[parse_table
     
     parse_table_generator ptg(rs);
 
-    SECTION("warnings")
-    {
-        const auto& warnings = ptg.get_warnings();
-        REQUIRE(warnings.size() == 4);
-        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
-        REQUIRE(warnings[1] == "\n    A -> a . / $eof");
-        REQUIRE(warnings[2] == "\n    B -> a . / $eof");
-        REQUIRE(warnings[3] == "\nConflict in state 1 on lookahead '$eof' unresolved");
-    }
-}
-
-TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to shift", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t root_idx = 0;
-    [[maybe_unused]] size_t eof_idx = 0;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
-    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
-    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
-    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_term_idx = sc.add_term("b", 2);
-
-    sc.validate();
-    
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
-    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
-    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
-    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
-    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
-
-    rs.validate();
-    
-    parse_table_generator ptg(rs);
-
-    SECTION("warnings")
-    {
-        const auto& warnings = ptg.get_warnings();
-        std::string s;
-        for (auto warning : warnings)
-            s.append(warning);
-        INFO(s);
-        REQUIRE(warnings.size() == 5);
-        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
-        REQUIRE(warnings[1] == "\n    A -> a . / b");
-        REQUIRE(warnings[2] == "\n    B -> a . / b");
-        REQUIRE(warnings[3] == "\n    shift on 'b' to state 6 has the highest precedence");
-        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
-    }
-}
-
-TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to one of the reduce", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t root_idx = 0;
-    [[maybe_unused]] size_t eof_idx = 0;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
-    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
-    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
-    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
-    
-    sc.validate();
-
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
-    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
-    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
-    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"}, 2);
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
-    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
-
-    rs.validate();
-    
-    parse_table_generator ptg(rs);
-
-    SECTION("warnings")
-    {
-        const auto& warnings = ptg.get_warnings();
-        REQUIRE(warnings.size() == 5);
-        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
-        REQUIRE(warnings[1] == "\n    A -> a . / b (highest precedence)");
-        REQUIRE(warnings[2] == "\n    B -> a . / b");
-        REQUIRE(warnings[3] == "\n    shift on 'b'");
-        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
-    }
-}
-
-TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t root_idx = 0;
-    [[maybe_unused]] size_t eof_idx = 0;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
-    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
-    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
-    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
-    
-    sc.validate();
-
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
-    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
-    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
-    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
-    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
-
-    rs.validate();
-    
-    parse_table_generator ptg(rs);
-
-    SECTION("warnings")
-    {
-        const auto& warnings = ptg.get_warnings();
-        REQUIRE(warnings.size() == 5);
-        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
-        REQUIRE(warnings[1] == "\n    A -> a . / b");
-        REQUIRE(warnings[2] == "\n    B -> a . / b");
-        REQUIRE(warnings[3] == "\n    shift on 'b'");
-        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' unresolved");
-    }
-}
-
-TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
-{
-    symbol_collection sc;
-    [[maybe_unused]] size_t root_idx = 0;
-    [[maybe_unused]] size_t eof_idx = 0;
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t b_idx = sc.add_nterm("B");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    
-    sc.validate();
-
-    ruleset rs(sc);
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"a", "B"});
-    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"c"});
-
-    rs.validate();
-    
-    parse_table_generator ptg(rs);
-
     const auto& states = ptg.get_states();
     REQUIRE(states.size() == 5);
 
@@ -273,36 +124,38 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
 
     SECTION("states")
     {
-        // State 0: kernel {$root -> . S / $eof}, items: that + {S -> . a B / $eof}
+        // State 0: kernel {$root -> . S / $eof}, items: {A -> . a / $eof, B -> . a / $eof, $root -> . S / $eof, S -> . A / $eof, S -> . B / $eof}
         auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
         REQUIRE(states[0].kernel_matches(exp_kernel0));
 
         auto exp_items0 = builder.reset()
+            (a_nterm_idx, a_r0, 0, eof_idx)
+            (b_nterm_idx, b_r0, 0, eof_idx)
             (root_idx, 0, 0, eof_idx)
-            (s_idx, s_r0, 0, eof_idx).build();
+            (s_idx, s_r0, 0, eof_idx)
+            (s_idx, s_r1, 0, eof_idx).build();
         REQUIRE(states[0].matches(exp_items0));
 
-        // State 1: kernel {S -> a . B / $eof}, items: that + {B -> . c / $eof}
-        auto exp_kernel1 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
+        // State 1: kernel {A -> a . / $eof, B -> a . / $eof}
+        auto exp_kernel1 = builder.reset()
+            (a_nterm_idx, a_r0, 1, eof_idx)
+            (b_nterm_idx, b_r0, 1, eof_idx).build();
         REQUIRE(states[1].kernel_matches(exp_kernel1));
 
-        auto exp_items1 = builder.reset()
-            (s_idx, s_r0, 1, eof_idx)
-            (b_idx, b_r0, 0, eof_idx).build();
-        REQUIRE(states[1].matches(exp_items1));
+        REQUIRE(states[1].matches(exp_kernel1));
 
         // State 2: kernel {$root -> S . / $eof}
         auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
         REQUIRE(states[2].kernel_matches(exp_kernel2));
         REQUIRE(states[2].matches(exp_kernel2));
 
-        // State 3: kernel {B -> c . / $eof}
-        auto exp_kernel3 = builder.reset()(b_idx, b_r0, 1, eof_idx).build();
+        // State 3: kernel {S -> A . / $eof}
+        auto exp_kernel3 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
         REQUIRE(states[3].kernel_matches(exp_kernel3));
         REQUIRE(states[3].matches(exp_kernel3));
 
-        // State 4: kernel {S -> a B . / $eof}
-        auto exp_kernel4 = builder.reset()(s_idx, s_r0, 2, eof_idx).build();
+        // State 4: kernel {S -> B . / $eof}
+        auto exp_kernel4 = builder.reset()(s_idx, s_r1, 1, eof_idx).build();
         REQUIRE(states[4].kernel_matches(exp_kernel4));
         REQUIRE(states[4].matches(exp_kernel4));
     }
@@ -310,15 +163,26 @@ TEST_CASE("parse_table_generator states simple", "[parse_table_generator]")
     SECTION("hints")
     {
         const auto& hints = ptg.get_table_entry_hints();
-        REQUIRE(hints.size() == 7);
+        REQUIRE(hints.size() == 8);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_idx}, pte::shift(1)));
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
         CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(1, {st::terminal, c_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(1, {st::non_terminal, b_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[5] == teh(3, {st::terminal, eof_idx}, pte::reduce(b_idx, 0)));
-        CHECK(hints[6] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 0)));
+        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        CHECK(hints[4] == teh(1, {st::terminal, eof_idx}, pte::rr_conflict(0, 2)));
+        CHECK(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        CHECK(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
+        CHECK(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
+    }
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 4);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / $eof");
+        REQUIRE(warnings[2] == "\n    B -> a . / $eof");
+        REQUIRE(warnings[3] == "\nConflict in state 1 on lookahead '$eof' unresolved. Will resort to GLR parsing");
     }
 }
 
@@ -409,6 +273,388 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
         CHECK(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
         CHECK(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, 0)));
         CHECK(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to shift", "[parse_table_generator]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b", 2);
+
+    sc.validate();
+    
+    ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    rs.validate();
+    
+    parse_table_generator ptg(rs);
+
+    const auto& states = ptg.get_states();
+    REQUIRE(states.size() == 10);
+
+    lr1_set_builder builder(rs);
+
+    SECTION("states")
+    {
+        // State 0: kernel {$root -> . S / $eof}, items: {A -> . a / b, B -> . a / b, C -> . a b / b, $root -> . S / $eof, S -> . A b / $eof, S -> . B b / $eof, S -> . C b / $eof}
+        auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
+        REQUIRE(states[0].kernel_matches(exp_kernel0));
+
+        auto exp_items0 = builder.reset()
+            (a_nterm_idx, a_r0, 0, b_term_idx)
+            (b_nterm_idx, b_r0, 0, b_term_idx)
+            (c_nterm_idx, c_r0, 0, b_term_idx)
+            (root_idx, 0, 0, eof_idx)
+            (s_idx, s_r0, 0, eof_idx)
+            (s_idx, s_r1, 0, eof_idx)
+            (s_idx, s_r2, 0, eof_idx).build();
+        REQUIRE(states[0].matches(exp_items0));
+
+        // State 1: kernel {A -> a . / b, B -> a . / b, C -> a . b / b}
+        auto exp_kernel1 = builder.reset()
+            (a_nterm_idx, a_r0, 1, b_term_idx)
+            (b_nterm_idx, b_r0, 1, b_term_idx)
+            (c_nterm_idx, c_r0, 1, b_term_idx).build();
+        REQUIRE(states[1].kernel_matches(exp_kernel1));
+
+        REQUIRE(states[1].matches(exp_kernel1));
+
+        // State 2: kernel {$root -> S . / $eof}
+        auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
+        REQUIRE(states[2].kernel_matches(exp_kernel2));
+        REQUIRE(states[2].matches(exp_kernel2));
+
+        // State 3: kernel {S -> A . b / $eof}
+        auto exp_kernel3 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
+        REQUIRE(states[3].kernel_matches(exp_kernel3));
+        REQUIRE(states[3].matches(exp_kernel3));
+
+        // State 4: kernel {S -> B . b / $eof}
+        auto exp_kernel4 = builder.reset()(s_idx, s_r1, 1, eof_idx).build();
+        REQUIRE(states[4].kernel_matches(exp_kernel4));
+        REQUIRE(states[4].matches(exp_kernel4));
+
+        // State 5: kernel {S -> C . b / $eof}
+        auto exp_kernel5 = builder.reset()(s_idx, s_r2, 1, eof_idx).build();
+        REQUIRE(states[5].kernel_matches(exp_kernel5));
+        REQUIRE(states[5].matches(exp_kernel5));
+
+        // State 6: kernel {C -> a b . / b}
+        auto exp_kernel6 = builder.reset()(c_nterm_idx, c_r0, 2, b_term_idx).build();
+        REQUIRE(states[6].kernel_matches(exp_kernel6));
+        REQUIRE(states[6].matches(exp_kernel6));
+
+        // State 7: kernel {S -> A b . / $eof}
+        auto exp_kernel7 = builder.reset()(s_idx, s_r0, 2, eof_idx).build();
+        REQUIRE(states[7].kernel_matches(exp_kernel7));
+        REQUIRE(states[7].matches(exp_kernel7));
+
+        // State 8: kernel {S -> B b . / $eof}
+        auto exp_kernel8 = builder.reset()(s_idx, s_r1, 2, eof_idx).build();
+        REQUIRE(states[8].kernel_matches(exp_kernel8));
+        REQUIRE(states[8].matches(exp_kernel8));
+
+        // State 9: kernel {S -> C b . / $eof}
+        auto exp_kernel9 = builder.reset()(s_idx, s_r2, 2, eof_idx).build();
+        REQUIRE(states[9].kernel_matches(exp_kernel9));
+        REQUIRE(states[9].matches(exp_kernel9));
+    }
+
+    SECTION("hints")
+    {
+        const auto& hints = ptg.get_table_entry_hints();
+        REQUIRE(hints.size() == 14);
+
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::shift(6)));
+        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(7)));
+        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(8)));
+        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(9)));
+        CHECK(hints[10] == teh(6, {st::terminal, b_term_idx}, pte::reduce(c_nterm_idx, c_r0)));
+        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
+        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
+        CHECK(hints[13] == teh(9, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+    }
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        std::string s;
+        for (auto warning : warnings)
+            s.append(warning);
+        INFO(s);
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b' to state 6 has the highest precedence");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to one of the reduce", "[parse_table_generator]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+    
+    sc.validate();
+
+    ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"}, 2);
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    rs.validate();
+    
+    parse_table_generator ptg(rs);
+
+    const auto& states = ptg.get_states();
+    REQUIRE(states.size() == 9);
+
+    lr1_set_builder builder(rs);
+
+    SECTION("states")
+    {
+        // State 0: kernel {$root -> . S / $eof}, items: {A -> . a / b, B -> . a / b, C -> . a b / b, $root -> . S / $eof, S -> . A b / $eof, S -> . B b / $eof, S -> . C b / $eof}
+        auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
+        REQUIRE(states[0].kernel_matches(exp_kernel0));
+
+        auto exp_items0 = builder.reset()
+            (a_nterm_idx, a_r0, 0, b_term_idx)
+            (b_nterm_idx, b_r0, 0, b_term_idx)
+            (c_nterm_idx, c_r0, 0, b_term_idx)
+            (root_idx, 0, 0, eof_idx)
+            (s_idx, s_r0, 0, eof_idx)
+            (s_idx, s_r1, 0, eof_idx)
+            (s_idx, s_r2, 0, eof_idx).build();
+        REQUIRE(states[0].matches(exp_items0));
+
+        // State 1: kernel {A -> a . / b, B -> a . / b, C -> a . b / b}
+        auto exp_kernel1 = builder.reset()
+            (a_nterm_idx, a_r0, 1, b_term_idx)
+            (b_nterm_idx, b_r0, 1, b_term_idx)
+            (c_nterm_idx, c_r0, 1, b_term_idx).build();
+        REQUIRE(states[1].kernel_matches(exp_kernel1));
+
+        REQUIRE(states[1].matches(exp_kernel1));
+
+        // State 2: kernel {$root -> S . / $eof}
+        auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
+        REQUIRE(states[2].kernel_matches(exp_kernel2));
+        REQUIRE(states[2].matches(exp_kernel2));
+
+        // State 3: kernel {S -> A . b / $eof}
+        auto exp_kernel3 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
+        REQUIRE(states[3].kernel_matches(exp_kernel3));
+        REQUIRE(states[3].matches(exp_kernel3));
+
+        // State 4: kernel {S -> B . b / $eof}
+        auto exp_kernel4 = builder.reset()(s_idx, s_r1, 1, eof_idx).build();
+        REQUIRE(states[4].kernel_matches(exp_kernel4));
+        REQUIRE(states[4].matches(exp_kernel4));
+
+        // State 5: kernel {S -> C . b / $eof}
+        auto exp_kernel5 = builder.reset()(s_idx, s_r2, 1, eof_idx).build();
+        REQUIRE(states[5].kernel_matches(exp_kernel5));
+        REQUIRE(states[5].matches(exp_kernel5));
+
+        // State 6: kernel {S -> A b . / $eof}
+        auto exp_kernel6 = builder.reset()(s_idx, s_r0, 2, eof_idx).build();
+        REQUIRE(states[6].kernel_matches(exp_kernel6));
+        REQUIRE(states[6].matches(exp_kernel6));
+
+        // State 7: kernel {S -> B b . / $eof}
+        auto exp_kernel7 = builder.reset()(s_idx, s_r1, 2, eof_idx).build();
+        REQUIRE(states[7].kernel_matches(exp_kernel7));
+        REQUIRE(states[7].matches(exp_kernel7));
+
+        // State 8: kernel {S -> C b . / $eof}
+        auto exp_kernel8 = builder.reset()(s_idx, s_r2, 2, eof_idx).build();
+        REQUIRE(states[8].kernel_matches(exp_kernel8));
+        REQUIRE(states[8].matches(exp_kernel8));
+    }
+
+    SECTION("hints")
+    {
+        const auto& hints = ptg.get_table_entry_hints();
+        REQUIRE(hints.size() == 13);
+
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::reduce(a_nterm_idx, a_r0)));
+        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
+        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
+        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
+        CHECK(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
+        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
+        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+    }
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b (highest precedence)");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b'");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' resolved");
+    }
+}
+
+TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", "[parse_table_generator]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+    [[maybe_unused]] size_t b_term_idx = sc.add_term("b");
+    
+    sc.validate();
+
+    ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A", "b"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B", "b"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C", "b"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a", "b"});
+
+    rs.validate();
+    
+    parse_table_generator ptg(rs);
+
+    const auto& states = ptg.get_states();
+    REQUIRE(states.size() == 9);
+
+    lr1_set_builder builder(rs);
+
+    SECTION("states")
+    {
+        // State 0: kernel {$root -> . S / $eof}, items: {A -> . a / b, B -> . a / b, C -> . a b / b, $root -> . S / $eof, S -> . A b / $eof, S -> . B b / $eof, S -> . C b / $eof}
+        auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
+        REQUIRE(states[0].kernel_matches(exp_kernel0));
+
+        auto exp_items0 = builder.reset()
+            (a_nterm_idx, a_r0, 0, b_term_idx)
+            (b_nterm_idx, b_r0, 0, b_term_idx)
+            (c_nterm_idx, c_r0, 0, b_term_idx)
+            (root_idx, 0, 0, eof_idx)
+            (s_idx, s_r0, 0, eof_idx)
+            (s_idx, s_r1, 0, eof_idx)
+            (s_idx, s_r2, 0, eof_idx).build();
+        REQUIRE(states[0].matches(exp_items0));
+
+        // State 1: kernel {A -> a . / b, B -> a . / b, C -> a . b / b}
+        auto exp_kernel1 = builder.reset()
+            (a_nterm_idx, a_r0, 1, b_term_idx)
+            (b_nterm_idx, b_r0, 1, b_term_idx)
+            (c_nterm_idx, c_r0, 1, b_term_idx).build();
+        REQUIRE(states[1].kernel_matches(exp_kernel1));
+
+        REQUIRE(states[1].matches(exp_kernel1));
+
+        // State 2: kernel {$root -> S . / $eof}
+        auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
+        REQUIRE(states[2].kernel_matches(exp_kernel2));
+        REQUIRE(states[2].matches(exp_kernel2));
+
+        // State 3: kernel {S -> A . b / $eof}
+        auto exp_kernel3 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
+        REQUIRE(states[3].kernel_matches(exp_kernel3));
+        REQUIRE(states[3].matches(exp_kernel3));
+
+        // State 4: kernel {S -> B . b / $eof}
+        auto exp_kernel4 = builder.reset()(s_idx, s_r1, 1, eof_idx).build();
+        REQUIRE(states[4].kernel_matches(exp_kernel4));
+        REQUIRE(states[4].matches(exp_kernel4));
+
+        // State 5: kernel {S -> C . b / $eof}
+        auto exp_kernel5 = builder.reset()(s_idx, s_r2, 1, eof_idx).build();
+        REQUIRE(states[5].kernel_matches(exp_kernel5));
+        REQUIRE(states[5].matches(exp_kernel5));
+
+        // State 6: kernel {S -> A b . / $eof}
+        auto exp_kernel6 = builder.reset()(s_idx, s_r0, 2, eof_idx).build();
+        REQUIRE(states[6].kernel_matches(exp_kernel6));
+        REQUIRE(states[6].matches(exp_kernel6));
+
+        // State 7: kernel {S -> B b . / $eof}
+        auto exp_kernel7 = builder.reset()(s_idx, s_r1, 2, eof_idx).build();
+        REQUIRE(states[7].kernel_matches(exp_kernel7));
+        REQUIRE(states[7].matches(exp_kernel7));
+
+        // State 8: kernel {S -> C b . / $eof}
+        auto exp_kernel8 = builder.reset()(s_idx, s_r2, 2, eof_idx).build();
+        REQUIRE(states[8].kernel_matches(exp_kernel8));
+        REQUIRE(states[8].matches(exp_kernel8));
+    }
+
+    SECTION("hints")
+    {
+        const auto& hints = ptg.get_table_entry_hints();
+        REQUIRE(hints.size() == 13);
+
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::rr_conflict(0, 2)));
+        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
+        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
+        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
+        CHECK(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
+        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
+        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+    }
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead 'b' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / b");
+        REQUIRE(warnings[2] == "\n    B -> a . / b");
+        REQUIRE(warnings[3] == "\n    shift on 'b'");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' unresolved. Will resort to GLR parsing");
     }
 }
 

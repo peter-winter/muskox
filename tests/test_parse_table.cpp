@@ -27,7 +27,7 @@ TEST_CASE("parse_table basics", "[parse_table]")
     rs.validate();
 
     size_t state_count = 5;
-    parse_table pt(rs, state_count);
+    parse_table pt(rs, state_count, 5);
 
     REQUIRE(pt.get_state_count() == state_count);
     REQUIRE(pt.get_symbol_count() == rs.get_term_plus_nterm_count());
@@ -55,14 +55,26 @@ TEST_CASE("parse_table basics", "[parse_table]")
 
     SECTION("set and get reduce")
     {
-        symbol_ref b_ref{st::non_terminal, b_idx};
-        auto& entry = pt.get(4, b_ref);
+        symbol_ref a_ref{st::terminal, a_idx};
+        auto& entry = pt.get(4, a_ref);
         entry.set_reduce(b_idx, b_r0);
 
-        const auto& const_entry = pt.get(4, b_ref);
+        const auto& const_entry = pt.get(4, a_ref);
         REQUIRE(const_entry.is_reduce());
         REQUIRE(const_entry.get_reduce_nterm_idx() == b_idx);
         REQUIRE(const_entry.get_reduce_rside_idx() == b_r0);
+    }
+    
+    SECTION("set and get rr-conflict")
+    {
+        symbol_ref a_ref{st::terminal, a_idx};
+        auto& entry = pt.get(4, a_ref);
+        entry.set_rr_conflict(3, 2);
+
+        const auto& const_entry = pt.get(4, a_ref);
+        REQUIRE(const_entry.is_rr_conflict());
+        REQUIRE(const_entry.get_rr_conflict_start_idx() == 3);
+        REQUIRE(const_entry.get_rr_conflict_count() == 2);
     }
 
     SECTION("out of range")
@@ -82,6 +94,10 @@ TEST_CASE("parse_table basics", "[parse_table]")
 
         e1.set_reduce(1, 2);
         e2.set_reduce(1, 2);
+        REQUIRE(e1 == e2);
+        
+        e1.set_rr_conflict(4, 5);
+        e2.set_rr_conflict(4, 5);
         REQUIRE(e1 == e2);
         
         e1.set_shift(42);
@@ -104,7 +120,7 @@ TEST_CASE("parse_table validate", "[parse_table]")
     rs.validate();
 
     size_t state_count = 3;
-    parse_table pt(rs, state_count);
+    parse_table pt(rs, state_count, 6);
 
     SECTION("valid empty")
     {
@@ -148,6 +164,34 @@ TEST_CASE("parse_table validate", "[parse_table]")
         pt.get(1, b_ref) = pte::reduce(b_idx, rs.get_nterm_rside_count(b_idx));
         REQUIRE_THROWS_MATCHES(pt.validate(), std::runtime_error, Message("Invalid reduce rside index"));
     }
+    
+    SECTION("valid rr-conflict")
+    {
+        symbol_ref b_ref{st::non_terminal, b_idx};
+        auto& entry = pt.get(1, b_ref);
+        entry.set_rr_conflict(4, 2);
+        REQUIRE_NOTHROW(pt.validate());
+    }
+
+    SECTION("invalid rr-conflict")
+    {
+        symbol_ref b_ref{st::non_terminal, b_idx};
+        SECTION("start overflow")
+        {
+            pt.get(1, b_ref) = pte::rr_conflict(pt.get_rr_table().size(), 1);
+            REQUIRE_THROWS_MATCHES(pt.validate(), std::runtime_error, Message("Invalid rr-conflict start index"));
+        }
+        SECTION("start + count overflow")
+        {
+            pt.get(1, b_ref) = pte::rr_conflict(pt.get_rr_table().size() - 1, 2);
+            REQUIRE_THROWS_MATCHES(pt.validate(), std::runtime_error, Message("Invalid rr-conflict count"));
+        }
+        SECTION("count zero")
+        {
+            pt.get(1, b_ref) = pte::rr_conflict(pt.get_rr_table().size() - 1, 0);
+            REQUIRE_THROWS_MATCHES(pt.validate(), std::runtime_error, Message("Zero rr-conflict count"));
+        }
+    }
 }
 
 TEST_CASE("parse_table_entry limits", "[parse_table]")
@@ -167,6 +211,16 @@ TEST_CASE("parse_table_entry limits", "[parse_table]")
     SECTION("set_reduce rside overflow")
     {
         REQUIRE_THROWS_MATCHES(entry.set_reduce(0, 65536), std::overflow_error, Message("Reduce rside index exceeds 16-bit limit"));
+    }
+    
+    SECTION("set_rr_conflict start index overflow")
+    {
+        REQUIRE_THROWS_MATCHES(entry.set_rr_conflict(65536, 1), std::overflow_error, Message("RR conflict table start index exceeds 16-bit limit"));
+    }
+    
+    SECTION("set_rr_conflict count overflow")
+    {
+        REQUIRE_THROWS_MATCHES(entry.set_rr_conflict(1, 65536), std::overflow_error, Message("RR conflict table element count exceeds 16-bit limit"));
     }
 }
 
