@@ -12,18 +12,7 @@ using namespace muskox;
 
 TEST_CASE("parse_context basics", "[parse_context]")
 {
-    symbol_collection sc;
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t e_idx = sc.add_nterm("E");
-    sc.validate();
-
-    ruleset rs(sc);
-    rs.add_rule("S", {"a", "E"});
-    rs.add_rule("E", {});
-    rs.validate();
-
-    parse_context ctx(rs);
+    parse_context ctx;
 
     SECTION("initial state")
     {

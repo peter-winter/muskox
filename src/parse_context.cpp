@@ -5,11 +5,6 @@
 namespace muskox
 {
 
-parse_context::parse_context(const ruleset& rs)
-    : state_stacks_(), rs_(rs), errors_()
-{
-}
-
 void parse_context::push_state_on_stack(size_t active_stack_idx, size_t state_idx)
 {
     state_stacks_.push_state_on_stack(active_stack_idx, state_idx);

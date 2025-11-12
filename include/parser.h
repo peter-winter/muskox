@@ -3,8 +3,7 @@
 #include "parse_table.h"
 #include "parse_context.h"
 #include "parse_result.h"
-#include "ruleset.h"
-#include "refs.h"
+#include "name_table.h"
 #include "symbol_stream.h"
 
 namespace muskox
@@ -13,16 +12,16 @@ namespace muskox
 class parser
 {
 public:
-    parser(const parse_table& pt, const ruleset& rs);
+    parser(parse_table&& pt, name_table&& nt, rr_table&& rt);
 
     parse_result parse(symbol_stream& stream) const;
 
 private:
     size_t get_lookahead(symbol_stream& stream) const;
 
-    void do_shift(parse_context& ctx, size_t new_state, symbol_ref symbol) const;
+    void do_shift(parse_context& ctx, size_t new_state, size_t term_idx) const;
 
-    bool do_reduce(parse_context& ctx, size_t nterm_idx, size_t rside_idx, size_t term_idx) const;
+    bool do_reduce(parse_context& ctx, size_t nterm_idx, size_t reduce_length, size_t term_idx) const;
 
     void do_error(parse_context& ctx, size_t state, size_t term_idx) const;
 
@@ -30,8 +29,9 @@ private:
 
     void syntax_error(parse_context& ctx, size_t term_idx) const;
 
-    const parse_table& pt_;
-    const ruleset& rs_;
+    parse_table pt_;
+    name_table nt_;
+    rr_table rt_;
 };
 
 } // namespace muskox

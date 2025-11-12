@@ -30,7 +30,8 @@ struct grammar_error_templates
     enum class code
     {
         ok, 
-        symbol_exists, 
+        symbol_exists,
+        empty_name,
         lside_not_exists, 
         lside_term, 
         rside_not_exist, 
@@ -56,6 +57,7 @@ struct grammar_error_templates
     {
         "Ok",
         "Symbol '{}' already exists",
+        "Empty symbol name",
         "Left side '{}' does not exist",
         "Left side '{}' is a terminal",
         "Right side symbol '{}' does not exist",

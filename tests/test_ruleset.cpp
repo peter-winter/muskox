@@ -152,14 +152,6 @@ TEST_CASE("ruleset dims", "[ruleset]")
     
     rs.validate();
 
-    SECTION("get_suffix_space_dims")
-    {
-        auto dims = rs.get_suffix_space_dims();
-        REQUIRE(dims[0] == 3);  // nterm count, including $root
-        REQUIRE(dims[1] == 2);  // max rside count
-        REQUIRE(dims[2] == 3);  // max symbol count
-    }
-
     SECTION("get_lr1_set_item_space_dims")
     {
         auto dims = rs.get_lr1_set_item_space_dims();
@@ -408,44 +400,6 @@ TEST_CASE("ruleset to symbol collection delegation", "[ruleset]")
     }
 }
 
-TEST_CASE("ruleset space dims", "[ruleset]")
-{
-    symbol_collection sc;
-    
-    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
-    [[maybe_unused]] size_t expr_idx = sc.add_nterm("Expr");
-    [[maybe_unused]] size_t a_idx = sc.add_term("a");
-    [[maybe_unused]] size_t b_idx = sc.add_term("b");
-    [[maybe_unused]] size_t c_idx = sc.add_term("c");
-    sc.validate();
-    
-    ruleset rs(sc);
-
-    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"Expr", "a"});
-    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"b"});
-    [[maybe_unused]] size_t expr_r0 = rs.add_rule("Expr", {"a", "b", "c"});
-    [[maybe_unused]] size_t expr_r1 = rs.add_rule("Expr", {});
-
-    rs.validate();
-    
-    SECTION("get_suffix_space_dims")
-    {
-        auto dims = rs.get_suffix_space_dims();
-        REQUIRE(dims[0] == rs.get_nterm_count());
-        REQUIRE(dims[1] == rs.get_max_rside_count());
-        REQUIRE(dims[2] == rs.get_max_symbol_count());
-    }
-
-    SECTION("get_lr1_set_item_space_dims")
-    {
-        auto dims = rs.get_lr1_set_item_space_dims();
-        REQUIRE(dims[0] == rs.get_nterm_count());
-        REQUIRE(dims[1] == rs.get_max_rside_count());
-        REQUIRE(dims[2] == rs.get_max_symbol_count() + 1);  // +1 for dot positions
-        REQUIRE(dims[3] == rs.get_term_count());
-    }
-}
-
 TEST_CASE("ruleset get_symbol_of_interest", "[ruleset]")
 {
     symbol_collection sc;
@@ -559,13 +513,7 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
             std::runtime_error,
             Message("Cannot query effective rside precedence before validation")
         );
-        
-        REQUIRE_THROWS_MATCHES(
-            rs.get_suffix_space_dims(),
-            std::runtime_error,
-            Message("Cannot query suffix space dims before validation")
-        );
-        
+                
         REQUIRE_THROWS_MATCHES(
             rs.get_lr1_set_item_space_dims(),
             std::runtime_error,
@@ -611,7 +559,6 @@ TEST_CASE("ruleset before/after validation", "[ruleset]")
         );
         
         REQUIRE_NOTHROW(rs.get_effective_rside_precedence(s_idx, r_idx));
-        REQUIRE_NOTHROW(rs.get_suffix_space_dims());
         REQUIRE_NOTHROW(rs.get_lr1_set_item_space_dims());
         REQUIRE_NOTHROW(rs.is_suffix_nullable(s_idx, r_idx, 0));
         REQUIRE_NOTHROW(rs.is_nterm_nullable(s_idx));

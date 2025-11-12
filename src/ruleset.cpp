@@ -237,17 +237,7 @@ std::optional<size_t> ruleset::get_explicit_rside_precedence(size_t nterm_idx, s
     return nterms_data_[nterm_idx].rsides_[rside_idx].precedence_;
 }
 
-std::array<size_t, 3> ruleset::get_suffix_space_dims() const
-{
-    if (!validated_)
-    {
-        throw std::runtime_error("Cannot query suffix space dims before validation");
-    }
-    
-    return {get_nterm_count(), get_max_rside_count(), get_max_symbol_count()};
-}
-
-std::array<size_t, 4> ruleset::get_lr1_set_item_space_dims() const
+lr1_set_item::array_type ruleset::get_lr1_set_item_space_dims() const
 {
     if (!validated_)
     {

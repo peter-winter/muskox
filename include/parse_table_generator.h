@@ -139,12 +139,27 @@ public:
      */
     const std::vector<table_entry_hint>& get_table_entry_hints() const;
     
+    
+    /**
+     * @brief Gets the reduce-reduce table entry hints.
+     *
+     * @return Const reference to the hints vector.
+     */
+    const std::vector<action::reduction>& get_rr_conflict_hints() const;
+    
     /**
      * @brief Creates the parse table from hints.
      *
      * @return The generated parse table.
      */
     parse_table create_parse_table() const;
+    
+    /**
+     * @brief Creates the auxiliary reduce-reduce conflicts table.
+     *
+     * @return The generated rr table.
+     */
+    rr_table create_rr_table() const;
     
 private:
     const ruleset& rs_; /// Reference to the ruleset.

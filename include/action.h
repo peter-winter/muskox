@@ -13,6 +13,8 @@ namespace muskox
         {
             size_t nterm_idx_;
             size_t rside_idx_;
+            
+            bool operator == (const reduction&) const = default;
         };
         
         using reductions = std::vector<reduction>;

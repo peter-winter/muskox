@@ -271,16 +271,6 @@ public:
     std::optional<size_t> get_explicit_rside_precedence(size_t nterm_idx, size_t rside_idx) const;
     
     /**
-     * @brief Gets dimensions for suffixes.
-     *
-     * Requires validation to have been called.
-     * 
-     * @return Array of {nterms, max rsides, max symbols}.
-     * @throw std::runtime_error If called before validation.
-     */
-    std::array<size_t, 3> get_suffix_space_dims() const;
-
-    /**
      * @brief Gets dimensions for LR(1) set items.
      *
      * Requires validation to have been called.
@@ -288,7 +278,7 @@ public:
      * @return Array of {nterms, max rsides, max symbols + 1, terms}.
      * @throw std::runtime_error If called before validation.
      */
-    std::array<size_t, 4> get_lr1_set_item_space_dims() const;
+    lr1_set_item::array_type get_lr1_set_item_space_dims() const;
     
     /**
      * @brief Checks if a rule suffix is nullable.

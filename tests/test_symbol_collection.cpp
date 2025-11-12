@@ -55,6 +55,20 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
             Message("Symbol 'dup2' already exists")
         );
     }
+    
+    SECTION("invalid names throw") 
+    {
+        REQUIRE_THROWS_MATCHES(
+            sc.add_term(""),
+            grammar_error,
+            Message("Empty symbol name")
+        );
+        REQUIRE_THROWS_MATCHES(
+            sc.add_nterm(""),
+            grammar_error,
+            Message("Empty symbol name")
+        );
+    }
 
     SECTION("get_symbol_ref") 
     {
@@ -225,17 +239,6 @@ TEST_CASE("symbol_collection basic operations", "[symbol_collection]")
         REQUIRE(sc.get_term_name(0) == "$eof");
         REQUIRE(sc.get_term_assoc(0).to_string() == "left");
         REQUIRE(!sc.get_term_prec(0).has_value());
-
-        REQUIRE_THROWS_MATCHES(
-            sc.add_nterm("$root"),
-            grammar_error,
-            Message("Cannot refer special '$root' symbol")
-        );
-        REQUIRE_THROWS_MATCHES(
-            sc.add_term("$eof"),
-            grammar_error,
-            Message("Cannot refer special '$eof' symbol")
-        );
     }
 
     SECTION("term defaults") 

@@ -20,6 +20,7 @@ add_library(${PROJECT_NAME}_lib
   src/lr1_state.cpp
   src/closure.cpp
   src/parse_table.cpp
+  src/name_table.cpp
   src/parse_table_entry.cpp
   src/parser.cpp
   src/state_stacks.cpp

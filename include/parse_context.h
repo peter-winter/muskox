@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ruleset.h"
 #include "state_stacks.h"
 #include "refs.h"
 
@@ -13,11 +12,8 @@ namespace muskox
 class parse_context
 {
 public:
-    parse_context(const ruleset& rs);
-    ~parse_context() = default;
-
-    void on_shift(size_t /*active_stack_idx*/, size_t /*from_state*/, size_t /*to_state*/, symbol_ref /*symbol*/) {}
-    void on_reduce(size_t /*active_stack_idx*/, size_t /*nterm_idx*/, size_t /*rside_idx*/, size_t /*pop_count*/) {}
+    void on_shift(size_t /*active_stack_idx*/, size_t /*from_state*/, size_t /*to_state*/, size_t /*term_idx*/) {}
+    void on_reduce(size_t /*active_stack_idx*/, size_t /*nterm_idx*/, size_t /*reduce_length*/) {}
     void on_error(size_t /*active_stack_idx*/, size_t /*state*/, symbol_ref /*lookahead*/) {}
     void on_accept(size_t /*active_stack_idx*/) {}
 
@@ -31,7 +27,6 @@ public:
 
 private:
     state_stacks state_stacks_;
-    const ruleset& rs_;
     std::vector<std::string> errors_;
 };
 

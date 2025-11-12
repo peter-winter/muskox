@@ -24,8 +24,10 @@ TEST_CASE("parser basics", "[parser]")
 
     parse_table_generator ptg(rs);
     parse_table pt = ptg.create_parse_table();
+    name_table nt(sc);
+    rr_table rt = ptg.create_rr_table();
 
-    parser p(pt, rs);
+    parser p(std::move(pt), std::move(nt), std::move(rt));
 
     SECTION("valid input ac")
     {
@@ -102,8 +104,10 @@ TEST_CASE("parser with epsilon production", "[parser]")
 
     parse_table_generator ptg(rs);
     parse_table pt = ptg.create_parse_table();
+    name_table nt(sc);
+    rr_table rt = ptg.create_rr_table();
 
-    parser p(pt, rs);
+    parser p(std::move(pt), std::move(nt), std::move(rt));
 
     SECTION("valid input a")
     {

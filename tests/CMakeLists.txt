@@ -27,6 +27,7 @@ add_executable(unit_tests
   test_closure.cpp
   test_list_printer.cpp
   test_parse_table.cpp
+  test_name_table.cpp
   test_parser.cpp
   test_parse_context.cpp
   test_parse_result.cpp

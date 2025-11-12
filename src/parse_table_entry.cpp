@@ -1,3 +1,10 @@
+/**
+ * @file parse_table_entry.cpp
+ * @brief Implementation of the parse table entry class.
+ *
+ * Part of the larger MuskOx project.
+ */
+
 #include "parse_table_entry.h"
 
 namespace muskox
@@ -10,10 +17,10 @@ parse_table_entry parse_table_entry::shift(size_t state_idx)
     return entry;
 }
 
-parse_table_entry parse_table_entry::reduce(size_t nterm_idx, size_t rside_idx)
+parse_table_entry parse_table_entry::reduce(size_t nterm_idx, size_t length)
 {
     parse_table_entry entry;
-    entry.set_reduce(nterm_idx, rside_idx);
+    entry.set_reduce(nterm_idx, length);
     return entry;
 }
 
@@ -34,19 +41,19 @@ void parse_table_entry::set_shift(size_t state_idx)
     data_.shift_state_idx_ = static_cast<uint32_t>(state_idx);
 }
 
-void parse_table_entry::set_reduce(size_t nterm_idx, size_t rside_idx)
+void parse_table_entry::set_reduce(size_t nterm_idx, size_t length)
 {
     if (nterm_idx > std::numeric_limits<uint16_t>::max())
     {
         throw std::overflow_error("Reduce nterm index exceeds 16-bit limit");
     }
-    if (rside_idx > std::numeric_limits<uint16_t>::max())
+    if (length > std::numeric_limits<uint16_t>::max())
     {
-        throw std::overflow_error("Reduce rside index exceeds 16-bit limit");
+        throw std::overflow_error("Reduce length exceeds 16-bit limit");
     }
     type_ = entry_type::reduce;
     data_.reduce_.nterm_idx_ = static_cast<uint16_t>(nterm_idx);
-    data_.reduce_.rside_idx_ = static_cast<uint16_t>(rside_idx);
+    data_.reduce_.length_ = static_cast<uint16_t>(length);
 }
 
 void parse_table_entry::set_rr_conflict(size_t rr_conflict_start_idx, size_t rr_conflict_count)
@@ -60,8 +67,8 @@ void parse_table_entry::set_rr_conflict(size_t rr_conflict_start_idx, size_t rr_
         throw std::overflow_error("RR conflict table element count exceeds 16-bit limit");
     }
     type_ = entry_type::rr_conflict;
-    data_.rr_conflict_.rr_conflict_start_idx_ = static_cast<uint32_t>(rr_conflict_start_idx);
-    data_.rr_conflict_.rr_conflict_count_ = static_cast<uint32_t>(rr_conflict_count);
+    data_.rr_conflict_.rr_conflict_start_idx_ = static_cast<uint16_t>(rr_conflict_start_idx);
+    data_.rr_conflict_.rr_conflict_count_ = static_cast<uint16_t>(rr_conflict_count);
 }
 
 bool parse_table_entry::is_error() const
@@ -94,9 +101,9 @@ size_t parse_table_entry::get_reduce_nterm_idx() const
     return data_.reduce_.nterm_idx_;
 }
 
-size_t parse_table_entry::get_reduce_rside_idx() const
+size_t parse_table_entry::get_reduce_length() const
 {
-    return data_.reduce_.rside_idx_;
+    return data_.reduce_.length_;
 }
 
 size_t parse_table_entry::get_rr_conflict_start_idx() const
@@ -120,7 +127,7 @@ bool parse_table_entry::operator==(const parse_table_entry& other) const
         return data_.shift_state_idx_ == other.data_.shift_state_idx_;
     case entry_type::reduce:
         return data_.reduce_.nterm_idx_ == other.data_.reduce_.nterm_idx_ &&
-               data_.reduce_.rside_idx_ == other.data_.reduce_.rside_idx_;
+               data_.reduce_.length_ == other.data_.reduce_.length_;
     case entry_type::rr_conflict:
         return data_.rr_conflict_.rr_conflict_start_idx_ == other.data_.rr_conflict_.rr_conflict_start_idx_ &&
                data_.rr_conflict_.rr_conflict_count_ == other.data_.rr_conflict_.rr_conflict_count_;

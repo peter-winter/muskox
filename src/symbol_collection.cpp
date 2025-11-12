@@ -53,11 +53,11 @@ size_t symbol_collection::add_term(std::string name, std::optional<size_t> prec,
         throw std::runtime_error("Cannot call add_term after validation");
     }
     
-    if (name[0] == '$')
+    if (name.empty())
     {
-        throw grammar_error(grammar_error::code::cannot_refer_special, name);
+        throw grammar_error(grammar_error::code::empty_name, name);
     }
-    
+        
     if (contains(name))
     {
         throw grammar_error(grammar_error::code::symbol_exists, name);
@@ -73,9 +73,9 @@ size_t symbol_collection::add_nterm(std::string name)
         throw std::runtime_error("Cannot call add_nterm after validation");
     }
     
-    if (name[0] == '$')
+    if (name.empty())
     {
-        throw grammar_error(grammar_error::code::cannot_refer_special, name);
+        throw grammar_error(grammar_error::code::empty_name, name);
     }
     
     if (contains(name))

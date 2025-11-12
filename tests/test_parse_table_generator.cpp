@@ -88,10 +88,25 @@ TEST_CASE("parse_table_generator basic", "[parse_table_generator]")
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 4);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(1, {st::terminal, eof_idx}, pte::reduce(a_nterm_idx, 0)));
-        CHECK(hints[3] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(1, {st::terminal, eof_idx}, pte::reduce(a_nterm_idx, 1)));
+        REQUIRE(hints[3] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        REQUIRE(rr_hints.size() == 0);
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 3);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_reduce_nterm_idx() == a_nterm_idx);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+        }
     }
 }
 
@@ -165,14 +180,44 @@ TEST_CASE("parse_table_generator rr conflict unresolved", "[parse_table_generato
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 8);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(1, {st::terminal, eof_idx}, pte::rr_conflict(0, 2)));
-        CHECK(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
-        CHECK(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(1, {st::terminal, eof_idx}, pte::rr_conflict(0, 2)));
+        REQUIRE(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        REQUIRE(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        REQUIRE(rr_hints.size() == 2);
+        REQUIRE(rr_hints[0] == action::reduction{a_nterm_idx, a_r0});
+        REQUIRE(rr_hints[1] == action::reduction{b_nterm_idx, b_r0});
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 5);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_rr_conflict_start_idx() == 0);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_rr_conflict_count() == 2);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_length() == 1);
+
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 2);
+            REQUIRE(rr[0].nterm_idx_ == static_cast<uint16_t>(a_nterm_idx));
+            REQUIRE(rr[0].length_ == 1);
+            REQUIRE(rr[1].nterm_idx_ == static_cast<uint16_t>(b_nterm_idx));
+            REQUIRE(rr[1].length_ == 1);
+        }
     }
 
     SECTION("warnings")
@@ -265,14 +310,35 @@ TEST_CASE("parse_table_generator rr conflict resolved", "[parse_table_generator]
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 8);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(1, {st::terminal, eof_idx}, pte::reduce(a_nterm_idx, 0)));
-        CHECK(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, 0)));
-        CHECK(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(1, {st::terminal, eof_idx}, pte::reduce(a_nterm_idx, 1)));
+        REQUIRE(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[6] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        REQUIRE(hints[7] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 5);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_reduce_nterm_idx() == a_nterm_idx);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_length() == 1);
+            
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 0);
+        }
     }
 }
 
@@ -378,20 +444,51 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to s
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 14);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
-        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::shift(6)));
-        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(7)));
-        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(8)));
-        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(9)));
-        CHECK(hints[10] == teh(6, {st::terminal, b_term_idx}, pte::reduce(c_nterm_idx, c_r0)));
-        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
-        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
-        CHECK(hints[13] == teh(9, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        REQUIRE(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::shift(6)));
+        REQUIRE(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(7)));
+        REQUIRE(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(8)));
+        REQUIRE(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(9)));
+        REQUIRE(hints[10] == teh(6, {st::terminal, b_term_idx}, pte::reduce(c_nterm_idx, 2)));
+        REQUIRE(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[13] == teh(9, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        REQUIRE(rr_hints.size() == 0);
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 10);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_nterm_entry(0, c_nterm_idx).get_shift_state_idx() == 5);
+            REQUIRE(pt.get_term_entry(1, b_term_idx).get_shift_state_idx() == 6);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, b_term_idx).get_shift_state_idx() == 7);
+            REQUIRE(pt.get_term_entry(4, b_term_idx).get_shift_state_idx() == 8);
+            REQUIRE(pt.get_term_entry(5, b_term_idx).get_shift_state_idx() == 9);
+            REQUIRE(pt.get_term_entry(6, b_term_idx).get_reduce_nterm_idx() == c_nterm_idx);
+            REQUIRE(pt.get_term_entry(6, b_term_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(9, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(9, eof_idx).get_reduce_length() == 2);
+            
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 0);
+        }
     }
 
     SECTION("warnings")
@@ -507,19 +604,49 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict resolved to o
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 13);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
-        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::reduce(a_nterm_idx, a_r0)));
-        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
-        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
-        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
-        CHECK(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
-        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
-        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        REQUIRE(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::reduce(a_nterm_idx, 1)));
+        REQUIRE(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
+        REQUIRE(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
+        REQUIRE(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
+        REQUIRE(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        REQUIRE(rr_hints.size() == 0);
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 9);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_nterm_entry(0, c_nterm_idx).get_shift_state_idx() == 5);
+            REQUIRE(pt.get_term_entry(1, b_term_idx).get_reduce_nterm_idx() == a_nterm_idx);
+            REQUIRE(pt.get_term_entry(1, b_term_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, b_term_idx).get_shift_state_idx() == 6);
+            REQUIRE(pt.get_term_entry(4, b_term_idx).get_shift_state_idx() == 7);
+            REQUIRE(pt.get_term_entry(5, b_term_idx).get_shift_state_idx() == 8);
+            REQUIRE(pt.get_term_entry(6, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(6, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_length() == 2);
+
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 0);
+        }
     }
 
     SECTION("warnings")
@@ -631,19 +758,55 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", 
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 13);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
-        CHECK(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::rr_conflict(0, 2)));
-        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
-        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
-        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
-        CHECK(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r0)));
-        CHECK(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r1)));
-        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, s_r2)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        REQUIRE(hints[5] == teh(1, {st::terminal, b_term_idx}, pte::rr_conflict(0, 2)));
+        REQUIRE(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[7] == teh(3, {st::terminal, b_term_idx}, pte::shift(6)));
+        REQUIRE(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::shift(7)));
+        REQUIRE(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
+        REQUIRE(hints[10] == teh(6, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[11] == teh(7, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        REQUIRE(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, 2)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        REQUIRE(rr_hints.size() == 2);
+        REQUIRE(rr_hints[0] == action::reduction{a_nterm_idx, a_r0});
+        REQUIRE(rr_hints[1] == action::reduction{b_nterm_idx, b_r0});
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 9);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_nterm_entry(0, c_nterm_idx).get_shift_state_idx() == 5);
+            REQUIRE(pt.get_term_entry(1, b_term_idx).get_rr_conflict_start_idx() == 0);
+            REQUIRE(pt.get_term_entry(1, b_term_idx).get_rr_conflict_count() == 2);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, b_term_idx).get_shift_state_idx() == 6);
+            REQUIRE(pt.get_term_entry(4, b_term_idx).get_shift_state_idx() == 7);
+            REQUIRE(pt.get_term_entry(5, b_term_idx).get_shift_state_idx() == 8);
+            REQUIRE(pt.get_term_entry(6, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(6, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(7, eof_idx).get_reduce_length() == 2);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(8, eof_idx).get_reduce_length() == 2);
+
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 2);
+            REQUIRE(rr[0].nterm_idx_ == static_cast<uint16_t>(a_nterm_idx));
+            REQUIRE(rr[0].length_ == 1);
+            REQUIRE(rr[1].nterm_idx_ == static_cast<uint16_t>(b_nterm_idx));
+            REQUIRE(rr[1].length_ == 1);
+        }
     }
 
     SECTION("warnings")
@@ -655,6 +818,147 @@ TEST_CASE("parse_table_generator sr + multiple reductions conflict unresolved", 
         REQUIRE(warnings[2] == "\n    B -> a . / b");
         REQUIRE(warnings[3] == "\n    shift on 'b'");
         REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead 'b' unresolved. Will resort to GLR parsing");
+    }
+}
+
+TEST_CASE("parse_table_generator multiple rr conflict unresolved", "[parse_table_generator]")
+{
+    symbol_collection sc;
+    [[maybe_unused]] size_t root_idx = 0;
+    [[maybe_unused]] size_t eof_idx = 0;
+    [[maybe_unused]] size_t s_idx = sc.add_nterm("S");
+    [[maybe_unused]] size_t a_nterm_idx = sc.add_nterm("A");
+    [[maybe_unused]] size_t b_nterm_idx = sc.add_nterm("B");
+    [[maybe_unused]] size_t c_nterm_idx = sc.add_nterm("C");
+    [[maybe_unused]] size_t a_term_idx = sc.add_term("a");
+
+    sc.validate();
+    
+    ruleset rs(sc);
+    [[maybe_unused]] size_t s_r0 = rs.add_rule("S", {"A"});
+    [[maybe_unused]] size_t s_r1 = rs.add_rule("S", {"B"});
+    [[maybe_unused]] size_t s_r2 = rs.add_rule("S", {"C"});
+    [[maybe_unused]] size_t a_r0 = rs.add_rule("A", {"a"});
+    [[maybe_unused]] size_t b_r0 = rs.add_rule("B", {"a"});
+    [[maybe_unused]] size_t c_r0 = rs.add_rule("C", {"a"});
+
+    rs.validate();
+    
+    parse_table_generator ptg(rs);
+
+    const auto& states = ptg.get_states();
+    REQUIRE(states.size() == 6);
+
+    lr1_set_builder builder(rs);
+
+    SECTION("states")
+    {
+        // State 0: kernel {$root -> . S / $eof}, items: {A -> . a / $eof, B -> . a / $eof, C -> . a / $eof, $root -> . S / $eof, S -> . A / $eof, S -> . B / $eof, S -> . C / $eof}
+        auto exp_kernel0 = builder.reset()(root_idx, 0, 0, eof_idx).build();
+        REQUIRE(states[0].kernel_matches(exp_kernel0));
+
+        auto exp_items0 = builder.reset()
+            (a_nterm_idx, a_r0, 0, eof_idx)
+            (b_nterm_idx, b_r0, 0, eof_idx)
+            (c_nterm_idx, c_r0, 0, eof_idx)
+            (root_idx, 0, 0, eof_idx)
+            (s_idx, s_r0, 0, eof_idx)
+            (s_idx, s_r1, 0, eof_idx)
+            (s_idx, s_r2, 0, eof_idx).build();
+        REQUIRE(states[0].matches(exp_items0));
+
+        // State 1: kernel {A -> a . / $eof, B -> a . / $eof, C -> a . / $eof}
+        auto exp_kernel1 = builder.reset()
+            (a_nterm_idx, a_r0, 1, eof_idx)
+            (b_nterm_idx, b_r0, 1, eof_idx)
+            (c_nterm_idx, c_r0, 1, eof_idx).build();
+        REQUIRE(states[1].kernel_matches(exp_kernel1));
+
+        REQUIRE(states[1].matches(exp_kernel1));
+
+        // State 2: kernel {$root -> S . / $eof}
+        auto exp_kernel2 = builder.reset()(root_idx, 0, 1, eof_idx).build();
+        REQUIRE(states[2].kernel_matches(exp_kernel2));
+        REQUIRE(states[2].matches(exp_kernel2));
+
+        // State 3: kernel {S -> A . / $eof}
+        auto exp_kernel3 = builder.reset()(s_idx, s_r0, 1, eof_idx).build();
+        REQUIRE(states[3].kernel_matches(exp_kernel3));
+        REQUIRE(states[3].matches(exp_kernel3));
+
+        // State 4: kernel {S -> B . / $eof}
+        auto exp_kernel4 = builder.reset()(s_idx, s_r1, 1, eof_idx).build();
+        REQUIRE(states[4].kernel_matches(exp_kernel4));
+        REQUIRE(states[4].matches(exp_kernel4));
+
+        // State 5: kernel {S -> C . / $eof}
+        auto exp_kernel5 = builder.reset()(s_idx, s_r2, 1, eof_idx).build();
+        REQUIRE(states[5].kernel_matches(exp_kernel5));
+        REQUIRE(states[5].matches(exp_kernel5));
+    }
+
+    SECTION("hints")
+    {
+        const auto& hints = ptg.get_table_entry_hints();
+        REQUIRE(hints.size() == 10);
+
+        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        CHECK(hints[1] == teh(0, {st::non_terminal, s_idx}, pte::shift(2)));
+        CHECK(hints[2] == teh(0, {st::non_terminal, a_nterm_idx}, pte::shift(3)));
+        CHECK(hints[3] == teh(0, {st::non_terminal, b_nterm_idx}, pte::shift(4)));
+        CHECK(hints[4] == teh(0, {st::non_terminal, c_nterm_idx}, pte::shift(5)));
+        CHECK(hints[5] == teh(1, {st::terminal, eof_idx}, pte::rr_conflict(0, 3)));
+        CHECK(hints[6] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        CHECK(hints[7] == teh(3, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        CHECK(hints[8] == teh(4, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        CHECK(hints[9] == teh(5, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        
+        const auto& rr_hints = ptg.get_rr_conflict_hints();
+        CHECK(rr_hints.size() == 3);
+        CHECK(rr_hints[0] == action::reduction{a_nterm_idx, a_r0});
+        CHECK(rr_hints[1] == action::reduction{b_nterm_idx, b_r0});
+        CHECK(rr_hints[2] == action::reduction{c_nterm_idx, c_r0});
+        
+        SECTION("tables")
+        {
+            auto pt = ptg.create_parse_table();
+            REQUIRE(pt.get_state_count() == 6);
+            REQUIRE(pt.get_term_entry(0, a_term_idx).get_shift_state_idx() == 1);
+            REQUIRE(pt.get_nterm_entry(0, s_idx).get_shift_state_idx() == 2);
+            REQUIRE(pt.get_nterm_entry(0, a_nterm_idx).get_shift_state_idx() == 3);
+            REQUIRE(pt.get_nterm_entry(0, b_nterm_idx).get_shift_state_idx() == 4);
+            REQUIRE(pt.get_nterm_entry(0, c_nterm_idx).get_shift_state_idx() == 5);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_rr_conflict_start_idx() == 0);
+            REQUIRE(pt.get_term_entry(1, eof_idx).get_rr_conflict_count() == 3);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_nterm_idx() == root_idx);
+            REQUIRE(pt.get_term_entry(2, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(3, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(4, eof_idx).get_reduce_length() == 1);
+            REQUIRE(pt.get_term_entry(5, eof_idx).get_reduce_nterm_idx() == s_idx);
+            REQUIRE(pt.get_term_entry(5, eof_idx).get_reduce_length() == 1);
+
+            auto rr = ptg.create_rr_table();
+            REQUIRE(rr.size() == 3);
+            REQUIRE(rr[0].nterm_idx_ == static_cast<uint16_t>(a_nterm_idx));
+            REQUIRE(rr[0].length_ == 1);
+            REQUIRE(rr[1].nterm_idx_ == static_cast<uint16_t>(b_nterm_idx));
+            REQUIRE(rr[1].length_ == 1);
+            REQUIRE(rr[2].nterm_idx_ == static_cast<uint16_t>(c_nterm_idx));
+            REQUIRE(rr[2].length_ == 1);
+        }
+    }
+
+    SECTION("warnings")
+    {
+        const auto& warnings = ptg.get_warnings();
+        REQUIRE(warnings.size() == 5);
+        REQUIRE(warnings[0] == "Conflict in state 1 on lookahead '$eof' :");
+        REQUIRE(warnings[1] == "\n    A -> a . / $eof");
+        REQUIRE(warnings[2] == "\n    B -> a . / $eof");
+        REQUIRE(warnings[3] == "\n    C -> a . / $eof");
+        REQUIRE(warnings[4] == "\nConflict in state 1 on lookahead '$eof' unresolved. Will resort to GLR parsing");
     }
 }
 
@@ -760,20 +1064,20 @@ TEST_CASE("parse_table_generator states complex lookaheads", "[parse_table_gener
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 14);
 
-        CHECK(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::terminal, c_term_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, s_idx}, pte::shift(3)));
-        CHECK(hints[3] == teh(1, {st::terminal, e_term_idx}, pte::shift(4)));
-        CHECK(hints[4] == teh(1, {st::non_terminal, a_nterm_idx}, pte::shift(5)));
-        CHECK(hints[5] == teh(2, {st::terminal, e_term_idx}, pte::shift(6)));
-        CHECK(hints[6] == teh(2, {st::non_terminal, c_nterm_idx}, pte::shift(7)));
-        CHECK(hints[7] == teh(3, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
-        CHECK(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::reduce(a_nterm_idx, 0)));
-        CHECK(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
-        CHECK(hints[10] == teh(6, {st::terminal, d_term_idx}, pte::reduce(c_nterm_idx, 0)));
-        CHECK(hints[11] == teh(7, {st::terminal, d_term_idx}, pte::shift(9)));
-        CHECK(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, 0)));
-        CHECK(hints[13] == teh(9, {st::terminal, eof_idx}, pte::reduce(s_idx, 1)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, a_term_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::terminal, c_term_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, s_idx}, pte::shift(3)));
+        REQUIRE(hints[3] == teh(1, {st::terminal, e_term_idx}, pte::shift(4)));
+        REQUIRE(hints[4] == teh(1, {st::non_terminal, a_nterm_idx}, pte::shift(5)));
+        REQUIRE(hints[5] == teh(2, {st::terminal, e_term_idx}, pte::shift(6)));
+        REQUIRE(hints[6] == teh(2, {st::non_terminal, c_nterm_idx}, pte::shift(7)));
+        REQUIRE(hints[7] == teh(3, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
+        REQUIRE(hints[8] == teh(4, {st::terminal, b_term_idx}, pte::reduce(a_nterm_idx, 1)));
+        REQUIRE(hints[9] == teh(5, {st::terminal, b_term_idx}, pte::shift(8)));
+        REQUIRE(hints[10] == teh(6, {st::terminal, d_term_idx}, pte::reduce(c_nterm_idx, 1)));
+        REQUIRE(hints[11] == teh(7, {st::terminal, d_term_idx}, pte::shift(9)));
+        REQUIRE(hints[12] == teh(8, {st::terminal, eof_idx}, pte::reduce(s_idx, 3)));
+        REQUIRE(hints[13] == teh(9, {st::terminal, eof_idx}, pte::reduce(s_idx, 3)));
     }
 }
 
@@ -1064,69 +1368,69 @@ TEST_CASE("parse_table_generator unary minus grammar sr conflicts", "[parse_tabl
         REQUIRE(hints.size() == 39);  // As per previous completion
 
         // State 0 shifts
-        CHECK(hints[0] == teh(0, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::terminal, minus_idx}, pte::shift(2)));
-        CHECK(hints[2] == teh(0, {st::non_terminal, expr_idx}, pte::shift(3)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::terminal, minus_idx}, pte::shift(2)));
+        REQUIRE(hints[2] == teh(0, {st::non_terminal, expr_idx}, pte::shift(3)));
 
         // Reduces from state 1 for all_la
-        CHECK(hints[3] == teh(1, {st::terminal, all_la[0]}, pte::reduce(expr_idx, expr_id)));
-        CHECK(hints[4] == teh(1, {st::terminal, all_la[1]}, pte::reduce(expr_idx, expr_id)));
-        CHECK(hints[5] == teh(1, {st::terminal, all_la[2]}, pte::reduce(expr_idx, expr_id)));
-        CHECK(hints[6] == teh(1, {st::terminal, all_la[3]}, pte::reduce(expr_idx, expr_id)));
+        REQUIRE(hints[3] == teh(1, {st::terminal, all_la[0]}, pte::reduce(expr_idx, 1)));
+        REQUIRE(hints[4] == teh(1, {st::terminal, all_la[1]}, pte::reduce(expr_idx, 1)));
+        REQUIRE(hints[5] == teh(1, {st::terminal, all_la[2]}, pte::reduce(expr_idx, 1)));
+        REQUIRE(hints[6] == teh(1, {st::terminal, all_la[3]}, pte::reduce(expr_idx, 1)));
 
         // State 2 shifts
-        CHECK(hints[7] == teh(2, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[8] == teh(2, {st::terminal, minus_idx}, pte::shift(2)));
-        CHECK(hints[9] == teh(2, {st::non_terminal, expr_idx}, pte::shift(4)));
+        REQUIRE(hints[7] == teh(2, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[8] == teh(2, {st::terminal, minus_idx}, pte::shift(2)));
+        REQUIRE(hints[9] == teh(2, {st::non_terminal, expr_idx}, pte::shift(4)));
 
         // State 3 reduce
-        CHECK(hints[10] == teh(3, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));
+        REQUIRE(hints[10] == teh(3, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));
 
         // State 3 shifts
-        CHECK(hints[11] == teh(3, {st::terminal, plus_idx}, pte::shift(5)));
-        CHECK(hints[12] == teh(3, {st::terminal, minus_idx}, pte::shift(6)));
-        CHECK(hints[13] == teh(3, {st::terminal, mul_idx}, pte::shift(7)));
+        REQUIRE(hints[11] == teh(3, {st::terminal, plus_idx}, pte::shift(5)));
+        REQUIRE(hints[12] == teh(3, {st::terminal, minus_idx}, pte::shift(6)));
+        REQUIRE(hints[13] == teh(3, {st::terminal, mul_idx}, pte::shift(7)));
 
         // State 4 resolved reduces
-        CHECK(hints[14] == teh(4, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_neg)));        
-        CHECK(hints[15] == teh(4, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_neg)));
-        CHECK(hints[16] == teh(4, {st::terminal, minus_idx}, pte::reduce(expr_idx, expr_neg)));
-        CHECK(hints[17] == teh(4, {st::terminal, mul_idx}, pte::reduce(expr_idx, expr_neg)));
+        REQUIRE(hints[14] == teh(4, {st::terminal, eof_idx}, pte::reduce(expr_idx, 2)));        
+        REQUIRE(hints[15] == teh(4, {st::terminal, plus_idx}, pte::reduce(expr_idx, 2)));
+        REQUIRE(hints[16] == teh(4, {st::terminal, minus_idx}, pte::reduce(expr_idx, 2)));
+        REQUIRE(hints[17] == teh(4, {st::terminal, mul_idx}, pte::reduce(expr_idx, 2)));
 
         // State 5 shifts
-        CHECK(hints[18] == teh(5, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[19] == teh(5, {st::terminal, minus_idx}, pte::shift(2)));
-        CHECK(hints[20] == teh(5, {st::non_terminal, expr_idx}, pte::shift(8)));
+        REQUIRE(hints[18] == teh(5, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[19] == teh(5, {st::terminal, minus_idx}, pte::shift(2)));
+        REQUIRE(hints[20] == teh(5, {st::non_terminal, expr_idx}, pte::shift(8)));
 
         // State 6 shifts
-        CHECK(hints[21] == teh(6, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[22] == teh(6, {st::terminal, minus_idx}, pte::shift(2)));
-        CHECK(hints[23] == teh(6, {st::non_terminal, expr_idx}, pte::shift(9)));
+        REQUIRE(hints[21] == teh(6, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[22] == teh(6, {st::terminal, minus_idx}, pte::shift(2)));
+        REQUIRE(hints[23] == teh(6, {st::non_terminal, expr_idx}, pte::shift(9)));
 
         // State 7 shifts
-        CHECK(hints[24] == teh(7, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[25] == teh(7, {st::terminal, minus_idx}, pte::shift(2)));
-        CHECK(hints[26] == teh(7, {st::non_terminal, expr_idx}, pte::shift(10)));
+        REQUIRE(hints[24] == teh(7, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[25] == teh(7, {st::terminal, minus_idx}, pte::shift(2)));
+        REQUIRE(hints[26] == teh(7, {st::non_terminal, expr_idx}, pte::shift(10)));
 
         // State 8 resolved
-        CHECK(hints[27] == teh(8, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_plus)));
-        CHECK(hints[28] == teh(8, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_plus)));
-        CHECK(hints[29] == teh(8, {st::terminal, minus_idx}, pte::reduce(expr_idx, expr_plus)));
+        REQUIRE(hints[27] == teh(8, {st::terminal, eof_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[28] == teh(8, {st::terminal, plus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[29] == teh(8, {st::terminal, minus_idx}, pte::reduce(expr_idx, 3)));
 
-        CHECK(hints[30] == teh(8, {st::terminal, mul_idx}, pte::shift(7)));
+        REQUIRE(hints[30] == teh(8, {st::terminal, mul_idx}, pte::shift(7)));
 
         // State 9 resolved
-        CHECK(hints[31] == teh(9, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_minus)));
-        CHECK(hints[32] == teh(9, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_minus)));
-        CHECK(hints[33] == teh(9, {st::terminal, minus_idx}, pte::reduce(expr_idx, expr_minus)));
+        REQUIRE(hints[31] == teh(9, {st::terminal, eof_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[32] == teh(9, {st::terminal, plus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[33] == teh(9, {st::terminal, minus_idx}, pte::reduce(expr_idx, 3)));
 
-        CHECK(hints[34] == teh(9, {st::terminal, mul_idx}, pte::shift(7)));
+        REQUIRE(hints[34] == teh(9, {st::terminal, mul_idx}, pte::shift(7)));
 
         // State 10 resolved
-        CHECK(hints[35] == teh(10, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_mul)));
-        CHECK(hints[36] == teh(10, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_mul)));
-        CHECK(hints[37] == teh(10, {st::terminal, minus_idx}, pte::reduce(expr_idx, expr_mul)));
-        CHECK(hints[38] == teh(10, {st::terminal, mul_idx}, pte::reduce(expr_idx, expr_mul)));
+        REQUIRE(hints[35] == teh(10, {st::terminal, eof_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[36] == teh(10, {st::terminal, plus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[37] == teh(10, {st::terminal, minus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[38] == teh(10, {st::terminal, mul_idx}, pte::reduce(expr_idx, 3)));
     }
 }
 
@@ -1303,31 +1607,31 @@ TEST_CASE("parse_table_generator right assoc grammar sr conflicts", "[parse_tabl
         const auto& hints = ptg.get_table_entry_hints();
         REQUIRE(hints.size() == 18);
 
-        CHECK(hints[0] == teh(0, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[1] == teh(0, {st::non_terminal, expr_idx}, pte::shift(2)));
+        REQUIRE(hints[0] == teh(0, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[1] == teh(0, {st::non_terminal, expr_idx}, pte::shift(2)));
 
         // Reduces from state 1 for all_la
         for (size_t i = 0; i < 3; ++i)
         {
-            CHECK(hints[2 + i] == teh(1, {st::terminal, all_la[i]}, pte::reduce(expr_idx, expr_id)));
+            REQUIRE(hints[2 + i] == teh(1, {st::terminal, all_la[i]}, pte::reduce(expr_idx, 1)));
         }
 
-        CHECK(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 0)));        
-        CHECK(hints[6] == teh(2, {st::terminal, plus_idx}, pte::shift(3)));
-        CHECK(hints[7] == teh(2, {st::terminal, pow_idx}, pte::shift(4)));
+        REQUIRE(hints[5] == teh(2, {st::terminal, eof_idx}, pte::reduce(root_idx, 1)));        
+        REQUIRE(hints[6] == teh(2, {st::terminal, plus_idx}, pte::shift(3)));
+        REQUIRE(hints[7] == teh(2, {st::terminal, pow_idx}, pte::shift(4)));
 
-        CHECK(hints[8] == teh(3, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[9] == teh(3, {st::non_terminal, expr_idx}, pte::shift(5)));
+        REQUIRE(hints[8] == teh(3, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[9] == teh(3, {st::non_terminal, expr_idx}, pte::shift(5)));
 
-        CHECK(hints[10] == teh(4, {st::terminal, id_idx}, pte::shift(1)));
-        CHECK(hints[11] == teh(4, {st::non_terminal, expr_idx}, pte::shift(6)));
+        REQUIRE(hints[10] == teh(4, {st::terminal, id_idx}, pte::shift(1)));
+        REQUIRE(hints[11] == teh(4, {st::non_terminal, expr_idx}, pte::shift(6)));
 
-        CHECK(hints[12] == teh(5, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_plus)));        
-        CHECK(hints[13] == teh(5, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_plus)));
-        CHECK(hints[14] == teh(5, {st::terminal, pow_idx}, pte::shift(4)));
+        REQUIRE(hints[12] == teh(5, {st::terminal, eof_idx}, pte::reduce(expr_idx, 3)));        
+        REQUIRE(hints[13] == teh(5, {st::terminal, plus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[14] == teh(5, {st::terminal, pow_idx}, pte::shift(4)));
 
-        CHECK(hints[15] == teh(6, {st::terminal, eof_idx}, pte::reduce(expr_idx, expr_pow)));        
-        CHECK(hints[16] == teh(6, {st::terminal, plus_idx}, pte::reduce(expr_idx, expr_pow)));
-        CHECK(hints[17] == teh(6, {st::terminal, pow_idx}, pte::shift(4)));
+        REQUIRE(hints[15] == teh(6, {st::terminal, eof_idx}, pte::reduce(expr_idx, 3)));        
+        REQUIRE(hints[16] == teh(6, {st::terminal, plus_idx}, pte::reduce(expr_idx, 3)));
+        REQUIRE(hints[17] == teh(6, {st::terminal, pow_idx}, pte::shift(4)));
     }
 }

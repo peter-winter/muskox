@@ -113,7 +113,11 @@ void parse_table_generator::process_reduce(size_t state_idx, size_t lookahead_id
 void parse_table_generator::process_single_reduce(size_t state_idx, size_t lookahead_idx, const action::reduction& r)
 {
     // Add reduce entry hint
-    table_entry_hints_.emplace_back(state_idx, symbol_ref{symbol_type::terminal, lookahead_idx}, parse_table_entry::reduce(r.nterm_idx_, r.rside_idx_));
+    table_entry_hints_.emplace_back(
+        state_idx, 
+        symbol_ref{symbol_type::terminal, lookahead_idx}, 
+        parse_table_entry::reduce(r.nterm_idx_, rs_.get_symbol_count(r.nterm_idx_, r.rside_idx_))
+    );
 }
 
 std::optional<std::size_t> parse_table_generator::process_conflict(size_t state_idx, size_t term_idx, action& a)
@@ -308,25 +312,43 @@ const std::vector<table_entry_hint>& parse_table_generator::get_table_entry_hint
     return table_entry_hints_;
 }
 
+const std::vector<action::reduction>& parse_table_generator::get_rr_conflict_hints() const
+{
+    return rr_conflict_hints_;
+}
+
 parse_table parse_table_generator::create_parse_table() const
 {
-    size_t state_count = states_.size();
-    parse_table pt(rs_, state_count, rr_conflict_hints_.size());
+    parse_table pt(rs_.get_term_count(), rs_.get_nterm_count(), states_.size());
 
     // Populate the parse table from hints
     for (const auto& hint : table_entry_hints_)
     {
-        pt.get(hint.get_state_idx(), hint.get_ref()) = hint.get_entry();
+        if (hint.get_ref().type_ == symbol_type::terminal)
+        {
+            pt.get_term_entry(hint.get_state_idx(), hint.get_ref().index_) = hint.get_entry();
+        }
+        else
+        {
+            pt.get_nterm_entry(hint.get_state_idx(), hint.get_ref().index_) = hint.get_entry();
+        }
     }
 
+    return pt;
+}
+
+rr_table parse_table_generator::create_rr_table() const
+{
+    rr_table rr;
     // Populate the reduce-reduce conflicts table from hints
     for (size_t i = 0; i < rr_conflict_hints_.size(); ++i)
     {
         const auto& hint = rr_conflict_hints_[i];
-        pt.get_rr_conflict(i) = parse_table_entry::reduction{static_cast<uint16_t>(hint.nterm_idx_), static_cast<uint16_t>(hint.rside_idx_)};
+        auto count = rs_.get_symbol_count(hint.nterm_idx_, hint.rside_idx_);
+        rr.push_back(parse_table_entry::reduction{static_cast<uint16_t>(hint.nterm_idx_), static_cast<uint16_t>(count)});
     }
     
-    return pt;
+    return rr;
 }
 
 } // namespace muskox
