@@ -1,14 +1,14 @@
-#include "symbol_stream.h"
+#include "symbol_stream_from_vector.h"
 
 namespace muskox
 {
 
-symbol_stream::symbol_stream(const std::vector<size_t>& terminals)
+symbol_stream_from_vector::symbol_stream_from_vector(const std::vector<size_t>& terminals)
     : terminals_(terminals)
 {
 }
 
-std::optional<size_t> symbol_stream::next()
+std::optional<size_t> symbol_stream_from_vector::next()
 {
     if (pos_ >= terminals_.size())
     {

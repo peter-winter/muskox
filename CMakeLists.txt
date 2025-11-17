@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME}_lib
   src/parse_table_entry.cpp
   src/parser.cpp
   src/state_stacks.cpp
-  src/symbol_stream.cpp
+  src/symbol_stream_from_vector.cpp
   src/parse_result.cpp
   src/parse_context.cpp
 )

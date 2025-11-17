@@ -4,7 +4,7 @@
 #include <parser.h>
 #include <ruleset.h>
 #include <symbol_collection.h>
-#include <symbol_stream.h>
+#include <symbol_stream_from_vector.h>
 
 using namespace muskox;
 
@@ -32,7 +32,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("valid input ac")
     {
         std::vector<size_t> input {a_idx, c_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE(res.is_success());
         REQUIRE(res.get_errors().empty());
@@ -41,7 +41,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("invalid input aa")
     {
         std::vector<size_t> input {a_idx, a_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -51,7 +51,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("invalid input a")
     {
         std::vector<size_t> input {a_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -61,7 +61,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("invalid input c")
     {
         std::vector<size_t> input {c_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -71,7 +71,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("empty input")
     {
         std::vector<size_t> input {};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -81,7 +81,7 @@ TEST_CASE("parser basics", "[parser]")
     SECTION("longer invalid input acc")
     {
         std::vector<size_t> input {a_idx, c_idx, c_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -112,7 +112,7 @@ TEST_CASE("parser with epsilon production", "[parser]")
     SECTION("valid input a")
     {
         std::vector<size_t> input {a_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE(res.is_success());
         REQUIRE(res.get_errors().empty());
@@ -121,7 +121,7 @@ TEST_CASE("parser with epsilon production", "[parser]")
     SECTION("invalid input aa")
     {
         std::vector<size_t> input {a_idx, a_idx};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);
@@ -131,7 +131,7 @@ TEST_CASE("parser with epsilon production", "[parser]")
     SECTION("invalid empty")
     {
         std::vector<size_t> input {};
-        symbol_stream stream(input);
+        symbol_stream_from_vector stream(input);
         auto res = p.parse(stream);
         REQUIRE_FALSE(res.is_success());
         REQUIRE(res.get_errors().size() == 1);

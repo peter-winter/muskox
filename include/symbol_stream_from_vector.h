@@ -6,10 +6,10 @@
 namespace muskox
 {
 
-class symbol_stream
+class symbol_stream_from_vector
 {
 public:
-    symbol_stream(const std::vector<size_t>& terminals);
+    symbol_stream_from_vector(const std::vector<size_t>& terminals);
 
     std::optional<size_t> next();
 

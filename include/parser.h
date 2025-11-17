@@ -4,7 +4,6 @@
 #include "parse_context.h"
 #include "parse_result.h"
 #include "name_table.h"
-#include "symbol_stream.h"
 
 namespace muskox
 {
@@ -14,10 +13,12 @@ class parser
 public:
     parser(parse_table&& pt, name_table&& nt, rr_table&& rt);
 
-    parse_result parse(symbol_stream& stream) const;
+    template<typename Stream>
+    parse_result parse(Stream& stream) const;
 
 private:
-    size_t get_lookahead(symbol_stream& stream) const;
+    template<typename Stream>
+    size_t get_lookahead(Stream& stream) const;
 
     void do_shift(parse_context& ctx, size_t new_state, size_t term_idx) const;
 

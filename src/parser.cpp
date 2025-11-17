@@ -1,7 +1,8 @@
 #include "parser.h"
-
 #include "parse_context.h"
 #include "parse_error.h"
+
+#include "symbol_stream_from_vector.h"
 
 #include <optional>
 
@@ -13,13 +14,15 @@ parser::parser(parse_table&& pt, name_table&& nt, rr_table&& rt)
 {
 }
 
-size_t parser::get_lookahead(symbol_stream& stream) const
+template<typename Stream>
+size_t parser::get_lookahead(Stream& stream) const
 {
     auto token = stream.next();
     return token ? *token : 0; // eof_idx = 0
 }
 
-parse_result parser::parse(symbol_stream& stream) const
+template<typename Stream>
+parse_result parser::parse(Stream& stream) const
 {
     parse_context ctx;
 
@@ -122,5 +125,7 @@ void parser::syntax_error(parse_context& ctx, size_t term_idx) const
     parse_error err(parse_error_templates::code::syntax_error, symbol);
     ctx.add_error(err.str());
 }
+
+template parse_result parser::parse<symbol_stream_from_vector>(symbol_stream_from_vector&) const;
 
 } // namespace muskox
